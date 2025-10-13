@@ -1,0 +1,60 @@
+{
+  "node": {
+    "00c619ec02afa7d57568b4e0406ecec6a6bf21e12a": {
+      "workers": {
+        "app/hr/employee-data/page": {
+          "moduleId": "[project]/.next-internal/server/app/hr/employee-data/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/hr/employee-data/page": "action-browser"
+      }
+    },
+    "40d9a51fb28edbd77052634e1d4229df7421a16ff4": {
+      "workers": {
+        "app/hr/employee-data/page": {
+          "moduleId": "[project]/.next-internal/server/app/hr/employee-data/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/hr/employee-data/page": "action-browser"
+      }
+    },
+    "00651499873cf7b226d6bebda46391ddb16c9e3017": {
+      "workers": {
+        "app/hr/employee-data/page": {
+          "moduleId": "[project]/.next-internal/server/app/hr/employee-data/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/hr/employee-data/page": "action-browser"
+      }
+    },
+    "405d0bc438bbb2c7f72de945affb8287da8e3ec894": {
+      "workers": {
+        "app/hr/employee-data/page": {
+          "moduleId": "[project]/.next-internal/server/app/hr/employee-data/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/hr/employee-data/page": "action-browser"
+      }
+    },
+    "4098d8639b4d7e181c4a232b77c397aee879de1de4": {
+      "workers": {
+        "app/hr/employee-data/page": {
+          "moduleId": "[project]/.next-internal/server/app/hr/employee-data/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/hr/employee-data/page": "action-browser"
+      }
+    }
+  },
+  "edge": {}
+}

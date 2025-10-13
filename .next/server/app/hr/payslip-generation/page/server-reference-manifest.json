@@ -1,0 +1,38 @@
+{
+  "node": {
+    "002dd23120083517493f1856b5ce3e27ca1098d244": {
+      "workers": {
+        "app/hr/payslip-generation/page": {
+          "moduleId": "[project]/.next-internal/server/app/hr/payslip-generation/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/hr/payslip-generation/page": "action-browser"
+      }
+    },
+    "00651499873cf7b226d6bebda46391ddb16c9e3017": {
+      "workers": {
+        "app/hr/payslip-generation/page": {
+          "moduleId": "[project]/.next-internal/server/app/hr/payslip-generation/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/hr/payslip-generation/page": "action-browser"
+      }
+    },
+    "405d0bc438bbb2c7f72de945affb8287da8e3ec894": {
+      "workers": {
+        "app/hr/payslip-generation/page": {
+          "moduleId": "[project]/.next-internal/server/app/hr/payslip-generation/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/hr/payslip-generation/page": "action-browser"
+      }
+    }
+  },
+  "edge": {}
+}

@@ -1,0 +1,38 @@
+{
+  "node": {
+    "00651499873cf7b226d6bebda46391ddb16c9e3017": {
+      "workers": {
+        "app/admin/branches/page": {
+          "moduleId": "[project]/.next-internal/server/app/admin/branches/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/admin/branches/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/admin/branches/page": "action-browser"
+      }
+    },
+    "605431ae73af1df41c7f1c3e5b01b396c392321f8e": {
+      "workers": {
+        "app/admin/branches/page": {
+          "moduleId": "[project]/.next-internal/server/app/admin/branches/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/admin/branches/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/admin/branches/page": "action-browser"
+      }
+    },
+    "40460d65aa254e01f8e53bf9f8a5344d44247c850c": {
+      "workers": {
+        "app/admin/branches/page": {
+          "moduleId": "[project]/.next-internal/server/app/admin/branches/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/admin/branches/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/admin/branches/page": "action-browser"
+      }
+    }
+  },
+  "edge": {}
+}

@@ -1,0 +1,27 @@
+{
+  "node": {
+    "00acc9d5c2e411c4f8f6e3b8e0c4a2c3da73708524": {
+      "workers": {
+        "app/hr/leave-approvals/page": {
+          "moduleId": "[project]/.next-internal/server/app/hr/leave-approvals/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/hr/leave-approvals/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/hr/leave-approvals/page": "action-browser"
+      }
+    },
+    "607fa2723abb9dbb7afe57b7c0393defacb01ac2f8": {
+      "workers": {
+        "app/hr/leave-approvals/page": {
+          "moduleId": "[project]/.next-internal/server/app/hr/leave-approvals/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/hr/leave-approvals/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/hr/leave-approvals/page": "action-browser"
+      }
+    }
+  },
+  "edge": {}
+}

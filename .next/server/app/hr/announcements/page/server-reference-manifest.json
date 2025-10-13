@@ -1,0 +1,38 @@
+{
+  "node": {
+    "0081b652a1ba97ae17200b5330a84c1eaee2045820": {
+      "workers": {
+        "app/hr/announcements/page": {
+          "moduleId": "[project]/.next-internal/server/app/hr/announcements/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/hr/announcements/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/hr/announcements/page": "action-browser"
+      }
+    },
+    "70c11b4e51180d8f9642412688db45cf9ac9031b55": {
+      "workers": {
+        "app/hr/announcements/page": {
+          "moduleId": "[project]/.next-internal/server/app/hr/announcements/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/hr/announcements/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/hr/announcements/page": "action-browser"
+      }
+    },
+    "40c6ede960f8c39f8d3f6b77178454537629dde43e": {
+      "workers": {
+        "app/hr/announcements/page": {
+          "moduleId": "[project]/.next-internal/server/app/hr/announcements/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/hr/announcements/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/hr/announcements/page": "action-browser"
+      }
+    }
+  },
+  "edge": {}
+}
