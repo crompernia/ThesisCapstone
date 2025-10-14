@@ -1,6 +1,39 @@
+# Dependencies
 node_modules
+.pnp
+.pnp.js
+bun.lockb
 
-.env.local
-.env.prod
+# Testing
+coverage
+
+# Next.js
+.next/
+out/
+build
+dist
+.turbo
+
+# Production
+.vercel
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
 .env
-.next
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.prod
+
+# Typescript
+*.tsbuildinfo
+next-env.d.ts
