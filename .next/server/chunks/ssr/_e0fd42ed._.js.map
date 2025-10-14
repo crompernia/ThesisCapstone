@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 6, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
-    {"offset": {"line": 24, "column": 0}, "map": {"version":3,"sources":["file:///home/user/studio/src/app/page.jsx"],"sourcesContent":["/**\n * @fileoverview This file defines the login page for the application.\n */\nimport { redirect } from 'next/navigation';\n\n/**\n * Renders the main landing page for the application.\n * It redirects to the employee dashboard.\n * @returns {null} Returns null as the component redirects.\n */\nexport default function LoginPage() {\n    redirect('/dashboard');\n    return null;\n}\n"],"names":[],"mappings":"AAAA;;CAEC;;;AACD;AAAA;;AAOe,SAAS;IACpB,CAAA,GAAA,qLAAA,CAAA,WAAQ,AAAD,EAAE;IACT,OAAO;AACX","debugId":null}}]
-}
