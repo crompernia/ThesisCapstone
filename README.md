@@ -185,35 +185,35 @@ The system uses the following main tables:
 
 ## Deployment
 
-### Deploy to Vercel with Vercel Postgres
+### Deploy to Vercel with Neon Database (Recommended)
 
-This project is configured to use **Vercel Postgres** as the production database.
+This project works with **Neon**, a serverless PostgreSQL database with excellent Drizzle ORM compatibility.
 
-#### Quick Deployment Steps
+#### Quick Deployment Steps with Neon
 
 1. **Install Vercel CLI:**
 ```bash
 npm i -g vercel
 ```
 
-2. **Deploy to Vercel:**
+2. **Create Neon Database:**
+   - Go to [neon.tech](https://neon.tech) and sign up (free tier available)
+   - Click **Create Project**
+   - Name: `hr-management-system`
+   - Region: Choose closest to your users
+   - Copy the **pooled connection string**
+
+3. **Deploy to Vercel:**
 ```bash
 vercel
 ```
 
-3. **Set up Vercel Postgres:**
-   - Go to [Vercel Dashboard](https://vercel.com/dashboard) → **Storage**
-   - Click **Create Database** → **Postgres**
-   - Name your database (e.g., `hr-management-db`)
-   - Click **Create**
-   - Connect the database to your project
+4. **Configure Environment Variables in Vercel:**
 
-4. **Configure Environment Variables:**
-
-   Vercel automatically adds `POSTGRES_URL` when you connect the database. Add these additional variables in **Settings** → **Environment Variables**:
+   Go to your Vercel project → **Settings** → **Environment Variables** and add:
 
    ```env
-   DATABASE_URL=${POSTGRES_URL}
+   DATABASE_URL=postgresql://username:password@ep-xxx.region.aws.neon.tech/dbname?sslmode=require
    NEXTAUTH_SECRET=<generate-with-openssl-rand-base64-32>
    NEXTAUTH_URL=https://your-app.vercel.app
    GOOGLE_API_KEY=<your-google-api-key>
@@ -225,12 +225,12 @@ vercel
 vercel env pull .env.production
 
 # Run migrations (using our helper script)
-./scripts/migrate-production.sh
+./scripts/migrate-neon.sh
 ```
 
 6. **Seed the Database (First Time Only):**
 ```bash
-./scripts/seed-production.sh
+./scripts/seed-neon.sh
 ```
 
 7. **Deploy to Production:**
@@ -238,18 +238,30 @@ vercel env pull .env.production
 vercel --prod
 ```
 
-#### Detailed Setup Guide
+#### Why Neon?
 
-For detailed instructions on setting up Vercel Postgres, see [VERCEL_POSTGRES_SETUP.md](VERCEL_POSTGRES_SETUP.md)
+- ✅ **100% Drizzle ORM Compatible** - Works perfectly with your existing code
+- ✅ **Serverless** - Scales to zero, pay only for what you use
+- ✅ **Database Branching** - Create preview databases for staging
+- ✅ **Auto-scaling** - Handles traffic spikes automatically
+- ✅ **Free Tier** - 512 MB storage, perfect for getting started
+- ✅ **Built-in Connection Pooling** - Optimized for serverless/edge
 
-#### Alternative Database Providers
+#### Detailed Setup Guides
 
-While this project is optimized for Vercel Postgres, you can also use:
-- **Neon** - Serverless PostgreSQL
-- **Supabase** - Open-source Firebase alternative
-- **Railway** - Full-stack deployment platform
+- **Neon Setup** (Recommended): See [NEON_DB_SETUP.md](NEON_DB_SETUP.md)
+- **Vercel Postgres Setup** (Alternative): See [VERCEL_POSTGRES_SETUP.md](VERCEL_POSTGRES_SETUP.md)
 
-Simply update the `DATABASE_URL` environment variable with your chosen provider's connection string.
+#### Database Provider Comparison
+
+| Provider | Best For | Drizzle Support | Free Tier | Branching |
+|----------|----------|-----------------|-----------|-----------|
+| **Neon** | Production apps | ✅ Full | 512 MB | ✅ Yes |
+| **Vercel Postgres** | Vercel-only apps | ✅ Full | 256 MB | ❌ No |
+| **Supabase** | Apps needing auth/storage | ✅ Full | 500 MB | ❌ No |
+| **Railway** | Full-stack deployment | ✅ Full | $5 credit | ❌ No |
+
+All providers are fully compatible with Drizzle ORM. Simply update the `DATABASE_URL` environment variable.
 
 ## Features in Detail
 
