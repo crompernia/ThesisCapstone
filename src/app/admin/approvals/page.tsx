@@ -48,13 +48,21 @@ import {
 } from "@/components/ui/dialog";
 
 
+type PendingApproval = {
+    id: string;
+    employeeName: string;
+    position: string | null;
+    submittedBy: string;
+    submissionDate: string;
+};
+
 /**
  * Renders the admin pending approvals page.
  * @returns {JSX.Element} The pending approvals page component.
  */
 export default function PendingApprovalsPage() {
     const { toast } = useToast();
-    const [pendingApprovals, setPendingApprovals] = React.useState([]);
+    const [pendingApprovals, setPendingApprovals] = React.useState<PendingApproval[]>([]);
 
     React.useEffect(() => {
               document.title = "Admin Account Approval";
@@ -68,7 +76,7 @@ export default function PendingApprovalsPage() {
         fetchData();
     }, []);
 
-    const handleApprove = async (id) => {
+    const handleApprove = async (id: string) => {
         const result = await approveEmployee(id);
         if (result?.success) {
             toast({
@@ -84,8 +92,8 @@ export default function PendingApprovalsPage() {
             });
         }
     };
-    
-    const handleReject = async (id) => {
+
+    const handleReject = async (id: string) => {
         const result = await rejectEmployee(id);
         if (result?.success) {
             toast({
