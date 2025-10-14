@@ -70,10 +70,20 @@ echo "🌱 Seeding Neon database with sample data..."
 echo ""
 
 # Run seed script with Neon database URL
-DATABASE_URL="$DATABASE_URL" npm run db:seed
-
-echo ""
-echo "✅ Database seeded successfully!"
+if DATABASE_URL="$DATABASE_URL" npm run db:seed; then
+    echo ""
+    echo "✅ Database seeded successfully!"
+    echo ""
+else
+    echo ""
+    echo "❌ Seeding failed!"
+    echo ""
+    echo "If the database already has data, you can either:"
+    echo "1. Keep the existing data (recommended for production)"
+    echo "2. Clear the database and reseed (only for development/testing)"
+    echo ""
+    exit 1
+fi
 echo ""
 echo "📝 Sample accounts created:"
 echo "  Admin:    super@example.com / password"

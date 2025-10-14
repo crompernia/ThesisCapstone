@@ -2,7 +2,7 @@
  * @fileoverview Authentication utility functions
  * Provides helper functions for password hashing and session management
  */
-import { hash, compare } from "bcryptjs";
+import { hash, compare } from "bcrypt";
 import { getServerSession } from "next-auth/next";
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -21,6 +21,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.employeeId || !credentials?.password) {
+          console.error("Employee login: Missing credentials");
           return null;
         }
 
@@ -32,23 +33,28 @@ export const authOptions: NextAuthOptions = {
             .where(eq(accounts.employeeNumber, credentials.employeeId));
 
           if (!user) {
+            console.error("Employee login: User not found", credentials.employeeId);
             return null;
           }
 
           if (user.role !== "Employee") {
+            console.error("Employee login: Invalid role", user.role);
             return null;
           }
 
           const isPasswordValid = await compare(credentials.password, user.password);
 
           if (!isPasswordValid) {
+            console.error("Employee login: Invalid password");
             return null;
           }
 
           if (user.status !== "Active") {
+            console.error("Employee login: Inactive account");
             return null;
           }
 
+          console.log("Employee login successful:", user.id);
           return {
             id: user.id,
             email: user.email,
@@ -73,6 +79,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.error("HR login: Missing credentials");
           return null;
         }
 
@@ -84,23 +91,28 @@ export const authOptions: NextAuthOptions = {
             .where(eq(accounts.email, credentials.email));
 
           if (!user) {
+            console.error("HR login: User not found", credentials.email);
             return null;
           }
 
           if (user.role !== "HR") {
+            console.error("HR login: Invalid role", user.role);
             return null;
           }
 
           const isPasswordValid = await compare(credentials.password, user.password);
 
           if (!isPasswordValid) {
+            console.error("HR login: Invalid password");
             return null;
           }
 
           if (user.status !== "Active") {
+            console.error("HR login: Inactive account");
             return null;
           }
 
+          console.log("HR login successful:", user.id);
           return {
             id: user.id,
             email: user.email,
@@ -123,6 +135,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.error("Admin login: Missing credentials");
           return null;
         }
 
@@ -134,23 +147,28 @@ export const authOptions: NextAuthOptions = {
             .where(eq(accounts.email, credentials.email));
 
           if (!user) {
+            console.error("Admin login: User not found", credentials.email);
             return null;
           }
 
           if (user.role !== "Admin") {
+            console.error("Admin login: Invalid role", user.role);
             return null;
           }
 
           const isPasswordValid = await compare(credentials.password, user.password);
 
           if (!isPasswordValid) {
+            console.error("Admin login: Invalid password");
             return null;
           }
 
           if (user.status !== "Active") {
+            console.error("Admin login: Inactive account");
             return null;
           }
 
+          console.log("Admin login successful:", user.id);
           return {
             id: user.id,
             email: user.email,
@@ -197,6 +215,7 @@ export const authOptions: NextAuthOptions = {
     maxAge: 24 * 60 * 60, // 24 hours
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === "development",
 };
 
 /**
