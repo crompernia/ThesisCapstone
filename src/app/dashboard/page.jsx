@@ -97,7 +97,7 @@ export default async function EmployeeDashboardPage() {
             {announcements.length > 0 ? (
                 <ul className="space-y-4">
                 {announcements.map((ann, index) => (
-                    <li key={ann.id}>
+                    <li key={`${ann.id}-${index}`}>
                     <p className="font-semibold">{ann.title}</p>
                     <p className="text-sm text-muted-foreground">{ann.date}</p>
                     <p className="text-sm mt-1">{ann.content}</p>

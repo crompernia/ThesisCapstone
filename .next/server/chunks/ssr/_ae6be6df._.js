@@ -74,11 +74,6 @@ async function getHRDashboardData() {
             change: ''
         },
         {
-            title: 'Active Job Postings',
-            value: '4',
-            change: 'External API'
-        },
-        {
             title: 'Pending Leave Requests',
             value: String(pendingLeaveRequests),
             change: ''

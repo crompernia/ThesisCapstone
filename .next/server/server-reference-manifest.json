@@ -2,10 +2,6 @@
   "node": {
     "002dd23120083517493f1856b5ce3e27ca1098d244": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -13,35 +9,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/payslip-generation/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/payslip-generation/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc",
-        "app/hr/payslip-generation/page": "action-browser"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "0041d2031c64a9612535dcab2138817eeef5f5974c": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -49,38 +25,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "00651499873cf7b226d6bebda46391ddb16c9e3017": {
       "workers": {
-        "app/admin/branch-allocation/page": {
-          "moduleId": "[project]/.next-internal/server/app/admin/branch-allocation/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/admin/branches/page": {
-          "moduleId": "[project]/.next-internal/server/app/admin/branches/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/admin/branches/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -88,61 +41,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/attendance-monitoring/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/attendance-monitoring/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/employee-data/new/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/employee-data/new/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/hr/employee-data/new/actions.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/employee-data/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/employee-data/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/payslip-generation/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/payslip-generation/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/scheduling/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/scheduling/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/admin/branch-allocation/page": "action-browser",
-        "app/admin/branches/page": "action-browser",
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/attendance-monitoring/page": "action-browser",
-        "app/hr/dashboard/page": "rsc",
-        "app/hr/employee-data/new/page": "action-browser",
-        "app/hr/employee-data/page": "action-browser",
-        "app/hr/payslip-generation/page": "action-browser",
-        "app/hr/scheduling/page": "action-browser"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "0067b71c9617499970f47f615b607f992a7b35b7ca": {
       "workers": {
-        "app/admin/approvals/page": {
-          "moduleId": "[project]/.next-internal/server/app/admin/approvals/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/admin/approvals/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -150,35 +57,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/admin/approvals/page": "action-browser",
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "006f92dd1eaec6e537e91dc9dec624243ee6afc955": {
       "workers": {
-        "app/admin/branch-allocation/page": {
-          "moduleId": "[project]/.next-internal/server/app/admin/branch-allocation/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -186,31 +73,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/admin/branch-allocation/page": "action-browser",
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "0081b652a1ba97ae17200b5330a84c1eaee2045820": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -218,39 +89,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/announcements/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/announcements/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/hr/announcements/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/announcements/page": "action-browser",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "009e1e55ed3679817775f3fa1467d6a8d3d8736c4a": {
       "workers": {
-        "app/admin/positions/page": {
-          "moduleId": "[project]/.next-internal/server/app/admin/positions/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/admin/positions/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -258,31 +105,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/admin/positions/page": "action-browser",
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "00acc9d5c2e411c4f8f6e3b8e0c4a2c3da73708524": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -290,35 +121,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/leave-approvals/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/leave-approvals/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/hr/leave-approvals/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc",
-        "app/hr/leave-approvals/page": "action-browser"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "00c619ec02afa7d57568b4e0406ecec6a6bf21e12a": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -326,35 +137,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/employee-data/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/employee-data/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc",
-        "app/hr/employee-data/page": "action-browser"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "00d5a8089689a75a56fcc38e7013d6855f6b64deb6": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -362,35 +153,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/scheduling/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/scheduling/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc",
-        "app/hr/scheduling/page": "action-browser"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "400c24efbdff8ad0edbd723316ed5350a26ca81947": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -398,30 +169,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "402bf722be4a91aa4ab56f119fd6bbe1240abba9d6": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -429,30 +185,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "40360376d7fc3085764bf086e59364b9a7bd931021": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -460,30 +201,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "403bd6deaf58cedd1f69830ca2372388b1774aab05": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -491,30 +217,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "405c3db62c447e59c0ae7044461282afdf964ae1bd": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -522,30 +233,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "405d0bc438bbb2c7f72de945affb8287da8e3ec894": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -553,55 +249,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/attendance-monitoring/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/attendance-monitoring/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/employee-data/new/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/employee-data/new/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/hr/employee-data/new/actions.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/employee-data/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/employee-data/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/payslip-generation/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/payslip-generation/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/scheduling/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/scheduling/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/attendance-monitoring/page": "action-browser",
-        "app/hr/dashboard/page": "rsc",
-        "app/hr/employee-data/new/page": "action-browser",
-        "app/hr/employee-data/page": "action-browser",
-        "app/hr/payslip-generation/page": "action-browser",
-        "app/hr/scheduling/page": "action-browser"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "406a1f92adca3011402ab7c759c72a0873cf50a660": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -609,34 +265,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "40885e633df6cf5d24407734484d3a4bcc7bc878e0": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/dashboard/leave/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/leave/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/dashboard/leave/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -644,31 +281,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
-        "app/dashboard/leave/page": "action-browser",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "4098d8639b4d7e181c4a232b77c397aee879de1de4": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -676,50 +297,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/attendance-monitoring/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/attendance-monitoring/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/employee-data/new/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/employee-data/new/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/hr/employee-data/new/actions.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/employee-data/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/employee-data/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/scheduling/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/scheduling/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/attendance-monitoring/page": "action-browser",
-        "app/hr/dashboard/page": "rsc",
-        "app/hr/employee-data/new/page": "action-browser",
-        "app/hr/employee-data/page": "action-browser",
-        "app/hr/scheduling/page": "action-browser"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "40a5b75da077963d47ebe0f5fc53e2a123ce19ae24": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -727,35 +313,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/attendance-monitoring/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/attendance-monitoring/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/attendance-monitoring/page": "action-browser",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "40a69a957b01cb08f497843c9138b9020dea342972": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -763,30 +329,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "40b0eb7305a3d24b1488b76f6edba4bab27c969bfe": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -794,30 +345,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "40b7b79cef1785e3c75ae17348edfad469c103bb85": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -825,30 +361,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "40d9a51fb28edbd77052634e1d4229df7421a16ff4": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -856,35 +377,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/employee-data/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/employee-data/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc",
-        "app/hr/employee-data/page": "action-browser"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "40e36f9c74786f4cdb1a562f7c79abdf9440a06d44": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -892,30 +393,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "40e89487447e1f133bfc1c734cc2338626fb053105": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -923,30 +409,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "40ed5a75d32568df3e02e1d7138130c11b0fa518ff": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -954,30 +425,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "40fdc91fc4350406f04eb4a57938354df3e9a76bac": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -985,34 +441,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "6034bd75e3ee5334cb7cb149ba648ab4d639d921dd": {
       "workers": {
-        "app/admin/branch-allocation/page": {
-          "moduleId": "[project]/.next-internal/server/app/admin/branch-allocation/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -1020,31 +457,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/admin/branch-allocation/page": "action-browser",
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "604206acd9d9cff37b360a36edb47864916be42ac7": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -1052,30 +473,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "6093911139f7f04c7d4349f18c45e70c1cd12710b1": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -1083,30 +489,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "609822123b4518f2a5ebec8d5029d0aa257facd731": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -1114,30 +505,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "60a9cb6eb3ceaacad191d5184a4122349a0d55217a": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -1145,30 +521,15 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
+        "app/dashboard/payslip/page": "rsc"
       }
     },
     "70b877cecdc386a8a18ed56ee7a4f1ed9d86f3d177": {
       "workers": {
-        "app/dashboard/attendance/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/attendance/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
         "app/dashboard/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
@@ -1176,143 +537,11 @@
         "app/dashboard/payslip/page": {
           "moduleId": "[project]/.next-internal/server/app/dashboard/payslip/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": true
-        },
-        "app/dashboard/schedule/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/schedule/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        },
-        "app/hr/dashboard/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
         }
       },
       "layer": {
-        "app/dashboard/attendance/page": "rsc",
         "app/dashboard/page": "rsc",
-        "app/dashboard/payslip/page": "rsc",
-        "app/dashboard/schedule/page": "rsc",
-        "app/hr/dashboard/page": "rsc"
-      }
-    },
-    "40c4a48c4327d347621b1b94973602cf1c4a7eec78": {
-      "workers": {
-        "app/hr/employee-data/new/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/employee-data/new/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/hr/employee-data/new/actions.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        }
-      },
-      "layer": {
-        "app/hr/employee-data/new/page": "action-browser"
-      }
-    },
-    "607fa2723abb9dbb7afe57b7c0393defacb01ac2f8": {
-      "workers": {
-        "app/hr/leave-approvals/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/leave-approvals/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/hr/leave-approvals/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        }
-      },
-      "layer": {
-        "app/hr/leave-approvals/page": "action-browser"
-      }
-    },
-    "70c11b4e51180d8f9642412688db45cf9ac9031b55": {
-      "workers": {
-        "app/hr/announcements/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/announcements/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/hr/announcements/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        }
-      },
-      "layer": {
-        "app/hr/announcements/page": "action-browser"
-      }
-    },
-    "40c6ede960f8c39f8d3f6b77178454537629dde43e": {
-      "workers": {
-        "app/hr/announcements/page": {
-          "moduleId": "[project]/.next-internal/server/app/hr/announcements/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/hr/announcements/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        }
-      },
-      "layer": {
-        "app/hr/announcements/page": "action-browser"
-      }
-    },
-    "60b093ea0415662a0f6cae6f65eaa2e30511ab5361": {
-      "workers": {
-        "app/dashboard/leave/page": {
-          "moduleId": "[project]/.next-internal/server/app/dashboard/leave/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/dashboard/leave/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        }
-      },
-      "layer": {
-        "app/dashboard/leave/page": "action-browser"
-      }
-    },
-    "400a1da22bb7d7cb687721aaaf3321bbddc10612b0": {
-      "workers": {
-        "app/admin/approvals/page": {
-          "moduleId": "[project]/.next-internal/server/app/admin/approvals/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/admin/approvals/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        }
-      },
-      "layer": {
-        "app/admin/approvals/page": "action-browser"
-      }
-    },
-    "4026e4b39b9e3767d3c57d1eec9edba57019fcd194": {
-      "workers": {
-        "app/admin/approvals/page": {
-          "moduleId": "[project]/.next-internal/server/app/admin/approvals/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/admin/approvals/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        }
-      },
-      "layer": {
-        "app/admin/approvals/page": "action-browser"
-      }
-    },
-    "605431ae73af1df41c7f1c3e5b01b396c392321f8e": {
-      "workers": {
-        "app/admin/branches/page": {
-          "moduleId": "[project]/.next-internal/server/app/admin/branches/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/admin/branches/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        }
-      },
-      "layer": {
-        "app/admin/branches/page": "action-browser"
-      }
-    },
-    "40460d65aa254e01f8e53bf9f8a5344d44247c850c": {
-      "workers": {
-        "app/admin/branches/page": {
-          "moduleId": "[project]/.next-internal/server/app/admin/branches/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/admin/branches/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        }
-      },
-      "layer": {
-        "app/admin/branches/page": "action-browser"
-      }
-    },
-    "60d1d962d21f16b1185b9c4d1fb8db3d0759d1e1d4": {
-      "workers": {
-        "app/admin/positions/page": {
-          "moduleId": "[project]/.next-internal/server/app/admin/positions/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/admin/positions/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        }
-      },
-      "layer": {
-        "app/admin/positions/page": "action-browser"
-      }
-    },
-    "4015f7024e0213bcf50a7c457dcd8c52e8b7f39522": {
-      "workers": {
-        "app/admin/positions/page": {
-          "moduleId": "[project]/.next-internal/server/app/admin/positions/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data.js [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/app/admin/positions/actions.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": true
-        }
-      },
-      "layer": {
-        "app/admin/positions/page": "action-browser"
+        "app/dashboard/payslip/page": "rsc"
       }
     }
   },

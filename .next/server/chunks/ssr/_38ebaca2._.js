@@ -273,7 +273,189 @@ async function createLeaveRequest(data) {
 }
 async function getPayPeriods(employeeId) {
     // This is a placeholder as there is no payslip table yet.
-    return [];
+    const data = [
+        {
+            id: 1,
+            period: "January 2025",
+            payDate: "2025-01-31",
+            earnings: [
+                {
+                    name: "Daily Rate",
+                    amount: 885
+                },
+                {
+                    name: "No. of Days",
+                    amount: 0
+                },
+                {
+                    name: "BASIC PAY",
+                    amount: 8850
+                },
+                {
+                    name: "Overtime",
+                    amount: 0
+                },
+                {
+                    name: "Night Differential",
+                    amount: 0
+                },
+                {
+                    name: "RH OT",
+                    amount: 0
+                },
+                {
+                    name: "Special Holiday",
+                    amount: 0
+                },
+                {
+                    name: "SP OT",
+                    amount: 0
+                },
+                {
+                    name: "Salary Adjustment",
+                    amount: 0
+                },
+                {
+                    name: "Allowances",
+                    amount: 0
+                }
+            ],
+            deductions: [
+                {
+                    name: "Late/Undertime",
+                    amount: 0
+                },
+                {
+                    name: "SSS",
+                    amount: 0
+                },
+                {
+                    name: "Philhealth",
+                    amount: 0
+                },
+                {
+                    name: "Pag-Ibig",
+                    amount: 0
+                },
+                {
+                    name: "Tax",
+                    amount: 0
+                },
+                {
+                    name: "SSS Loan",
+                    amount: 700
+                },
+                {
+                    name: "HDMF Loan",
+                    amount: 0
+                },
+                {
+                    name: "Company Deduction",
+                    amount: 0
+                },
+                {
+                    name: "Company Loan",
+                    amount: 1145
+                }
+            ],
+            net_pay: 0
+        },
+        {
+            id: 2,
+            period: "February 2025",
+            payDate: "2025-02-31",
+            earnings: [
+                {
+                    name: "Daily Rate",
+                    amount: 0
+                },
+                {
+                    name: "No. of Days",
+                    amount: 0
+                },
+                {
+                    name: "BASIC PAY",
+                    amount: 100
+                },
+                {
+                    name: "Overtime",
+                    amount: 0
+                },
+                {
+                    name: "Night Differential",
+                    amount: 0
+                },
+                {
+                    name: "RH OT",
+                    amount: 0
+                },
+                {
+                    name: "Special Holiday",
+                    amount: 0
+                },
+                {
+                    name: "SP OT",
+                    amount: 0
+                },
+                {
+                    name: "Salary Adjustment",
+                    amount: 0
+                },
+                {
+                    name: "Allowances",
+                    amount: 0
+                }
+            ],
+            deductions: [
+                {
+                    name: "Late/Undertime",
+                    amount: 0
+                },
+                {
+                    name: "SSS",
+                    amount: 0
+                },
+                {
+                    name: "Philhealth",
+                    amount: 0
+                },
+                {
+                    name: "Tax",
+                    amount: 0
+                },
+                {
+                    name: "SSS Loan",
+                    amount: 0
+                },
+                {
+                    name: "HDMF Loan",
+                    amount: 0
+                },
+                {
+                    name: "Company Deduction",
+                    amount: 0
+                },
+                {
+                    name: "Company Loan",
+                    amount: 0
+                }
+            ],
+            net_pay: 0
+        }
+    ];
+    // Calculate net_pay dynamically for each pay period
+    const excludedEarnings = [
+        "Daily Rate",
+        "No. of Days"
+    ];
+    data.forEach((period)=>{
+        const totalEarnings = period.earnings.reduce((sum, e)=>{
+            return excludedEarnings.includes(e.name) ? sum : sum + e.amount;
+        }, 0);
+        const totalDeductions = period.deductions.reduce((sum, d)=>sum + d.amount, 0);
+        period.net_pay = totalEarnings - totalDeductions;
+    });
+    return data;
 }
 async function getSchedule(employeeId) {
     // This is a placeholder as there is no schedule table yet.

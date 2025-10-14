@@ -74,11 +74,6 @@ async function getHRDashboardData() {
             change: ''
         },
         {
-            title: 'Active Job Postings',
-            value: '4',
-            change: 'External API'
-        },
-        {
             title: 'Pending Leave Requests',
             value: String(pendingLeaveRequests),
             change: ''
@@ -265,7 +260,7 @@ async function getPastLeaveRequests(employeeId) {
 }
 async function createLeaveRequest(data) {
     const { employeeId, leaveType, startDate, endDate, reason } = data;
-    await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["query"])('INSERT INTO leave_requests (account_id, leave_type, start_date, end_date, reason) VALUES ($1, $2, $3, $4, $5)', [
+    await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["query"])('INSERT INTO leave_requests (employee_id, leave_type, start_date, end_date, reason) VALUES ($1, $2, $3, $4, $5)', [
         employeeId,
         leaveType,
         startDate,

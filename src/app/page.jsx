@@ -1,98 +1,32 @@
-/**
- * @fileoverview This file defines the main landing page of the application.
- * It provides clear navigation options for users to access the different portals:
- * Employee, HR, and Admin.
- */
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { ArrowRight, User, ShieldCheck, Briefcase } from "lucide-react";
-import Link from "next/link";
-import { Logo } from "@/components/logo";
+"use client";
 
-/**
- * Renders the main landing page with navigation to different user portals.
- * @returns {JSX.Element} The landing page component.
- */
-export default function LandingPage() {
+import dynamic from "next/dynamic";
+import { Logo } from "../components/logo";
+
+const LoginForm = dynamic(() => import("../components/login-form").then(m => m.LoginForm), {
+  ssr: false,
+});
+
+export default function LoginPage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-muted/40 p-4">
-      <div className="mb-8 flex flex-col items-center text-center">
-        <Logo className="w-auto h-20 mb-4" />
-        <h1 className="text-4xl font-bold font-headline">
-          Welcome to the Chumplace Portal
+    <main className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
+      <div className="w-full max-w-md">
+        <div className="flex justify-center mb-6">
+          <Logo className="h-20 w-auto" />
+        </div>
+        <h1 className="text-3xl font-bold text-center mb-2 font-headline">
+          Employee Dashboard
         </h1>
-        <p className="text-muted-foreground mt-2">
-          Your central hub for employee and management portals.
+        <p className="text-muted-foreground text-center mb-8">
+          Welcome back. Please login to your account.
+        </p>
+
+        <LoginForm />
+
+        <p className="text-xs text-muted-foreground text-center mt-8">
+          © {new Date().getFullYear()} Chumplace Inc. All rights reserved.
         </p>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full">
-        {/* Employee Dashboard Card */}
-        <Card className="flex flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User />
-              Employee Dashboard
-            </CardTitle>
-            <CardDescription>
-              Access your personal schedule, attendance, payslips, and more.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="mt-auto">
-            <Button asChild className="w-full">
-              <Link href="/dashboard">
-                Go to Employee Hub <ArrowRight className="ml-2" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* HR Dashboard Card */}
-        <Card className="flex flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Briefcase />
-              HR Portal
-            </CardTitle>
-            <CardDescription>
-              Manage employee data, scheduling, payroll, and announcements.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="mt-auto">
-            <Button asChild className="w-full">
-              <Link href="/hr/dashboard">
-                Go to HR Portal <ArrowRight className="ml-2" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Admin Dashboard Card */}
-        <Card className="flex flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheck />
-              Admin Portal
-            </CardTitle>
-            <CardDescription>
-              Oversee system reports, approvals, and global settings.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="mt-auto">
-            <Button asChild className="w-full">
-              <Link href="/admin/dashboard">
-                Go to Admin Portal <ArrowRight className="ml-2" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    </main>
   );
 }

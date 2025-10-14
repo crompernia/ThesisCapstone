@@ -1139,6 +1139,12 @@ var _s = __turbopack_context__.k.signature();
 ;
 // Hardcoded employee ID for demonstration purposes.
 const EMPLOYEE_ID = 'EMP-00123';
+// ✅ Define max leave days per leave type
+const LEAVE_LIMITS = {
+    "Solo Parent": 7,
+    "Sick Leave": null,
+    "Service Incentive Leave": 5
+};
 const leaveRequestSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["z"].object({
     leaveType: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["z"].string().min(1, {
         message: "Leave type is required."
@@ -1183,7 +1189,33 @@ function LeaveRequestPage() {
     }["LeaveRequestPage.useEffect"], [
         fetchLeaveRequests
     ]);
+    // 🧩 Watch leave type and date fields
+    const leaveType = form.watch("leaveType");
+    const startDate = form.watch("startDate");
+    const endDate = form.watch("endDate");
+    const maxDays = LEAVE_LIMITS[leaveType] || null;
+    const calculateDays = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
+        "LeaveRequestPage.useCallback[calculateDays]": ()=>{
+            if (!startDate || !endDate) return 0;
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const diff = (end - start) / (1000 * 60 * 60 * 24) + 1;
+            return diff > 0 ? diff : 0;
+        }
+    }["LeaveRequestPage.useCallback[calculateDays]"], [
+        startDate,
+        endDate
+    ]);
+    const totalDays = calculateDays();
     const handleSubmit = async (data)=>{
+        if (maxDays && totalDays > maxDays) {
+            toast({
+                variant: "destructive",
+                title: "Invalid Leave Duration",
+                description: `You can only request up to ${maxDays} days for ${leaveType}.`
+            });
+            return;
+        }
         const formData = new FormData();
         formData.append("employeeId", EMPLOYEE_ID);
         formData.append("leaveType", data.leaveType);
@@ -1219,8 +1251,8 @@ function LeaveRequestPage() {
                 children: "Leave Request"
             }, void 0, false, {
                 fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                lineNumber: 139,
-                columnNumber: 13
+                lineNumber: 169,
+                columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "grid grid-cols-1 lg:grid-cols-3 gap-6",
@@ -1230,7 +1262,7 @@ function LeaveRequestPage() {
                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Form"], {
                             ...form,
                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
-                                action: form.handleSubmit((data)=>handleSubmit(new FormData(document.getElementById('leave-request-form')))),
+                                onSubmit: form.handleSubmit(handleSubmit),
                                 id: "leave-request-form",
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
                                     children: [
@@ -1240,21 +1272,21 @@ function LeaveRequestPage() {
                                                     children: "File a Leave Request"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                    lineNumber: 147,
-                                                    columnNumber: 37
+                                                    lineNumber: 177,
+                                                    columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardDescription"], {
                                                     children: "Complete the form to request time off."
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                    lineNumber: 148,
-                                                    columnNumber: 37
+                                                    lineNumber: 178,
+                                                    columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                            lineNumber: 146,
-                                            columnNumber: 33
+                                            lineNumber: 176,
+                                            columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
                                             className: "space-y-4",
@@ -1265,8 +1297,8 @@ function LeaveRequestPage() {
                                                     value: EMPLOYEE_ID
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                    lineNumber: 151,
-                                                    columnNumber: 38
+                                                    lineNumber: 182,
+                                                    columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FormField"], {
                                                     control: form.control,
@@ -1277,8 +1309,8 @@ function LeaveRequestPage() {
                                                                     children: "Leave Type"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                    lineNumber: 157,
-                                                                    columnNumber: 49
+                                                                    lineNumber: 189,
+                                                                    columnNumber: 25
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Select"], {
                                                                     onValueChange: field.onChange,
@@ -1291,18 +1323,18 @@ function LeaveRequestPage() {
                                                                                     placeholder: "Select a type"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                                    lineNumber: 160,
-                                                                                    columnNumber: 72
+                                                                                    lineNumber: 192,
+                                                                                    columnNumber: 44
                                                                                 }, void 0)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                                lineNumber: 160,
-                                                                                columnNumber: 57
+                                                                                lineNumber: 192,
+                                                                                columnNumber: 29
                                                                             }, void 0)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                            lineNumber: 159,
-                                                                            columnNumber: 53
+                                                                            lineNumber: 191,
+                                                                            columnNumber: 27
                                                                         }, void 0),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
                                                                             children: [
@@ -1311,52 +1343,64 @@ function LeaveRequestPage() {
                                                                                     children: "Solo Parent"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                                    lineNumber: 163,
-                                                                                    columnNumber: 57
+                                                                                    lineNumber: 195,
+                                                                                    columnNumber: 29
                                                                                 }, void 0),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
                                                                                     value: "Sick Leave",
                                                                                     children: "Sick Leave"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                                    lineNumber: 164,
-                                                                                    columnNumber: 57
+                                                                                    lineNumber: 196,
+                                                                                    columnNumber: 29
                                                                                 }, void 0),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
                                                                                     value: "Service Incentive Leave",
                                                                                     children: "Service Incentive Leave"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                                    lineNumber: 165,
-                                                                                    columnNumber: 57
+                                                                                    lineNumber: 197,
+                                                                                    columnNumber: 29
                                                                                 }, void 0)
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                            lineNumber: 162,
-                                                                            columnNumber: 53
+                                                                            lineNumber: 194,
+                                                                            columnNumber: 27
                                                                         }, void 0)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                    lineNumber: 158,
-                                                                    columnNumber: 49
+                                                                    lineNumber: 190,
+                                                                    columnNumber: 25
+                                                                }, void 0),
+                                                                maxDays && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "text-xs text-muted-foreground mt-1",
+                                                                    children: [
+                                                                        "Maximum of ",
+                                                                        maxDays,
+                                                                        " days allowed."
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/src/app/dashboard/leave/page.jsx",
+                                                                    lineNumber: 201,
+                                                                    columnNumber: 27
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                    lineNumber: 168,
-                                                                    columnNumber: 49
+                                                                    lineNumber: 205,
+                                                                    columnNumber: 25
                                                                 }, void 0)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                            lineNumber: 156,
-                                                            columnNumber: 45
+                                                            lineNumber: 188,
+                                                            columnNumber: 23
                                                         }, void 0)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                    lineNumber: 152,
-                                                    columnNumber: 38
+                                                    lineNumber: 184,
+                                                    columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                     className: "grid grid-cols-2 gap-4",
@@ -1370,8 +1414,8 @@ function LeaveRequestPage() {
                                                                             children: "Start Date"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                            lineNumber: 178,
-                                                                            columnNumber: 53
+                                                                            lineNumber: 216,
+                                                                            columnNumber: 27
                                                                         }, void 0),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FormControl"], {
                                                                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$input$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -1380,29 +1424,29 @@ function LeaveRequestPage() {
                                                                                 name: "startDate"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                                lineNumber: 179,
-                                                                                columnNumber: 66
+                                                                                lineNumber: 218,
+                                                                                columnNumber: 29
                                                                             }, void 0)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                            lineNumber: 179,
-                                                                            columnNumber: 53
+                                                                            lineNumber: 217,
+                                                                            columnNumber: 27
                                                                         }, void 0),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                            lineNumber: 180,
-                                                                            columnNumber: 53
+                                                                            lineNumber: 220,
+                                                                            columnNumber: 27
                                                                         }, void 0)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                    lineNumber: 177,
-                                                                    columnNumber: 49
+                                                                    lineNumber: 215,
+                                                                    columnNumber: 25
                                                                 }, void 0)
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                            lineNumber: 173,
-                                                            columnNumber: 41
+                                                            lineNumber: 211,
+                                                            columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FormField"], {
                                                             control: form.control,
@@ -1413,45 +1457,60 @@ function LeaveRequestPage() {
                                                                             children: "End Date"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                            lineNumber: 189,
-                                                                            columnNumber: 53
+                                                                            lineNumber: 230,
+                                                                            columnNumber: 27
                                                                         }, void 0),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FormControl"], {
                                                                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$input$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
                                                                                 type: "date",
                                                                                 ...field,
-                                                                                name: "endDate"
+                                                                                name: "endDate",
+                                                                                min: startDate || "",
+                                                                                max: startDate && maxDays ? new Date(new Date(startDate).setDate(new Date(startDate).getDate() + (maxDays - 1))).toISOString().split("T")[0] : ""
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                                lineNumber: 190,
-                                                                                columnNumber: 66
+                                                                                lineNumber: 232,
+                                                                                columnNumber: 29
                                                                             }, void 0)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                            lineNumber: 190,
-                                                                            columnNumber: 53
+                                                                            lineNumber: 231,
+                                                                            columnNumber: 27
                                                                         }, void 0),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                            lineNumber: 191,
-                                                                            columnNumber: 53
+                                                                            lineNumber: 250,
+                                                                            columnNumber: 27
                                                                         }, void 0)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                    lineNumber: 188,
-                                                                    columnNumber: 49
+                                                                    lineNumber: 229,
+                                                                    columnNumber: 25
                                                                 }, void 0)
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                            lineNumber: 184,
-                                                            columnNumber: 41
+                                                            lineNumber: 225,
+                                                            columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                    lineNumber: 172,
-                                                    columnNumber: 37
+                                                    lineNumber: 210,
+                                                    columnNumber: 19
+                                                }, this),
+                                                startDate && endDate && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: `text-sm ${maxDays && totalDays > maxDays ? "text-red-500" : "text-foreground"}`,
+                                                    children: [
+                                                        "You selected ",
+                                                        totalDays,
+                                                        " day(s)",
+                                                        maxDays ? ` (maximum allowed: ${maxDays})` : " (no limit for this leave type)."
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/app/dashboard/leave/page.jsx",
+                                                    lineNumber: 258,
+                                                    columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FormField"], {
                                                     control: form.control,
@@ -1462,8 +1521,8 @@ function LeaveRequestPage() {
                                                                     children: "Reason (Optional)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                    lineNumber: 201,
-                                                                    columnNumber: 49
+                                                                    lineNumber: 273,
+                                                                    columnNumber: 25
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FormControl"], {
                                                                     children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$textarea$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Textarea"], {
@@ -1472,39 +1531,37 @@ function LeaveRequestPage() {
                                                                         name: "reason"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                        lineNumber: 203,
-                                                                        columnNumber: 53
+                                                                        lineNumber: 275,
+                                                                        columnNumber: 27
                                                                     }, void 0)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                    lineNumber: 202,
-                                                                    columnNumber: 49
+                                                                    lineNumber: 274,
+                                                                    columnNumber: 25
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                    lineNumber: 205,
-                                                                    columnNumber: 49
+                                                                    lineNumber: 277,
+                                                                    columnNumber: 25
                                                                 }, void 0)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                            lineNumber: 200,
-                                                            columnNumber: 45
+                                                            lineNumber: 272,
+                                                            columnNumber: 23
                                                         }, void 0)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                    lineNumber: 196,
-                                                    columnNumber: 37
+                                                    lineNumber: 268,
+                                                    columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FormField"], {
                                                     control: form.control,
                                                     name: "attachments",
                                                     render: ({ field })=>{
-                                                        // Convert FileList to Array for easier manipulation
                                                         const files = Array.from(form.watch("attachments") || []);
                                                         const handleRemoveFile = (fileToRemove)=>{
                                                             const updatedFiles = files.filter((file)=>file !== fileToRemove);
-                                                            // Create a new FileList-like object and update form value
                                                             const dataTransfer = new DataTransfer();
                                                             updatedFiles.forEach((file)=>dataTransfer.items.add(file));
                                                             field.onChange(dataTransfer.files);
@@ -1515,8 +1572,8 @@ function LeaveRequestPage() {
                                                                     children: "Attachments (Optional)"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                    lineNumber: 226,
-                                                                    columnNumber: 41
+                                                                    lineNumber: 296,
+                                                                    columnNumber: 27
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FormControl"], {
                                                                     children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$input$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -1526,13 +1583,13 @@ function LeaveRequestPage() {
                                                                         onChange: (e)=>field.onChange(e.target.files)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                        lineNumber: 228,
-                                                                        columnNumber: 41
+                                                                        lineNumber: 298,
+                                                                        columnNumber: 29
                                                                     }, void 0)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                    lineNumber: 227,
-                                                                    columnNumber: 41
+                                                                    lineNumber: 297,
+                                                                    columnNumber: 27
                                                                 }, void 0),
                                                                 files.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
                                                                     className: "mt-3 space-y-1 text-sm text-gray-600",
@@ -1547,8 +1604,8 @@ function LeaveRequestPage() {
                                                                                     ]
                                                                                 }, void 0, true, {
                                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                                    lineNumber: 244,
-                                                                                    columnNumber: 17
+                                                                                    lineNumber: 313,
+                                                                                    columnNumber: 35
                                                                                 }, void 0),
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                                                                     type: "button",
@@ -1559,47 +1616,47 @@ function LeaveRequestPage() {
                                                                                         size: 16
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                                        lineNumber: 253,
-                                                                                        columnNumber: 19
+                                                                                        lineNumber: 320,
+                                                                                        columnNumber: 37
                                                                                     }, void 0)
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                                    lineNumber: 247,
-                                                                                    columnNumber: 17
+                                                                                    lineNumber: 314,
+                                                                                    columnNumber: 35
                                                                                 }, void 0)
                                                                             ]
                                                                         }, file.name, true, {
                                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                            lineNumber: 240,
-                                                                            columnNumber: 15
+                                                                            lineNumber: 309,
+                                                                            columnNumber: 33
                                                                         }, void 0))
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                    lineNumber: 238,
-                                                                    columnNumber: 11
+                                                                    lineNumber: 307,
+                                                                    columnNumber: 29
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                    lineNumber: 260,
-                                                                    columnNumber: 9
+                                                                    lineNumber: 326,
+                                                                    columnNumber: 27
                                                                 }, void 0)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                            lineNumber: 225,
-                                                            columnNumber: 37
+                                                            lineNumber: 295,
+                                                            columnNumber: 25
                                                         }, void 0);
                                                     }
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                    lineNumber: 209,
-                                                    columnNumber: 37
+                                                    lineNumber: 282,
+                                                    columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                            lineNumber: 150,
-                                            columnNumber: 33
+                                            lineNumber: 181,
+                                            columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardFooter"], {
                                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2d$dialog$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDialog"], {
@@ -1612,13 +1669,13 @@ function LeaveRequestPage() {
                                                             children: "Submit Request"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                            lineNumber: 270,
-                                                            columnNumber: 45
+                                                            lineNumber: 336,
+                                                            columnNumber: 23
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                        lineNumber: 269,
-                                                        columnNumber: 41
+                                                        lineNumber: 335,
+                                                        columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2d$dialog$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDialogContent"], {
                                                         children: [
@@ -1628,21 +1685,21 @@ function LeaveRequestPage() {
                                                                         children: "Are you sure you want to submit?"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                        lineNumber: 274,
-                                                                        columnNumber: 49
+                                                                        lineNumber: 340,
+                                                                        columnNumber: 25
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2d$dialog$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDialogDescription"], {
                                                                         children: "This action cannot be undone. This will submit your leave request for approval."
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                        lineNumber: 275,
-                                                                        columnNumber: 49
+                                                                        lineNumber: 341,
+                                                                        columnNumber: 25
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                lineNumber: 273,
-                                                                columnNumber: 45
+                                                                lineNumber: 339,
+                                                                columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2d$dialog$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDialogFooter"], {
                                                                 children: [
@@ -1650,60 +1707,60 @@ function LeaveRequestPage() {
                                                                         children: "Cancel"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                        lineNumber: 280,
-                                                                        columnNumber: 49
+                                                                        lineNumber: 346,
+                                                                        columnNumber: 25
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2d$dialog$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDialogAction"], {
                                                                         onClick: ()=>document.getElementById('leave-request-form')?.requestSubmit(),
                                                                         children: "Submit"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                        lineNumber: 281,
-                                                                        columnNumber: 49
+                                                                        lineNumber: 347,
+                                                                        columnNumber: 25
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                lineNumber: 279,
-                                                                columnNumber: 45
+                                                                lineNumber: 345,
+                                                                columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                        lineNumber: 272,
-                                                        columnNumber: 41
+                                                        lineNumber: 338,
+                                                        columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                lineNumber: 268,
-                                                columnNumber: 37
+                                                lineNumber: 334,
+                                                columnNumber: 19
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                            lineNumber: 267,
-                                            columnNumber: 33
+                                            lineNumber: 333,
+                                            columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                    lineNumber: 145,
-                                    columnNumber: 30
+                                    lineNumber: 175,
+                                    columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                lineNumber: 144,
-                                columnNumber: 25
+                                lineNumber: 174,
+                                columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                            lineNumber: 143,
-                            columnNumber: 21
+                            lineNumber: 173,
+                            columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                        lineNumber: 142,
-                        columnNumber: 17
+                        lineNumber: 172,
+                        columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "lg:col-span-2",
@@ -1715,21 +1772,21 @@ function LeaveRequestPage() {
                                             children: "Request History"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                            lineNumber: 295,
-                                            columnNumber: 29
+                                            lineNumber: 363,
+                                            columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardDescription"], {
                                             children: "The status of your past leave requests."
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                            lineNumber: 296,
-                                            columnNumber: 29
+                                            lineNumber: 364,
+                                            columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                    lineNumber: 294,
-                                    columnNumber: 25
+                                    lineNumber: 362,
+                                    columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
                                     children: pastRequests.length > 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Table"], {
@@ -1741,41 +1798,41 @@ function LeaveRequestPage() {
                                                             children: "Type"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                            lineNumber: 303,
-                                                            columnNumber: 45
+                                                            lineNumber: 371,
+                                                            columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
                                                             children: "Start Date"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                            lineNumber: 304,
-                                                            columnNumber: 45
+                                                            lineNumber: 372,
+                                                            columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
                                                             children: "End Date"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                            lineNumber: 305,
-                                                            columnNumber: 45
+                                                            lineNumber: 373,
+                                                            columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
                                                             className: "text-right",
                                                             children: "Status"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                            lineNumber: 306,
-                                                            columnNumber: 45
+                                                            lineNumber: 374,
+                                                            columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                    lineNumber: 302,
-                                                    columnNumber: 41
+                                                    lineNumber: 370,
+                                                    columnNumber: 21
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                lineNumber: 301,
-                                                columnNumber: 37
+                                                lineNumber: 369,
+                                                columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableBody"], {
                                                 children: pastRequests.map((req)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableRow"], {
@@ -1785,22 +1842,22 @@ function LeaveRequestPage() {
                                                                 children: req.leave_type
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                lineNumber: 312,
-                                                                columnNumber: 49
+                                                                lineNumber: 380,
+                                                                columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
                                                                 children: req.startDate
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                lineNumber: 313,
-                                                                columnNumber: 49
+                                                                lineNumber: 381,
+                                                                columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
                                                                 children: req.endDate
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                lineNumber: 314,
-                                                                columnNumber: 49
+                                                                lineNumber: 382,
+                                                                columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
                                                                 className: "text-right",
@@ -1810,68 +1867,68 @@ function LeaveRequestPage() {
                                                                     children: req.status
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                    lineNumber: 316,
-                                                                    columnNumber: 53
+                                                                    lineNumber: 384,
+                                                                    columnNumber: 27
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                                lineNumber: 315,
-                                                                columnNumber: 49
+                                                                lineNumber: 383,
+                                                                columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, req.id, true, {
                                                         fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                        lineNumber: 311,
-                                                        columnNumber: 45
+                                                        lineNumber: 379,
+                                                        columnNumber: 23
                                                     }, this))
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                                lineNumber: 309,
-                                                columnNumber: 37
+                                                lineNumber: 377,
+                                                columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                        lineNumber: 300,
-                                        columnNumber: 33
+                                        lineNumber: 368,
+                                        columnNumber: 17
                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         className: "text-muted-foreground text-center",
                                         children: "You have no past leave requests."
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                        lineNumber: 329,
-                                        columnNumber: 33
+                                        lineNumber: 402,
+                                        columnNumber: 17
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                                    lineNumber: 298,
-                                    columnNumber: 25
+                                    lineNumber: 366,
+                                    columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                            lineNumber: 293,
-                            columnNumber: 21
+                            lineNumber: 361,
+                            columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                        lineNumber: 292,
-                        columnNumber: 17
+                        lineNumber: 360,
+                        columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/app/dashboard/leave/page.jsx",
-                lineNumber: 140,
-                columnNumber: 13
+                lineNumber: 170,
+                columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/app/dashboard/leave/page.jsx",
-        lineNumber: 138,
-        columnNumber: 9
+        lineNumber: 168,
+        columnNumber: 5
     }, this);
 }
-_s(LeaveRequestPage, "ZczB5LCDMzgQw0hMh1B5Hr0DBME=", false, function() {
+_s(LeaveRequestPage, "rdqfkv/4iNXBr2RmD7oneEcYDqc=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$use$2d$toast$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useToast"],
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$hook$2d$form$2f$dist$2f$index$2e$esm$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useForm"]

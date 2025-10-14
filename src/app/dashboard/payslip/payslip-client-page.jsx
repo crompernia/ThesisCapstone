@@ -46,7 +46,6 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
   
   const payslipData = payPeriods?.find(p => String(p.id) === selectedPeriod);
 
-  // Calculate totals from payslip data if it exists.
   const totalEarnings = payslipData?.earnings.reduce((sum, item) => sum + item.amount, 0) ?? 0;
   const totalDeductions = payslipData?.deductions.reduce((sum, item) => sum + item.amount, 0) ?? 0;
   const netPay = payslipData?.net_pay ?? 0;
@@ -77,6 +76,10 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
     doc.text(`Pay Date: ${payslipData.payDate}`, 14, 50);
 
     // Earnings Table
+    const totalEarnings = payslipData.earnings
+      .filter(e => e.name !== 'No. of Days' && e.name !== 'Daily Rate')
+      .reduce((sum, e) => sum + e.amount, 0);
+
     autoTable(doc, {
       startY: 60,
       head: [['Earnings', 'Amount']],
@@ -103,8 +106,8 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
     const finalY = doc.lastAutoTable.finalY;
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("Net Pay:", 14, finalY + 15);
-    doc.text(formatCurrency(netPay), doc.internal.pageSize.getWidth() - 14, finalY + 15, { align: 'right' });
+    doc.text("Net Pay:", 132, finalY + 15);
+    doc.text(formatCurrency(netPay), doc.internal.pageSize.getWidth() - 35, finalY + 15, { align: 'right' });
 
 
     doc.save(`Payslip-${employeeName.replace(' ', '-')}-${payslipData.period}.pdf`);
@@ -148,9 +151,10 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
             <div>
                 <div className="flex items-center gap-2">
                     <Building2 />
-                    <h2 className="text-2xl font-bold font-headline">Chumplace</h2>
+                    <h2 className="text-2xl font-bold font-headline">CHUMTING TRADING CORPORATION</h2>
                 </div>
-                <p className="text-muted-foreground">{payslipData ? `Payslip for ${payslipData.period}` : 'Select a period to view payslip'}</p>
+                <p className="text-muted-foreground">{payslipData ? `Employee Name: ${employeeName}` : 'Select a period to view payslip'}
+                </p>
             </div>
             {payslipData && (
               <div className="text-right">
@@ -163,24 +167,33 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
         {payslipData ? (
           <>
             <CardContent className="p-6">
-                <div className="grid md:grid-cols-2 gap-8">
-                    {/* Earnings Section: Lists all income sources for the period. */}
-                    <div>
-                        <h3 className="font-semibold text-lg mb-4 text-green-600">Earnings</h3>
-                        <ul className="space-y-2">
-                        {payslipData.earnings.map((item, index) => (
-                            <li key={index} className="flex justify-between items-center text-sm">
-                                <span>{item.name}</span>
-                                <span className="font-mono">{formatCurrency(item.amount)}</span>
-                            </li>
-                        ))}
-                        </ul>
-                        <Separator className="my-4"/>
-                        <div className="flex justify-between items-center font-semibold">
-                            <span>Gross Earnings</span>
-                            <span className="font-mono">{formatCurrency(totalEarnings)}</span>
-                        </div>
-                    </div>
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Earnings Section: Lists all income sources for the period. */}
+                <div>
+                <h3 className="font-semibold text-lg mb-4 text-green-600">Earnings</h3>
+
+                <ul className="space-y-2">
+                  {payslipData.earnings.map((item, index) => (
+                    <li key={index} className="flex justify-between items-center text-sm">
+                      <span>{item.name}</span>
+                      <span className="font-mono">{formatCurrency(item.amount)}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Separator className="my-4" />
+                <div className="flex justify-between items-center font-semibold">
+                  <span>Gross Earnings</span>
+                  <span className="font-mono">
+                    {formatCurrency(
+                      payslipData.earnings
+                        .filter(item => !["Daily Rate", "No. of Days"].includes(item.name))
+                        .reduce((sum, e) => sum + e.amount, 0)
+                    )}
+                  </span>
+                </div>
+              </div>
+              
                     {/* Deductions Section: Lists all deductions for the period. */}
                     <div>
                         <h3 className="font-semibold text-lg mb-4 text-red-600">Deductions</h3>

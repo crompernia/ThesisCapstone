@@ -61,6 +61,13 @@ import {
 // Hardcoded employee ID for demonstration purposes.
 const EMPLOYEE_ID = 'EMP-00123';
 
+// ✅ Define max leave days per leave type
+const LEAVE_LIMITS = {
+  "Solo Parent": 7,
+  "Sick Leave": null, 
+  "Service Incentive Leave": 5,
+};
+
 const leaveRequestSchema = z.object({
   leaveType: z.string().min(1, { message: "Leave type is required." }),
   startDate: z.string().min(1, { message: "Start date is required." }),
@@ -73,265 +80,331 @@ const leaveRequestSchema = z.object({
  * Renders the employee leave request page.
  * @returns {JSX.Element} The leave request page component.
  */
-
 export default function LeaveRequestPage() {
-    React.useEffect(() => {
-          document.title = "Employee Leave Request";
-          }, []);
+  React.useEffect(() => {
+    document.title = "Employee Leave Request";
+  }, []);
     
-    const { toast } = useToast();
-    const [pastRequests, setPastRequests] = React.useState([]);
-    
-    const form = useForm({
-        resolver: zodResolver(leaveRequestSchema),
-        defaultValues: {
-            leaveType: "",
-            startDate: "",
-            endDate: "",
-            reason: "",
-        }
-    });
+  const { toast } = useToast();
+  const [pastRequests, setPastRequests] = React.useState([]);
 
-     const fetchLeaveRequests = React.useCallback(async () => {
-        const requests = await getPastLeaveRequests(EMPLOYEE_ID);
-        setPastRequests(requests);
-    }, []);
+  const form = useForm({
+    resolver: zodResolver(leaveRequestSchema),
+    defaultValues: {
+      leaveType: "",
+      startDate: "",
+      endDate: "",
+      reason: "",
+    }
+  });
 
-    React.useEffect(() => {
-        fetchLeaveRequests();
-    }, [fetchLeaveRequests]);
+  const fetchLeaveRequests = React.useCallback(async () => {
+    const requests = await getPastLeaveRequests(EMPLOYEE_ID);
+    setPastRequests(requests);
+  }, []);
 
-    const handleSubmit = async (data) => {
-  const formData = new FormData();
-  formData.append("employeeId", EMPLOYEE_ID);
-  formData.append("leaveType", data.leaveType);
-  formData.append("startDate", data.startDate);
-  formData.append("endDate", data.endDate);
-  formData.append("reason", data.reason || "");
-
-  if (data.attachments && data.attachments.length > 0) {
-    Array.from(data.attachments).forEach((file) => {
-      formData.append("attachments", file);
-    });
-  }
-
-  const result = await createLeaveRequest(null, formData);
-
-  if (result?.message.includes("success")) {
-    toast({
-      title: "Success",
-      description: "Your leave request has been submitted.",
-    });
-    form.reset();
+  React.useEffect(() => {
     fetchLeaveRequests();
-  } else {
-    toast({
-      variant: "destructive",
-      title: "Error",
-      description: result?.message || "An unknown error occurred.",
-    });
-  }
-};
+  }, [fetchLeaveRequests]);
 
+  // 🧩 Watch leave type and date fields
+  const leaveType = form.watch("leaveType");
+  const startDate = form.watch("startDate");
+  const endDate = form.watch("endDate");
+  const maxDays = LEAVE_LIMITS[leaveType] || null;
 
-    return (
-        <div className="space-y-6">
-            <h1 className="text-3xl font-bold font-headline">Leave Request</h1>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Leave Request Form */}
-                <div className="lg:col-span-1">
-                    <Form {...form}>
-                        <form action={form.handleSubmit(data => handleSubmit(new FormData(document.getElementById('leave-request-form'))))} id="leave-request-form">
-                             <Card>
-                                <CardHeader>
-                                    <CardTitle>File a Leave Request</CardTitle>
-                                    <CardDescription>Complete the form to request time off.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                     <input type="hidden" name="employeeId" value={EMPLOYEE_ID} />
-                                     <FormField
-                                        control={form.control}
-                                        name="leaveType"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Leave Type</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value} name="leaveType">
-                                                    <FormControl>
-                                                        <SelectTrigger><SelectValue placeholder="Select a type" /></SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="Solo Parent">Solo Parent</SelectItem>
-                                                        <SelectItem value="Sick Leave">Sick Leave</SelectItem>
-                                                        <SelectItem value="Service Incentive Leave">Service Incentive Leave</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <FormField
-                                            control={form.control}
-                                            name="startDate"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Start Date</FormLabel>
-                                                    <FormControl><Input type="date" {...field} name="startDate" /></FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="endDate"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>End Date</FormLabel>
-                                                    <FormControl><Input type="date" {...field} name="endDate" /></FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                    <FormField
-                                        control={form.control}
-                                        name="reason"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Reason (Optional)</FormLabel>
-                                                <FormControl>
-                                                    <Textarea placeholder="Please provide a brief reason for your leave." {...field} name="reason" />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="attachments"
-                                        render={({ field }) => {
-                                    // Convert FileList to Array for easier manipulation
-                                        const files = Array.from(form.watch("attachments") || []);
+  const calculateDays = React.useCallback(() => {
+    if (!startDate || !endDate) return 0;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diff = (end - start) / (1000 * 60 * 60 * 24) + 1;
+    return diff > 0 ? diff : 0;
+  }, [startDate, endDate]);
 
-                                        const handleRemoveFile = (fileToRemove) => {
-                                            const updatedFiles = files.filter((file) => file !== fileToRemove);
-                                    // Create a new FileList-like object and update form value
-                                        const dataTransfer = new DataTransfer();
-                                            updatedFiles.forEach((file) => dataTransfer.items.add(file));
-                                             field.onChange(dataTransfer.files);
-                                        };
+  const totalDays = calculateDays();
 
-                                    return (
-                                    <FormItem>
-                                        <FormLabel>Attachments (Optional)</FormLabel>
-                                        <FormControl>
-                                        <Input
-                                            type="file"
-                                            name="attachments"
-                                            multiple
-                                            onChange={(e) => field.onChange(e.target.files)}
-                                        />
-                                         </FormControl>
+  const handleSubmit = async (data) => {
+    if (maxDays && totalDays > maxDays) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Leave Duration",
+        description: `You can only request up to ${maxDays} days for ${leaveType}.`,
+      });
+      return;
+    }
 
-        {/* 👇 File preview list with delete buttons */}
-        {files.length > 0 && (
-          <ul className="mt-3 space-y-1 text-sm text-gray-600">
-            {files.map((file) => (
-              <li
-                key={file.name}
-                className="flex items-center justify-between bg-gray-50 border rounded px-2 py-1"
-              >
-                <span className="truncate max-w-[80%]">
-                  📎 {file.name}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveFile(file)}
-                  className="text-red-500 hover:text-red-700"
-                  title="Remove file"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+    const formData = new FormData();
+    formData.append("employeeId", EMPLOYEE_ID);
+    formData.append("leaveType", data.leaveType);
+    formData.append("startDate", data.startDate);
+    formData.append("endDate", data.endDate);
+    formData.append("reason", data.reason || "");
 
-        <FormMessage />
-      </FormItem>
-    );
-  }}
-/>
+    if (data.attachments && data.attachments.length > 0) {
+      Array.from(data.attachments).forEach((file) => {
+        formData.append("attachments", file);
+      });
+    }
 
-                                </CardContent>
-                                <CardFooter>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button type="button" className="w-full">Submit Request</Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    This action cannot be undone. This will submit your leave request for approval.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => document.getElementById('leave-request-form')?.requestSubmit()}>Submit</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </CardFooter>
-                            </Card>
-                        </form>
-                    </Form>
-                </div>
+    const result = await createLeaveRequest(null, formData);
 
-                {/* Past Leave Requests Table */}
-                <div className="lg:col-span-2">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Request History</CardTitle>
-                            <CardDescription>The status of your past leave requests.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {pastRequests.length > 0 ? (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Type</TableHead>
-                                            <TableHead>Start Date</TableHead>
-                                            <TableHead>End Date</TableHead>
-                                            <TableHead className="text-right">Status</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {pastRequests.map((req) => (
-                                            <TableRow key={req.id}>
-                                                <TableCell className="font-medium">{req.leave_type}</TableCell>
-                                                <TableCell>{req.startDate}</TableCell>
-                                                <TableCell>{req.endDate}</TableCell>
-                                                <TableCell className="text-right">
-                                                    <Badge variant={
-                                                        req.status === 'Approved' ? 'default' 
-                                                        : req.status === 'Rejected' ? 'destructive' 
-                                                        : 'secondary'
-                                                    } className={req.status === 'Approved' ? 'bg-green-500' : ''}>
-                                                        {req.status}
-                                                    </Badge>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            ) : (
-                                <p className="text-muted-foreground text-center">You have no past leave requests.</p>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+    if (result?.message.includes("success")) {
+      toast({
+        title: "Success",
+        description: "Your leave request has been submitted.",
+      });
+      form.reset();
+      fetchLeaveRequests();
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: result?.message || "An unknown error occurred.",
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold font-headline">Leave Request</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Leave Request Form */}
+        <div className="lg:col-span-1">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} id="leave-request-form">
+              <Card>
+                <CardHeader>
+                  <CardTitle>File a Leave Request</CardTitle>
+                  <CardDescription>Complete the form to request time off.</CardDescription>
+                </CardHeader>
+
+                <CardContent className="space-y-4">
+                  <input type="hidden" name="employeeId" value={EMPLOYEE_ID} />
+                  
+                  <FormField
+                    control={form.control}
+                    name="leaveType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Leave Type</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} name="leaveType">
+                          <FormControl>
+                            <SelectTrigger><SelectValue placeholder="Select a type" /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Solo Parent">Solo Parent</SelectItem>
+                            <SelectItem value="Sick Leave">Sick Leave</SelectItem>
+                            <SelectItem value="Service Incentive Leave">Service Incentive Leave</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {maxDays && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Maximum of {maxDays} days allowed.
+                          </p>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="startDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Start Date</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} name="startDate" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="endDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>End Date</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              {...field}
+                              name="endDate"
+                              min={startDate || ""}
+                              max={
+                                startDate && maxDays
+                                  ? new Date(
+                                      new Date(startDate).setDate(
+                                        new Date(startDate).getDate() + (maxDays - 1)
+                                      )
+                                    )
+                                      .toISOString()
+                                      .split("T")[0]
+                                  : ""
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Display selected day count */}
+                  {startDate && endDate && (
+                    <p
+                     className={`text-sm ${
+                    maxDays && totalDays > maxDays ? "text-red-500" : "text-foreground"
+                     }`}
+                    >
+                     You selected {totalDays} day(s)
+                    {maxDays ? ` (maximum allowed: ${maxDays})` : " (no limit for this leave type)."}
+                    </p>
+                    )}
+
+                  <FormField
+                    control={form.control}
+                    name="reason"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Reason (Optional)</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Please provide a brief reason for your leave." {...field} name="reason" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="attachments"
+                    render={({ field }) => {
+                      const files = Array.from(form.watch("attachments") || []);
+                      const handleRemoveFile = (fileToRemove) => {
+                        const updatedFiles = files.filter((file) => file !== fileToRemove);
+                        const dataTransfer = new DataTransfer();
+                        updatedFiles.forEach((file) => dataTransfer.items.add(file));
+                        field.onChange(dataTransfer.files);
+                      };
+
+                      return (
+                        <FormItem>
+                          <FormLabel>Attachments (Optional)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="file"
+                              name="attachments"
+                              multiple
+                              onChange={(e) => field.onChange(e.target.files)}
+                            />
+                          </FormControl>
+
+                          {files.length > 0 && (
+                            <ul className="mt-3 space-y-1 text-sm text-gray-600">
+                              {files.map((file) => (
+                                <li
+                                  key={file.name}
+                                  className="flex items-center justify-between bg-gray-50 border rounded px-2 py-1"
+                                >
+                                  <span className="truncate max-w-[80%]">📎 {file.name}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveFile(file)}
+                                    className="text-red-500 hover:text-red-700"
+                                    title="Remove file"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+                </CardContent>
+
+                <CardFooter>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button type="button" className="w-full">Submit Request</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will submit your leave request for approval.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => document.getElementById('leave-request-form')?.requestSubmit()}>
+                          Submit
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </CardFooter>
+              </Card>
+            </form>
+          </Form>
         </div>
-    );
+
+        {/* Past Leave Requests Table */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Request History</CardTitle>
+              <CardDescription>The status of your past leave requests.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {pastRequests.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Start Date</TableHead>
+                      <TableHead>End Date</TableHead>
+                      <TableHead className="text-right">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pastRequests.map((req) => (
+                      <TableRow key={req.id}>
+                        <TableCell className="font-medium">{req.leave_type}</TableCell>
+                        <TableCell>{req.startDate}</TableCell>
+                        <TableCell>{req.endDate}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge
+                            variant={
+                              req.status === 'Approved'
+                                ? 'default'
+                                : req.status === 'Rejected'
+                                ? 'destructive'
+                                : 'secondary'
+                            }
+                            className={req.status === 'Approved' ? 'bg-green-500' : ''}
+                          >
+                            {req.status}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-muted-foreground text-center">You have no past leave requests.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
 }
