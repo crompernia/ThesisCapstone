@@ -70,8 +70,8 @@ export async function addEmployee(formData: FormData) {
     tin
   } = validatedFields.data;
 
-  // Generate a unique ID for the new employee
-  const newId = `EMP-${String(Date.now()).slice(-5)}`;
+  // Generate a unique employee number for the new employee (DB will generate the UUID primary key)
+  const employeeNumber = `EMP-${String(Date.now()).slice(-5)}`;
 
   try {
     const db = await getDb();
@@ -80,7 +80,7 @@ export async function addEmployee(formData: FormData) {
     const hashedPassword = await hashPassword('password');
 
     await db.insert(accounts).values({
-      id: newId,
+      employeeNumber,
       firstName,
       lastName,
       middleName,
