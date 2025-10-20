@@ -7,7 +7,7 @@ import { getDb } from './db';
 import { format } from 'date-fns';
 import { eq, and, desc, sql, inArray, ne, isNotNull, asc } from 'drizzle-orm';
 import * as schema from './schema';
-const { accounts, announcements, leaveRequests, branches, positions } = schema;
+const { accounts, announcements, leaveRequests, branches, positions, schedules } = schema;
 
 // Type definitions for database query results
 interface CountResult {
@@ -491,6 +491,75 @@ data.forEach((period) => {
 export async function getSchedule(employeeId: string) {
     // This is a placeholder as there is no schedule table yet.
     return [];
+}
+
+/**
+ * Publish schedule entries for employees for a given week.
+ * scheduleItems: Array of { employeeId: string, shifts: string[] } where shifts is 5 items (Mon-Fri)
+ * weekStart: ISO date string for the Monday of the week (yyyy-MM-dd)
+ */
+export async function publishSchedule(scheduleItems: { employeeId: string; shifts: string[] }[], weekStart: string) {
+    const db = await getDb();
+    // Helper to normalize time strings like "9:00 - 17:00" into ["09:00:00","17:00:00"].
+    const normalizeTime = (t: string) => {
+        if (!t) return null;
+        // Accept formats like "9:00 - 17:00" or "09:00 - 17:00"
+        const parts = t.split('-').map(p => p.trim());
+        if (parts.length !== 2) return null;
+        const norm = (s: string) => {
+            // remove am/pm if present
+            const noMeridian = s.replace(/\s*(am|pm)$/i, '').trim();
+            const [hhmm] = noMeridian.split(' ');
+            const cols = hhmm.split(':').map(p => p.padStart(2, '0'));
+            if (cols.length === 1) cols.push('00');
+            return `${cols[0]}:${cols[1]}:00`;
+        };
+        try {
+            return [norm(parts[0]), norm(parts[1])];
+        } catch (e) {
+            return null;
+        }
+    };
+
+    const startDate = new Date(weekStart);
+    if (Number.isNaN(startDate.getTime())) {
+        throw new Error('Invalid week start date');
+    }
+
+    for (const item of scheduleItems) {
+        const { employeeId, shifts } = item;
+        for (let dayOffset = 0; dayOffset < 5; dayOffset++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + dayOffset);
+            const isoDate = format(date, 'yyyy-MM-dd');
+
+            const shiftStr = (shifts && shifts[dayOffset]) ? String(shifts[dayOffset]).trim() : '';
+            if (!shiftStr || /^off$/i.test(shiftStr)) {
+                // Skip OFF days; no schedule row created
+                continue;
+            }
+
+            const times = normalizeTime(shiftStr);
+            if (!times) {
+                // If parsing fails, skip this entry
+                continue;
+            }
+
+            const [shiftStart, shiftEnd] = times;
+
+            // Check existing record
+            const existing = await db.select().from(schedules).where(and(eq(schedules.employeeId, employeeId), eq(schedules.date, isoDate)));
+            if (existing.length > 0) {
+                await db.update(schedules)
+                    .set({ shiftStart, shiftEnd, notes: null })
+                    .where(and(eq(schedules.employeeId, employeeId), eq(schedules.date, isoDate)));
+            } else {
+                await db.insert(schedules).values({ employeeId, date: isoDate, shiftStart, shiftEnd });
+            }
+        }
+    }
+
+    return { success: true };
 }
 
 

@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { UploadCloud, PlusCircle } from "lucide-react";
 import { getEmployeesForScheduling, getBranches, getDepartmentsForBranch, getPositionsForDepartment } from "@/lib/data";
+import { publishScheduleAction } from './actions';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -58,11 +59,15 @@ export default function SchedulingPage() {
     document.title = "HR Employee Scheduling";
   }, []);
 
-  const [scheduleData, setScheduleData] = React.useState([]);
-  const [allEmployees, setAllEmployees] = React.useState([]);
-  const [branches, setBranches] = React.useState([]);
-  const [departments, setDepartments] = React.useState([]);
-  const [positions, setPositions] = React.useState([]);
+  type EmpRow = { id: string; name: string; shift: string };
+  const [scheduleData, setScheduleData] = React.useState<EmpRow[]>([]);
+  // internal map of employeeId -> shifts array (Mon-Fri)
+  const [shiftsMap, setShiftsMap] = React.useState<Record<string, string[]>>({});
+  const [weekStart, setWeekStart] = React.useState<string>('');
+  const [allEmployees, setAllEmployees] = React.useState<EmpRow[]>([]);
+  const [branches, setBranches] = React.useState<{ id: number; name: string; coordinates: string | null }[]>([]);
+  const [departments, setDepartments] = React.useState<string[]>([]);
+  const [positions, setPositions] = React.useState<string[]>([]);
   const [selectedBranch, setSelectedBranch] = React.useState('');
   const [selectedDepartment, setSelectedDepartment] = React.useState('');
 
@@ -107,11 +112,21 @@ export default function SchedulingPage() {
     fetchPositions();
   }, [selectedDepartment]);
 
-  const addEmployeeToSchedule = (employee) => {
+  const addEmployeeToSchedule = (employee: EmpRow) => {
     // Avoid adding duplicates
     if (!scheduleData.find(e => e.id === employee.id)) {
       setScheduleData(prevData => [...prevData, { ...employee, shift: '9:00 - 17:00' }]);
+      setShiftsMap(prev => ({ ...prev, [employee.id]: ['9:00 - 17:00','9:00 - 17:00','9:00 - 17:00','9:00 - 17:00','9:00 - 17:00'] }));
     }
+  };
+
+  const updateShift = (employeeId: string, dayIndex: number, value: string) => {
+    setShiftsMap(prev => {
+      const copy = { ...(prev || {}) };
+      copy[employeeId] = copy[employeeId] || ['','','','',''];
+      copy[employeeId][dayIndex] = value;
+      return copy;
+    });
   };
 
   return (
@@ -216,7 +231,8 @@ export default function SchedulingPage() {
                             <TableCell key={i}>
                               <Input
                                 className="h-8 text-xs"
-                                defaultValue={emp.shift}
+                                value={(shiftsMap[emp.id] && shiftsMap[emp.id][i]) || emp.shift}
+                                onChange={(e) => updateShift(emp.id, i, e.target.value)}
                               />
                             </TableCell>
                           ))}
@@ -233,26 +249,40 @@ export default function SchedulingPage() {
                       ))}
                     </TableBody>
                   </Table>
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button variant="outline">Save as Draft</Button>
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button>Publish Schedule</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will publish the schedule and make it visible to all scheduled employees.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction>Publish</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
+          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="week-start">Week Start (YYYY-MM-DD)</Label>
+            <Input id="week-start" placeholder="2025-08-19" value={weekStart} onChange={(e) => setWeekStart(e.target.value)} />
+          </div>
+          <Button variant="outline">Save as Draft</Button>
+           <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button>Publish Schedule</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will publish the schedule and make it visible to all scheduled employees.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={async () => {
+                  // prepare payload
+                  const payload = scheduleData.map(emp => ({ employeeId: emp.id, shifts: shiftsMap[emp.id] || [emp.shift, emp.shift, emp.shift, emp.shift, emp.shift] }));
+                  const res = await publishScheduleAction(payload, weekStart);
+                  // reload page or give feedback
+                  if (res?.success) {
+                    window.location.reload();
+                  } else {
+                    alert(res?.message || 'Failed to publish schedule');
+                  }
+                }}>Publish</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          </div>
                 </>
               ) : (
                 <p className="text-muted-foreground text-center pt-4">No employees added to the schedule yet.</p>
