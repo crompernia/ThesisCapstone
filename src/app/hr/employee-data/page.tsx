@@ -197,6 +197,10 @@ export default function EmployeeDataPage() {
             <Input
               placeholder="Search by name or employee ID..."
               className="lg:col-span-2"
+              onChange={(e) => {
+                // TODO: Implement search functionality
+                console.log('Search:', e.target.value);
+              }}
             />
             <Select value={selectedBranch} onValueChange={setSelectedBranch}>
               <SelectTrigger>
@@ -210,6 +214,8 @@ export default function EmployeeDataPage() {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* {console.log('test >> ', selectedBranch, departments)} */}
             <Select
               value={selectedDepartment}
               onValueChange={setSelectedDepartment}

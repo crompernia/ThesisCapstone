@@ -22,7 +22,7 @@ const labelVariants = cva(
 /**
  * The Label component.
  */
-const Label = React.forwardRef(({ className, ...props }, ref) => (
+const Label = React.forwardRef<HTMLLabelElement, React.LabelHTMLAttributes<HTMLLabelElement>>(({ className, ...props }, ref) => (
   <LabelPrimitive.Root
     ref={ref}
     className={cn(labelVariants(), className)}

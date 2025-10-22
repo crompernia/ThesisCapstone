@@ -15,7 +15,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "npx tsx src/lib/seed.ts",
-    "db:update-passwords": "npx tsx src/lib/update-passwords.ts"
+    "db:update-passwords": "npx tsx src/lib/update-passwords.ts",
+    "db:update-leaves": "npx tsx src/lib/update-leaves.ts"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.8.0",

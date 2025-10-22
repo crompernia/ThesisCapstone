@@ -21,15 +21,16 @@ import { Badge } from "@/components/ui/badge";
  * @param {{ params: { id: string } }} props - The props containing the employee ID from the URL.
  * @returns {JSX.Element} The employee profile page component.
  */
-export default async function EmployeeProfilePage({ params }) {
-  const employee = await getEmployeeById(params.id);
+export default async function EmployeeProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const employee = await getEmployeeById(id);
 
   if (!employee) {
     return (
       <div className="text-center">
         <h1 className="text-2xl font-bold">Employee not found</h1>
         <p className="text-muted-foreground">
-          The employee with ID {params.id} could not be found.
+          The employee with ID {id} could not be found.
         </p>
         <Button asChild variant="link" className="mt-4">
           <Link href="/hr/employee-data">
@@ -73,7 +74,7 @@ export default async function EmployeeProfilePage({ params }) {
               />
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
-            <div className="flex-1">
+              <div className="flex-1">
               <div className="flex justify-between items-center">
                 <CardTitle className="font-headline text-3xl">
                   {employee.name}
@@ -104,10 +105,10 @@ export default async function EmployeeProfilePage({ params }) {
             <h3 className="text-lg font-semibold border-b pb-2 mb-4">
               Personal Information
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <InfoItem label="Employee ID" value={employee.employeeNumber} />
               <InfoItem label="Email" value={employee.email} />
-              <InfoItem label="Date of Birth" value={employee.date_of_birth} />
+              <InfoItem label="Date of Birth" value={(employee as any).dateOfBirth ?? (employee as any).date_of_birth ?? ''} />
               <InfoItem label="Gender" value={employee.gender} />
             </div>
           </div>
@@ -118,10 +119,10 @@ export default async function EmployeeProfilePage({ params }) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <InfoItem label="Department" value={employee.department} />
               <InfoItem label="Branch" value={employee.branch} />
-              <InfoItem label="Date Hired" value={employee.date_hired} />
+              <InfoItem label="Date Hired" value={(employee as any).dateHired ?? (employee as any).date_hired ?? ''} />
               <InfoItem
                 label="Available Leaves"
-                value={`${employee.available_leaves} days`}
+                value={`${(employee as any).availableLeaves ?? (employee as any).available_leaves ?? 0} days`}
               />
             </div>
           </div>
@@ -131,7 +132,7 @@ export default async function EmployeeProfilePage({ params }) {
   );
 }
 
-function InfoItem({ label, value }) {
+function InfoItem({ label, value }: { label: string; value?: React.ReactNode }) {
   return (
     <div>
       <p className="font-medium text-muted-foreground">{label}</p>

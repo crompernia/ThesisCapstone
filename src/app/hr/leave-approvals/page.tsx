@@ -30,7 +30,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Check, Search, X, Eye } from "lucide-react";
+import { Search, Eye } from "lucide-react";
 import { getLeaveRequests } from "@/lib/data";
 import { updateLeaveRequestStatusAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
@@ -66,7 +66,17 @@ export default function LeaveApprovalsPage() {
         document.title = "HR Leave Approvals";
         }, []);
     const { toast } = useToast();
-    const [leaveRequests, setLeaveRequests] = React.useState([]);
+    type LeaveRequest = {
+        id: number;
+        employeeId: string | null;
+        employeeName: string;
+        leave_type: string;
+        startDate: string;
+        endDate: string;
+        reason: string | null;
+        status: string | null;
+    }
+    const [leaveRequests, setLeaveRequests] = React.useState<LeaveRequest[]>([]);
 
     const fetchLeaveRequests = React.useCallback(async () => {
         const requests = await getLeaveRequests();
@@ -78,7 +88,7 @@ export default function LeaveApprovalsPage() {
     }, [fetchLeaveRequests]);
 
 
-    const handleUpdateRequest = async (requestId, status) => {
+    const handleUpdateRequest = async (requestId: number, status: string) => {
         const result = await updateLeaveRequestStatusAction(requestId, status);
         if (result?.success) {
             toast({

@@ -55,14 +55,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
  * @returns {JSX.Element} The scheduling page component.
  */
 export default function SchedulingPage() {
-  React.useEffect(() => {
-    document.title = "HR Employee Scheduling";
-  }, []);
-
   type EmpRow = { id: string; name: string; shift: string };
   const [scheduleData, setScheduleData] = React.useState<EmpRow[]>([]);
   // internal map of employeeId -> shifts array (Mon-Fri)
   const [shiftsMap, setShiftsMap] = React.useState<Record<string, string[]>>({});
+  const [breaksMap, setBreaksMap] = React.useState<Record<string, string[]>>({});
   const [weekStart, setWeekStart] = React.useState<string>('');
   const [allEmployees, setAllEmployees] = React.useState<EmpRow[]>([]);
   const [branches, setBranches] = React.useState<{ id: number; name: string; coordinates: string | null }[]>([]);
@@ -70,6 +67,25 @@ export default function SchedulingPage() {
   const [positions, setPositions] = React.useState<string[]>([]);
   const [selectedBranch, setSelectedBranch] = React.useState('');
   const [selectedDepartment, setSelectedDepartment] = React.useState('');
+
+  React.useEffect(() => {
+    document.title = "HR Employee Scheduling";
+  }, []);
+
+  // Auto-fill weekStart to the Monday of current week if empty
+  React.useEffect(() => {
+    if (!weekStart) {
+      const today = new Date();
+      const day = today.getDay(); // 0 (Sun) - 6 (Sat)
+      const diffToMonday = (day + 6) % 7; // days since Monday
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - diffToMonday);
+      const yyyy = monday.getFullYear();
+      const mm = String(monday.getMonth() + 1).padStart(2, '0');
+      const dd = String(monday.getDate()).padStart(2, '0');
+      setWeekStart(`${yyyy}-${mm}-${dd}`);
+    }
+  }, []);
 
   React.useEffect(() => {
     async function fetchData() {
@@ -117,6 +133,8 @@ export default function SchedulingPage() {
     if (!scheduleData.find(e => e.id === employee.id)) {
       setScheduleData(prevData => [...prevData, { ...employee, shift: '9:00 - 17:00' }]);
       setShiftsMap(prev => ({ ...prev, [employee.id]: ['9:00 - 17:00','9:00 - 17:00','9:00 - 17:00','9:00 - 17:00','9:00 - 17:00'] }));
+      // default 1 hour break at 12:00 - 13:00
+      setBreaksMap(prev => ({ ...prev, [employee.id]: ['12:00 - 13:00','12:00 - 13:00','12:00 - 13:00','12:00 - 13:00','12:00 - 13:00'] }));
     }
   };
 
@@ -127,6 +145,42 @@ export default function SchedulingPage() {
       copy[employeeId][dayIndex] = value;
       return copy;
     });
+  };
+
+  // updateBreak removed: not used currently
+
+  // Client-side publish handler with validation
+  const handlePublish = async () => {
+    // basic weekStart validation (YYYY-MM-DD)
+    if (!weekStart || !/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) {
+      alert('Please enter a valid Week Start date in YYYY-MM-DD format.');
+      return;
+    }
+
+    const payload = scheduleData.map(emp => ({
+      employeeId: emp.id,
+      shifts: shiftsMap[emp.id] || [emp.shift, emp.shift, emp.shift, emp.shift, emp.shift],
+      breaks: breaksMap[emp.id] || ['12:00 - 13:00','12:00 - 13:00','12:00 - 13:00','12:00 - 13:00','12:00 - 13:00']
+    }));
+
+    if (!payload || payload.length === 0) {
+      alert('No employees in the schedule to publish.');
+      return;
+    }
+
+    // call server action
+    try {
+      const res = await publishScheduleAction(payload, weekStart);
+      if (res?.success) {
+        alert('Schedule published successfully.');
+        window.location.reload();
+      } else {
+        alert(res?.message || 'Failed to publish schedule.');
+      }
+    } catch (e) {
+      console.error('Publish failed', e);
+      alert('Publish failed. See console for details.');
+    }
   };
 
   return (
@@ -268,17 +322,7 @@ export default function SchedulingPage() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={async () => {
-                  // prepare payload
-                  const payload = scheduleData.map(emp => ({ employeeId: emp.id, shifts: shiftsMap[emp.id] || [emp.shift, emp.shift, emp.shift, emp.shift, emp.shift] }));
-                  const res = await publishScheduleAction(payload, weekStart);
-                  // reload page or give feedback
-                  if (res?.success) {
-                    window.location.reload();
-                  } else {
-                    alert(res?.message || 'Failed to publish schedule');
-                  }
-                }}>Publish</AlertDialogAction>
+                <AlertDialogAction onClick={handlePublish}>Publish</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

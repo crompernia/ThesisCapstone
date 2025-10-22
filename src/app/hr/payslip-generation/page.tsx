@@ -47,10 +47,10 @@ export default function PayslipGenerationPage() {
   React.useEffect(() => {
     document.title = "HR Payslip Generation";
   }, []);
-  const [employees, setEmployees] = React.useState([]);
-  const [branches, setBranches] = React.useState([]);
-  const [departments, setDepartments] = React.useState([]);
-  const [selectedBranch, setSelectedBranch] = React.useState("");
+  const [employees, setEmployees] = React.useState<any[]>([]);
+  const [branches, setBranches] = React.useState<any[]>([]);
+  const [departments, setDepartments] = React.useState<any[]>([]);
+  const [selectedBranch, setSelectedBranch] = React.useState<string>("");
 
   React.useEffect(() => {
     const fetchInitialData = async () => {

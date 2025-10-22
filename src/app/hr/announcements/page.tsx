@@ -23,13 +23,8 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Trash2 } from "lucide-react";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Trash2 } from "lucide-react";
+// dropdown menu removed (not used) to satisfy TS unused import checks
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getPastAnnouncements } from "@/lib/data";
@@ -59,7 +54,18 @@ export default function AnnouncementsPage() {
     document.title = "HR Announcements";
     }, []);
     const { toast } = useToast();
-    const [pastAnnouncements, setPastAnnouncements] = React.useState([]);
+    type Announcement = {
+        id: number;
+        title: string;
+        content: string;
+        postedBy: string;
+        date: string;
+        status: string;
+        created_at: Date | null;
+        first_name?: string | null;
+        last_name?: string | null;
+    }
+    const [pastAnnouncements, setPastAnnouncements] = React.useState<Announcement[]>([]);
     const [title, setTitle] = React.useState('');
     const [content, setContent] = React.useState('');
     const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -73,7 +79,7 @@ export default function AnnouncementsPage() {
         fetchAnnouncements();
     }, [fetchAnnouncements]);
 
-    const handleSubmit = async (status) => {
+    const handleSubmit = async (status: string) => {
         setIsSubmitting(true);
         const result = await createAnnouncementAction(title, content, status);
         if (result?.success) {
@@ -94,7 +100,7 @@ export default function AnnouncementsPage() {
         setIsSubmitting(false);
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = async (id: number) => {
         const result = await deleteAnnouncementAction(id);
         if (result?.success) {
             toast({
@@ -131,7 +137,7 @@ export default function AnnouncementsPage() {
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="announcement-content">Content</Label>
-                        <Textarea id="announcement-content" placeholder="Type your announcement here..." className="min-h-[200px]" value={content} onChange={(e) => setContent(e.target.value)} disabled={isSubmitting}/>
+                        <Textarea id="announcement-content" placeholder="Type your announcement here..." className="min-h-[200px]" value={content} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setContent(e.target.value)} disabled={isSubmitting}/>
                     </div>
                 </CardContent>
                 <CardFooter className="flex justify-between">

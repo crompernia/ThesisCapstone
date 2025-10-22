@@ -4,6 +4,7 @@
 'use server';
 
 import { createAnnouncement, deleteAnnouncement } from '@/lib/data';
+import { getCurrentUserId } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
 export async function createAnnouncementAction(title: string, content: string, status: string) {
@@ -11,7 +12,8 @@ export async function createAnnouncementAction(title: string, content: string, s
         return { success: false, message: 'Title, content, and status are required.' };
     }
     try {
-        await createAnnouncement(title, content, status);
+        const userId = await getCurrentUserId();
+        await createAnnouncement(title, content, status, userId || undefined);
         revalidatePath('/hr/announcements');
         revalidatePath('/dashboard');
         return { success: true };

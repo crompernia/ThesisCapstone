@@ -7,7 +7,7 @@ import { getDb } from './db';
 import { format } from 'date-fns';
 import { eq, and, desc, sql, inArray, ne, isNotNull, asc } from 'drizzle-orm';
 import * as schema from './schema';
-const { accounts, announcements, leaveRequests, branches, positions, schedules } = schema;
+const { accounts, announcements, leaveRequests, branches, positions, schedules, attendance, departments, positionDepartments, attendanceRecords } = schema;
 
 // Type definitions for database query results
 interface CountResult {
@@ -67,6 +67,13 @@ interface PositionRow {
   rate: string;
 }
 
+interface DepartmentRow {
+  id: number;
+  name: string;
+  branchId: number;
+  createdAt: Date;
+}
+
 export async function getHRDashboardData() {
     const db = await getDb();
 
@@ -119,9 +126,9 @@ export async function getPastAnnouncements() {
     }));
 }
 
-export async function createAnnouncement(title: string, content: string, status: string): Promise<void> {
+export async function createAnnouncement(title: string, content: string, status: string, postedBy?: string): Promise<void> {
     const db = await getDb();
-    const id = 'HR-001'; // In a real app, this should come from session
+    const id = postedBy || 'HR-001'; // fallback for older callers
 
     await db.insert(announcements).values({
         title,
@@ -137,9 +144,10 @@ export async function deleteAnnouncement(id: number): Promise<void> {
 }
 
 export async function getDailyAttendanceData(date: string): Promise<unknown[]> {
-    // This is a placeholder as there is no attendance table yet.
-    // Return employee data with mock attendance information
     const db = await getDb();
+
+    // Left join attendance for the requested date; if no row exists the employee is considered 'Away'
+    const targetDate = new Date(date);
 
     const result = await db
         .select({
@@ -149,20 +157,33 @@ export async function getDailyAttendanceData(date: string): Promise<unknown[]> {
             last_name: accounts.lastName,
             position: accounts.position,
             branch: accounts.branch,
+            time_in: attendance.timeIn,
+            time_out: attendance.timeOut,
+            attendance_status: attendance.status,
         })
         .from(accounts)
+        .leftJoin(attendance, and(eq(attendance.employeeId, accounts.id), eq(attendance.date, targetDate)))
         .where(and(eq(accounts.role, 'Employee'), eq(accounts.status, 'Active')));
 
-    return result.map(a => ({
-        id: a.id,
-        employeeNumber: a.employeeNumber,
-        name: `${a.first_name} ${a.last_name}`,
-        position: a.position,
-        branch: a.branch,
-        timeIn: '08:00 AM',
-        timeOut: '05:00 PM',
-        status: 'Present'
-    }));
+    return result.map(a => {
+        const timeInRaw = (a as any).time_in as Date | undefined | null;
+        const timeOutRaw = (a as any).time_out as Date | undefined | null;
+        const attendanceStatus = (a as any).attendance_status as string | undefined | null;
+
+        const fmt = (d?: Date | null) => d ? format(new Date(d), 'hh:mm a') : null;
+
+        return {
+            id: a.id,
+            employeeNumber: a.employeeNumber,
+            name: `${a.first_name} ${a.last_name}`,
+            position: a.position,
+            branch: a.branch,
+            timeIn: fmt(timeInRaw) || null,
+            timeOut: fmt(timeOutRaw) || null,
+            // default to 'Away' when there's no attendance row
+            status: attendanceStatus || 'Away'
+        };
+    });
 }
 
 
@@ -359,11 +380,149 @@ export async function getEmployeeDashboardData(employeeid: string) {
 }
 
 export async function getAttendanceData(employeeId: string) {
-    // This is a placeholder as there is no attendance table yet.
+    const db = await getDb();
+
+    // Get current month
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    const startOfMonth = new Date(currentYear, currentMonth - 1, 1);
+    const endOfMonth = new Date(currentYear, currentMonth, 0); // last day of month
+
+    // Get available leaves and hire date from accounts
+    const accountResult = await db
+        .select({ availableLeaves: accounts.availableLeaves, dateHired: accounts.dateHired })
+        .from(accounts)
+        .where(eq(accounts.id, employeeId));
+
+    const availableLeaves = accountResult[0]?.availableLeaves || 0;
+    const hireDate = accountResult[0]?.dateHired ? new Date(accountResult[0].dateHired) : now;
+
+    // Get attendance records with schedules for the current month
+    const attendanceRecords = await db
+        .select({
+            date: attendance.date,
+            timeIn: attendance.timeIn,
+            timeOut: attendance.timeOut,
+            status: attendance.status,
+            hoursWorked: attendance.hoursWorked,
+            shiftStart: schedules.shiftStart,
+        })
+        .from(attendance)
+        .leftJoin(schedules, and(eq(attendance.employeeId, schedules.employeeId), eq(attendance.date, schedules.date)))
+        .where(and(eq(attendance.employeeId, employeeId), sql`${attendance.date} >= ${startOfMonth.toISOString().slice(0, 10)}`, sql`${attendance.date} <= ${endOfMonth.toISOString().slice(0, 10)}`))
+        .orderBy(desc(attendance.date));
+
+    let daysAttended = 0;
+    let lates = 0; // sum of minutes late
+    let totalHours = 0;
+    const records: Array<{ date: string; timeIn: string | null; timeOut: string | null; status: string }> = [];
+
+    let lateAbsences = 0; // records where late >= 480 minutes
+
+    for (const record of attendanceRecords) {
+        const timeIn = record.timeIn ? new Date(record.timeIn) : null;
+        const timeOut = record.timeOut ? new Date(record.timeOut) : null;
+        const shiftStartStr = record.shiftStart || '09:00:00'; // default 9:00
+        const [h, m] = shiftStartStr.split(':').map(Number);
+        const shiftStart = new Date(timeIn ? timeIn.getFullYear() : now.getFullYear(), timeIn ? timeIn.getMonth() : now.getMonth(), timeIn ? timeIn.getDate() : now.getDate(), h, m);
+
+        let minutesLate = 0;
+        if (timeIn && timeIn > shiftStart) {
+            minutesLate = Math.floor((timeIn.getTime() - shiftStart.getTime()) / (1000 * 60));
+        }
+
+        let status = record.status || 'Present';
+        if (minutesLate >= 480) {
+            status = 'Absent';
+            lateAbsences++;
+        } else if (minutesLate > 0) {
+            status = 'Late';
+            lates += minutesLate;
+        }
+
+        if (timeIn && timeOut && minutesLate < 480) {
+            daysAttended++;
+        }
+
+        totalHours += Number(record.hoursWorked) || 0;
+
+        // Format for display
+        const fmtTime = (d: Date | null) => d ? d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null;
+        records.push({
+            date: record.date as string,
+            timeIn: fmtTime(timeIn),
+            timeOut: fmtTime(timeOut),
+            status,
+        });
+    }
+
+    // Calculate total working days from hire date to now (weekdays only)
+    const totalWorkingDaysFromHire = calculateWorkingDays(hireDate, now);
+
+    // Get all attendance records from hire date to now
+    const allAttendanceRecords = await db
+        .select({
+            date: attendance.date,
+            timeIn: attendance.timeIn,
+            timeOut: attendance.timeOut,
+            shiftStart: schedules.shiftStart,
+        })
+        .from(attendance)
+        .leftJoin(schedules, and(eq(attendance.employeeId, schedules.employeeId), eq(attendance.date, schedules.date)))
+        .where(and(eq(attendance.employeeId, employeeId), sql`${attendance.date} >= ${hireDate.toISOString().slice(0, 10)}`, sql`${attendance.date} <= ${now.toISOString().slice(0, 10)}`));
+
+    let validAttendanceDays = 0;
+    let totalLateAbsences = 0;
+
+    for (const record of allAttendanceRecords) {
+        const timeIn = record.timeIn ? new Date(record.timeIn) : null;
+        const shiftStartStr = record.shiftStart || '09:00:00';
+        const [h, m] = shiftStartStr.split(':').map(Number);
+        const shiftStart = new Date(timeIn ? timeIn.getFullYear() : now.getFullYear(), timeIn ? timeIn.getMonth() : now.getMonth(), timeIn ? timeIn.getDate() : now.getDate(), h, m);
+
+        let minutesLate = 0;
+        if (timeIn && timeIn > shiftStart) {
+            minutesLate = Math.floor((timeIn.getTime() - shiftStart.getTime()) / (1000 * 60));
+        }
+
+        if (timeIn && record.timeOut && minutesLate < 480) {
+            validAttendanceDays++;
+        } else if (minutesLate >= 480) {
+            totalLateAbsences++;
+        }
+    }
+
+    // Absences = total working days from hire - valid attendance days + late absences
+    const absences = totalWorkingDaysFromHire - validAttendanceDays + totalLateAbsences;
+
     return {
-        summary: { daysAttended: 0, lates: 0, absences: 0, totalHours: 0, availableLeaves: 0 },
-        records: []
+        summary: {
+            daysAttended,
+            lates,
+            absences,
+            availableLeaves,
+            totalHours: Math.round(totalHours * 100) / 100, // round to 2 decimals
+        },
+        records,
     };
+}
+
+// Helper function to calculate working days (weekdays) between two dates
+function calculateWorkingDays(startDate: Date, endDate: Date): number {
+    let workingDays = 0;
+    const currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+        const dayOfWeek = currentDate.getDay();
+        // Monday to Friday (1-5)
+        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+            workingDays++;
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return workingDays;
 }
 
 export async function getPastLeaveRequests(employeeId: string) {
@@ -412,6 +571,53 @@ export async function createLeaveRequest(data: {
 }
 
 export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]> {
+  const db = await getDb();
+
+  // Get employee's position
+  const employeeResult = await db
+    .select({ position: accounts.position })
+    .from(accounts)
+    .where(eq(accounts.id, employeeId));
+
+  const employeePosition = employeeResult[0]?.position;
+
+  // Get daily rate from positions table (hourly rate × 8 hours)
+  let dailyRate = 0;
+  if (employeePosition) {
+    const positionResult = await db
+      .select({ rate: positions.rate })
+      .from(positions)
+      .where(eq(positions.title, employeePosition));
+
+    const hourlyRate = positionResult[0]?.rate ? parseFloat(positionResult[0].rate) : 0;
+    dailyRate = hourlyRate * 8; // Convert hourly rate to daily rate
+  }
+
+  // Function to get days worked for a specific month/year
+  const getDaysWorked = async (year: number, month: number): Promise<number> => {
+    const startDate = new Date(year, month - 1, 1); // month is 0-indexed
+    const endDate = new Date(year, month, 0); // Last day of the month
+
+    const attendanceResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(attendance)
+      .where(and(
+        eq(attendance.employeeId, employeeId),
+        sql`${attendance.date} >= ${startDate} AND ${attendance.date} <= ${endDate}`,
+        inArray(attendance.status, ['Present', 'Late']) // Count only days actually worked
+      ));
+
+    return attendanceResult[0]?.count || 0;
+  };
+
+  // Get days worked for each period
+  const januaryDays = await getDaysWorked(2025, 1); // January 2025
+  const februaryDays = await getDaysWorked(2025, 2); // February 2025
+
+  // Calculate basic pay for each period
+  const januaryBasicPay = dailyRate * januaryDays;
+  const februaryBasicPay = dailyRate * februaryDays;
+
   // This is a placeholder as there is no payslip table yet.
   const data: PayPeriodData[] = [
     {
@@ -419,9 +625,9 @@ export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]
       period: "January 2025",
       payDate: "2025-01-31",
       earnings: [
-        { name: "Daily Rate", amount: 885 },
-        { name: "No. of Days", amount: 0 },
-        { name: "BASIC PAY", amount: 8850},
+        { name: "Daily Rate", amount: dailyRate },
+        { name: "No. of Days", amount: januaryDays },
+        { name: "BASIC PAY", amount: januaryBasicPay },
         { name: "Overtime", amount: 0 },
         { name: "Night Differential", amount: 0 },
         { name: "RH OT", amount: 0 },
@@ -436,21 +642,21 @@ export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]
         { name: "Philhealth", amount: 0 },
         { name: "Pag-Ibig", amount: 0 },
         { name: "Tax", amount: 0 },
-        { name: "SSS Loan", amount: 700 },
+        { name: "SSS Loan", amount: 0 },
         { name: "HDMF Loan", amount: 0 },
         { name: "Company Deduction", amount: 0 },
-        { name: "Company Loan", amount: 1145 },
+        { name: "Company Loan", amount: 0 },
       ],
-      net_pay: 0, 
+      net_pay: 0,
     },
     {
       id: 2,
       period: "February 2025",
       payDate: "2025-02-31",
       earnings: [
-        { name: "Daily Rate", amount: 0 },
-        { name: "No. of Days", amount: 0 },
-        { name: "BASIC PAY", amount: 100 },
+        { name: "Daily Rate", amount: dailyRate },
+        { name: "No. of Days", amount: februaryDays },
+        { name: "BASIC PAY", amount: februaryBasicPay },
         { name: "Overtime", amount: 0 },
         { name: "Night Differential", amount: 0 },
         { name: "RH OT", amount: 0 },
@@ -469,7 +675,7 @@ export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]
         { name: "Company Deduction", amount: 0 },
         { name: "Company Loan", amount: 0 },
       ],
-      net_pay: 0, 
+      net_pay: 0,
     },
 ]
 
@@ -489,8 +695,83 @@ data.forEach((period) => {
 }
 
 export async function getSchedule(employeeId: string) {
-    // This is a placeholder as there is no schedule table yet.
-    return [];
+    const db = await getDb();
+
+    // Compute current week's Monday (local timezone)
+    const today = new Date();
+    const day = today.getDay(); // 0 (Sun) - 6 (Sat)
+    const diffToMonday = (day + 6) % 7; // days since Monday
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - diffToMonday);
+
+    // Build the 5 dates (Mon-Fri) as ISO strings yyyy-MM-dd
+    const weekDates: string[] = [];
+    for (let i = 0; i < 5; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        weekDates.push(format(d, 'yyyy-MM-dd'));
+    }
+
+    // Query schedule rows for the employee for those dates (include notes)
+    const rows = await db
+        .select({ date: schedules.date, shiftStart: schedules.shiftStart, shiftEnd: schedules.shiftEnd, notes: schedules.notes })
+        .from(schedules)
+        .where(and(eq(schedules.employeeId, employeeId), inArray(schedules.date, weekDates)))
+        .orderBy(asc(schedules.date));
+
+    // Map rows to the client shape expected by ScheduleClientPage
+    const items = rows.map(r => {
+        // r.date may be a Date or string depending on driver; normalize to yyyy-MM-dd
+        const dateStr = typeof r.date === 'string' ? r.date : format(new Date(r.date as any), 'yyyy-MM-dd');
+        const dayName = new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long' });
+
+        const formatTimeShort = (t: string | null | undefined) => {
+            if (!t) return '-';
+            // t expected like '09:00:00' or '09:00'
+            const parts = String(t).split(':');
+            if (parts.length >= 2) return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+            return String(t);
+        };
+
+        const timeIn = formatTimeShort(r.shiftStart as any);
+        const timeOut = formatTimeShort(r.shiftEnd as any);
+
+        // Extract break from notes if available. notes may be null or a JSON string/object
+        let breakStr = '-';
+        try {
+            if (r.notes) {
+                // If notes is a stringified JSON, parse it; if it's an object, use it
+                const parsed = typeof r.notes === 'string' ? JSON.parse(r.notes) : r.notes;
+                if (parsed && parsed.break) breakStr = parsed.break;
+            }
+        } catch (e) {
+            breakStr = '-';
+        }
+
+        // compute hours as decimal between shiftStart and shiftEnd
+        let hours = 0;
+        try {
+            if (r.shiftStart && r.shiftEnd) {
+                const [sh, sm] = String(r.shiftStart).split(':').map(Number);
+                const [eh, em] = String(r.shiftEnd).split(':').map(Number);
+                const minutes = (eh * 60 + (em || 0)) - (sh * 60 + (sm || 0));
+                hours = Math.round((minutes / 60) * 100) / 100;
+            }
+        } catch (e) {
+            hours = 0;
+        }
+
+        return {
+            day: dayName,
+            date: dateStr,
+            timeIn,
+            timeOut,
+            break: breakStr,
+            hours,
+        };
+    });
+
+    return items;
 }
 
 /**
@@ -498,8 +779,9 @@ export async function getSchedule(employeeId: string) {
  * scheduleItems: Array of { employeeId: string, shifts: string[] } where shifts is 5 items (Mon-Fri)
  * weekStart: ISO date string for the Monday of the week (yyyy-MM-dd)
  */
-export async function publishSchedule(scheduleItems: { employeeId: string; shifts: string[] }[], weekStart: string) {
+export async function publishSchedule(scheduleItems: { employeeId: string; shifts: string[]; breaks?: string[] }[], weekStart: string) {
     const db = await getDb();
+    console.log('publishSchedule called with', { count: scheduleItems.length, weekStart });
     // Helper to normalize time strings like "9:00 - 17:00" into ["09:00:00","17:00:00"].
     const normalizeTime = (t: string) => {
         if (!t) return null;
@@ -546,15 +828,18 @@ export async function publishSchedule(scheduleItems: { employeeId: string; shift
             }
 
             const [shiftStart, shiftEnd] = times;
+            // get break time string from scheduleItems if provided
+            const breakStr = (item.breaks && item.breaks[dayOffset]) ? String(item.breaks[dayOffset]).trim() : null;
 
             // Check existing record
             const existing = await db.select().from(schedules).where(and(eq(schedules.employeeId, employeeId), eq(schedules.date, isoDate)));
+            const notesValue = breakStr ? JSON.stringify({ break: breakStr }) : null;
             if (existing.length > 0) {
                 await db.update(schedules)
-                    .set({ shiftStart, shiftEnd, notes: null })
+                    .set({ shiftStart, shiftEnd, notes: notesValue })
                     .where(and(eq(schedules.employeeId, employeeId), eq(schedules.date, isoDate)));
             } else {
-                await db.insert(schedules).values({ employeeId, date: isoDate, shiftStart, shiftEnd });
+                await db.insert(schedules).values({ employeeId, date: isoDate, shiftStart, shiftEnd, notes: notesValue });
             }
         }
     }
@@ -820,15 +1105,320 @@ export async function getDepartmentsForBranch(branchName: string): Promise<strin
     return result.map(r => r.department!);
 }
 
+export async function getDepartmentsForBranchById(branchId: number) {
+    const db = await getDb();
+
+    const result = await db
+        .select({
+            id: departments.id,
+            name: departments.name,
+            branchId: departments.branchId,
+            createdAt: departments.createdAt,
+            branch_name: branches.name,
+        })
+        .from(departments)
+        .leftJoin(branches, eq(departments.branchId, branches.id))
+        .where(eq(departments.branchId, branchId))
+        .orderBy(asc(departments.name));
+
+    return result;
+}
+
 export async function getPositionsForDepartment(departmentName: string): Promise<string[]> {
     const db = await getDb();
 
-    // Get all positions associated with employees in that department
+    // First, try to get positions from the position_departments allocation table
+    const allocatedPositions = await db
+        .select({ positionTitle: positions.title })
+        .from(positionDepartments)
+        .leftJoin(positions, eq(positionDepartments.positionId, positions.id))
+        .leftJoin(departments, eq(positionDepartments.departmentId, departments.id))
+        .where(eq(departments.name, departmentName))
+        .orderBy(asc(positions.title));
+
+    if (allocatedPositions.length > 0) {
+        return allocatedPositions.map(r => r.positionTitle).filter(Boolean) as string[];
+    }
+
+    // Fallback: Get all positions associated with employees in that department (legacy)
     const result = await db
         .selectDistinct({ position: accounts.position })
         .from(accounts)
         .where(and(eq(accounts.department, departmentName), isNotNull(accounts.position)))
         .orderBy(asc(accounts.position));
 
-    return result.map(r => r.position!);
+    return result.map(r => r.position!).filter(Boolean);
+}
+
+export async function getDepartments() {
+    const db = await getDb();
+
+    const result = await db
+        .select({
+            id: departments.id,
+            name: departments.name,
+            branchId: departments.branchId,
+            createdAt: departments.createdAt,
+            branch_name: branches.name,
+        })
+        .from(departments)
+        .leftJoin(branches, eq(departments.branchId, branches.id))
+        .orderBy(asc(departments.name));
+
+    return result;
+}
+
+export async function createDepartment(name: string, branchId: number): Promise<DepartmentRow> {
+    const db = await getDb();
+
+    try {
+        const result = await db
+            .insert(departments)
+            .values({
+                name,
+                branchId,
+            })
+            .returning();
+
+        return result[0] as DepartmentRow;
+    } catch(e: any) {
+        if (e.code === '23505') { // unique_violation
+            throw new Error('A department with this name already exists in this branch.');
+        }
+        throw e;
+    }
+}
+
+export async function deleteDepartment(departmentId: number): Promise<void> {
+    const db = await getDb();
+
+    const departmentResult = await db
+        .select({ name: departments.name })
+        .from(departments)
+        .where(eq(departments.id, departmentId));
+
+    if (departmentResult.length === 0) return;
+    const departmentName = departmentResult[0].name;
+
+    const accountResult = await db
+        .select({ id: accounts.id })
+        .from(accounts)
+        .where(eq(accounts.department, departmentName));
+
+    if (accountResult.length > 0) {
+        throw new Error('This department is currently assigned to employees and cannot be deleted.');
+    }
+
+    await db.delete(departments).where(eq(departments.id, departmentId));
+}
+
+export async function getPositionDepartments() {
+    const db = await getDb();
+
+    const result = await db
+        .select({
+            id: positionDepartments.id,
+            positionId: positionDepartments.positionId,
+            departmentId: positionDepartments.departmentId,
+            createdAt: positionDepartments.createdAt,
+            positionTitle: positions.title,
+            departmentName: departments.name,
+            branchName: branches.name,
+        })
+        .from(positionDepartments)
+        .leftJoin(positions, eq(positionDepartments.positionId, positions.id))
+        .leftJoin(departments, eq(positionDepartments.departmentId, departments.id))
+        .leftJoin(branches, eq(departments.branchId, branches.id))
+        .orderBy(asc(positions.title));
+
+    return result;
+}
+
+export async function allocatePositionToDepartment(positionId: number, departmentId: number): Promise<void> {
+    const db = await getDb();
+
+    try {
+        await db.insert(positionDepartments).values({
+            positionId,
+            departmentId,
+        });
+    } catch(e: any) {
+        if (e.code === '23505') { // unique_violation
+            throw new Error('This position is already allocated to this department.');
+        }
+        throw e;
+    }
+}
+
+
+export async function getAllDepartments() {
+    const db = await getDb();
+
+    const result = await db
+        .select({
+            id: departments.id,
+            name: departments.name,
+            branchId: departments.branchId,
+            createdAt: departments.createdAt,
+            branch_name: branches.name,
+        })
+        .from(departments)
+        .leftJoin(branches, eq(departments.branchId, branches.id))
+        .orderBy(asc(departments.name));
+
+    return result;
+}
+
+export async function removePositionFromDepartment(allocationId: number): Promise<void> {
+    const db = await getDb();
+
+    // Check if any employees are using this position-department combination
+    const allocationResult = await db
+        .select({
+            positionTitle: positions.title,
+            departmentName: departments.name,
+        })
+        .from(positionDepartments)
+        .leftJoin(positions, eq(positionDepartments.positionId, positions.id))
+        .leftJoin(departments, eq(positionDepartments.departmentId, departments.id))
+        .where(eq(positionDepartments.id, allocationId));
+
+    if (allocationResult.length === 0) return;
+
+    const { positionTitle, departmentName } = allocationResult[0];
+
+    const accountResult = await db
+        .select({ id: accounts.id })
+        .from(accounts)
+        .where(and(sql`${accounts.position} = ${positionTitle}`, sql`${accounts.department} = ${departmentName}`));
+
+    if (accountResult.length > 0) {
+        throw new Error('This position-department allocation is currently assigned to employees and cannot be removed.');
+    }
+
+    await db.delete(positionDepartments).where(eq(positionDepartments.id, allocationId));
+}
+
+export async function populateAttendanceRecords() {
+    const db = await getDb();
+
+    // Get all employees from accounts table with their details
+    const employees = await db.select({
+        id: accounts.id,
+        employeeNumber: accounts.employeeNumber,
+        firstName: accounts.firstName,
+        lastName: accounts.lastName,
+        position: accounts.position,
+        department: accounts.department,
+        branch: accounts.branch,
+        availableLeaves: accounts.availableLeaves
+    }).from(accounts).where(eq(accounts.role, 'Employee'));
+
+    for (const employee of employees) {
+        const employeeId = employee.id;
+        const availableLeaves = employee.availableLeaves || 0;
+
+        // Get all attendance records for this employee, grouped by month
+        const attendanceData = await db
+            .select({
+                date: attendance.date,
+                timeIn: attendance.timeIn,
+                timeOut: attendance.timeOut,
+                status: attendance.status,
+                hoursWorked: attendance.hoursWorked,
+                shiftStart: schedules.shiftStart,
+            })
+            .from(attendance)
+            .leftJoin(schedules, and(eq(attendance.employeeId, schedules.employeeId), eq(attendance.date, schedules.date)))
+            .where(eq(attendance.employeeId, employeeId))
+            .orderBy(attendance.date);
+
+        // Group by period (YYYY-MM)
+        const periodGroups: { [period: string]: typeof attendanceData } = {};
+        for (const record of attendanceData) {
+            const date = new Date(record.date);
+            const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            if (!periodGroups[period]) {
+                periodGroups[period] = [];
+            }
+            periodGroups[period].push(record);
+        }
+
+        // Process each period
+        for (const [period, records] of Object.entries(periodGroups)) {
+            let daysAttended = 0;
+            let lates = 0;
+            let absences = 0;
+            let totalWorkHours = 0;
+
+            for (const record of records) {
+                const timeIn = record.timeIn ? new Date(record.timeIn) : null;
+                const shiftStartStr = record.shiftStart || '09:00:00';
+                const [h, m] = shiftStartStr.split(':').map(Number);
+                const date = new Date(record.date);
+                const shiftStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m);
+
+                let minutesLate = 0;
+                if (timeIn && timeIn > shiftStart) {
+                    minutesLate = Math.floor((timeIn.getTime() - shiftStart.getTime()) / (1000 * 60));
+                }
+
+                if (record.status === 'Present' || (timeIn && record.timeOut && minutesLate < 480)) {
+                    daysAttended++;
+                } else if (record.status === 'Absent' || minutesLate >= 480) {
+                    absences++;
+                }
+
+                if (minutesLate > 0 && minutesLate < 480) {
+                    lates += minutesLate;
+                }
+
+                totalWorkHours += Number(record.hoursWorked) || 0;
+            }
+
+            // Calculate total working days in period (weekdays)
+            const [year, month] = period.split('-').map(Number);
+            const periodStart = new Date(year, month - 1, 1);
+            const periodEnd = new Date(year, month, 0); // last day of month
+            const totalWorkingDays = calculateWorkingDays(periodStart, periodEnd);
+
+            // Absences = total working days - days attended (since absences are already counted above)
+            absences = totalWorkingDays - daysAttended;
+
+            // Upsert into attendance_records with employee details
+            await db.insert(attendanceRecords).values({
+                employeeId,
+                employeeNumber: employee.employeeNumber,
+                firstName: employee.firstName,
+                lastName: employee.lastName,
+                position: employee.position,
+                department: employee.department,
+                branch: employee.branch,
+                period,
+                daysAttended,
+                lates,
+                absences,
+                availableLeaves,
+                totalWorkHours: String(Math.round(totalWorkHours * 100) / 100),
+            }).onConflictDoUpdate({
+                target: [attendanceRecords.employeeId, attendanceRecords.period],
+                set: {
+                    employeeNumber: employee.employeeNumber,
+                    firstName: employee.firstName,
+                    lastName: employee.lastName,
+                    position: employee.position,
+                    department: employee.department,
+                    branch: employee.branch,
+                    daysAttended,
+                    lates,
+                    absences,
+                    availableLeaves,
+                    totalWorkHours: String(Math.round(totalWorkHours * 100) / 100),
+                    updatedAt: sql`NOW()`,
+                },
+            });
+        }
+    }
+
+    console.log('Attendance records populated successfully');
 }

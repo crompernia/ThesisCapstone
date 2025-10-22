@@ -1,5 +1,6 @@
 CREATE TABLE "accounts" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"employee_number" varchar(50),
 	"first_name" varchar(255) NOT NULL,
 	"last_name" varchar(255) NOT NULL,
 	"middle_name" varchar(255),
@@ -21,6 +22,7 @@ CREATE TABLE "accounts" (
 	"managed_branches" varchar(255)[],
 	"created_at" timestamp with time zone DEFAULT now(),
 	"updated_at" timestamp with time zone DEFAULT now(),
+	CONSTRAINT "accounts_employee_number_unique" UNIQUE("employee_number"),
 	CONSTRAINT "accounts_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
@@ -44,6 +46,20 @@ CREATE TABLE "attendance" (
 	"notes" text,
 	"created_at" timestamp with time zone DEFAULT now(),
 	CONSTRAINT "attendance_employee_id_date_unique" UNIQUE("employee_id","date")
+);
+--> statement-breakpoint
+CREATE TABLE "attendance_summaries" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"employee_id" uuid NOT NULL,
+	"month_year" varchar(7) NOT NULL,
+	"days_attended" integer DEFAULT 0,
+	"lates_minutes" integer DEFAULT 0,
+	"absences" integer DEFAULT 0,
+	"available_leaves" integer DEFAULT 0,
+	"total_work_hours" numeric(8, 2) DEFAULT '0',
+	"created_at" timestamp with time zone DEFAULT now(),
+	"updated_at" timestamp with time zone DEFAULT now(),
+	CONSTRAINT "attendance_summaries_employee_id_month_year_unique" UNIQUE("employee_id","month_year")
 );
 --> statement-breakpoint
 CREATE TABLE "branches" (
@@ -96,6 +112,14 @@ CREATE TABLE "payslips" (
 	CONSTRAINT "payslips_employee_id_pay_period_unique" UNIQUE("employee_id","pay_period")
 );
 --> statement-breakpoint
+CREATE TABLE "position_departments" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"position_id" integer NOT NULL,
+	"department_id" integer NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now(),
+	CONSTRAINT "position_departments_position_id_department_id_unique" UNIQUE("position_id","department_id")
+);
+--> statement-breakpoint
 CREATE TABLE "positions" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"title" varchar(255) NOT NULL,
@@ -125,12 +149,16 @@ CREATE TABLE "schedules" (
 --> statement-breakpoint
 ALTER TABLE "announcements" ADD CONSTRAINT "announcements_posted_by_accounts_id_fk" FOREIGN KEY ("posted_by") REFERENCES "public"."accounts"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "attendance" ADD CONSTRAINT "attendance_employee_id_accounts_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "attendance_summaries" ADD CONSTRAINT "attendance_summaries_employee_id_accounts_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "departments" ADD CONSTRAINT "departments_branch_id_branches_id_fk" FOREIGN KEY ("branch_id") REFERENCES "public"."branches"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "leave_requests" ADD CONSTRAINT "leave_requests_employee_id_accounts_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payslips" ADD CONSTRAINT "payslips_employee_id_accounts_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "position_departments" ADD CONSTRAINT "position_departments_position_id_positions_id_fk" FOREIGN KEY ("position_id") REFERENCES "public"."positions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "position_departments" ADD CONSTRAINT "position_departments_department_id_departments_id_fk" FOREIGN KEY ("department_id") REFERENCES "public"."departments"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "reports" ADD CONSTRAINT "reports_generated_by_accounts_id_fk" FOREIGN KEY ("generated_by") REFERENCES "public"."accounts"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedules" ADD CONSTRAINT "schedules_employee_id_accounts_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "idx_accounts_email" ON "accounts" USING btree ("email");--> statement-breakpoint
+CREATE INDEX "idx_accounts_employee_number" ON "accounts" USING btree ("employee_number");--> statement-breakpoint
 CREATE INDEX "idx_accounts_role" ON "accounts" USING btree ("role");--> statement-breakpoint
 CREATE INDEX "idx_accounts_status" ON "accounts" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "idx_accounts_branch" ON "accounts" USING btree ("branch");--> statement-breakpoint
@@ -138,6 +166,8 @@ CREATE INDEX "idx_announcements_status" ON "announcements" USING btree ("status"
 CREATE INDEX "idx_announcements_created_at" ON "announcements" USING btree ("created_at");--> statement-breakpoint
 CREATE INDEX "idx_attendance_employee_date" ON "attendance" USING btree ("employee_id","date");--> statement-breakpoint
 CREATE INDEX "idx_attendance_date" ON "attendance" USING btree ("date");--> statement-breakpoint
+CREATE INDEX "idx_attendance_summaries_employee" ON "attendance_summaries" USING btree ("employee_id");--> statement-breakpoint
+CREATE INDEX "idx_attendance_summaries_month" ON "attendance_summaries" USING btree ("month_year");--> statement-breakpoint
 CREATE INDEX "idx_leave_requests_employee" ON "leave_requests" USING btree ("employee_id");--> statement-breakpoint
 CREATE INDEX "idx_leave_requests_status" ON "leave_requests" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "idx_leave_requests_created_at" ON "leave_requests" USING btree ("created_at");--> statement-breakpoint

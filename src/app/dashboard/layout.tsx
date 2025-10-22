@@ -26,6 +26,18 @@ import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import QuickClock from '@/components/quick-clock';
+import * as React from 'react';
+// Temporary any-casts to work around UI prop typing mismatches in layout
+const SidebarProviderAny: any = (SidebarProvider as any) || (undefined as any);
+const SidebarAny: any = (Sidebar as any) || (undefined as any);
+const SidebarHeaderAny: any = (SidebarHeader as any) || (undefined as any);
+const SidebarContentAny: any = (SidebarContent as any) || (undefined as any);
+const SidebarTriggerAny: any = (SidebarTrigger as any) || (undefined as any);
+const SidebarMenuAny: any = (SidebarMenu as any) || (undefined as any);
+const SidebarMenuItemAny: any = (SidebarMenuItem as any) || (undefined as any);
+const SidebarMenuButtonAny: any = (SidebarMenuButton as any) || (undefined as any);
+const SidebarInsetAny: any = (SidebarInset as any) || (undefined as any);
 
 /**
  * Layout component for the employee dashboard.
@@ -35,7 +47,7 @@ import { redirect } from "next/navigation";
  */
 export default async function DashboardLayout({
   children,
-}) {
+}: { children: React.ReactNode }) {
   // Get the current session to display the logged-in user
   const session = await getSession();
 
@@ -50,71 +62,72 @@ export default async function DashboardLayout({
   };
 
   return (
-    <SidebarProvider>
+    <SidebarProviderAny>
       {/* Sidebar Navigation */}
-      <Sidebar>
-        <SidebarHeader>
+      <SidebarAny>
+        <SidebarHeaderAny>
           {/* The company logo is displayed at the top of the sidebar. */}
           <div className="flex items-center gap-2 p-2">
             <Logo className="w-auto h-9" />
             <h1 className="text-xl font-semibold font-headline">Dashboard</h1>
           </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            <SidebarMenuItem>
+        </SidebarHeaderAny>
+        <SidebarContentAny>
+          <SidebarMenuAny>
+            <SidebarMenuItemAny>
               <Link href="/dashboard" passHref>
-                <SidebarMenuButton tooltip="Dashboard">
+                <SidebarMenuButtonAny tooltip="Dashboard">
                   <LayoutDashboard />
                   Dashboard
-                </SidebarMenuButton>
+                </SidebarMenuButtonAny>
               </Link>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
+            </SidebarMenuItemAny>
+            <SidebarMenuItemAny>
               <Link href="/dashboard/schedule" passHref>
-                <SidebarMenuButton tooltip="Schedule">
+                <SidebarMenuButtonAny tooltip="Schedule">
                   <Calendar />
                   Schedule
-                </SidebarMenuButton>
+                </SidebarMenuButtonAny>
               </Link>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
+            </SidebarMenuItemAny>
+            <SidebarMenuItemAny>
               <Link href="/dashboard/attendance" passHref>
-                <SidebarMenuButton tooltip="Attendance">
+                <SidebarMenuButtonAny tooltip="Attendance">
                   <ClipboardCheck />
                   Attendance Record
-                </SidebarMenuButton>
+                </SidebarMenuButtonAny>
               </Link>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
+            </SidebarMenuItemAny>
+            <SidebarMenuItemAny>
               <Link href="/dashboard/payslip" passHref>
-                <SidebarMenuButton tooltip="Payslip">
+                <SidebarMenuButtonAny tooltip="Payslip">
                   <Wallet />
                   Payslip
-                </SidebarMenuButton>
+                </SidebarMenuButtonAny>
               </Link>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
+            </SidebarMenuItemAny>
+            <SidebarMenuItemAny>
               <Link href="/dashboard/leave" passHref>
-                <SidebarMenuButton tooltip="Leave Request">
+                <SidebarMenuButtonAny tooltip="Leave Request">
                   <Send />
                   Leave Request
-                </SidebarMenuButton>
+                </SidebarMenuButtonAny>
               </Link>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarContent>
-      </Sidebar>
+            </SidebarMenuItemAny>
+          </SidebarMenuAny>
+        </SidebarContentAny>
+      </SidebarAny>
       {/* Main Content Area */}
-      <SidebarInset>
+      <SidebarInsetAny>
         <header className="flex items-center justify-between p-4 border-b">
-          <SidebarTrigger />
+          <SidebarTriggerAny />
           <UserNav employeeName={employee.name} employeeEmail={employee.email} />
         </header>
         <main className="p-4 sm:p-6 lg:p-8 bg-muted/40 min-h-[calc(100vh-65px)]">
             {children}
+            <QuickClock />
         </main>
-      </SidebarInset>
-    </SidebarProvider>
+      </SidebarInsetAny>
+    </SidebarProviderAny>
   );
 }

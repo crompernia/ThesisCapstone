@@ -5,8 +5,29 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1760460387202,
-      "tag": "0000_wandering_argent",
+      "when": 1761075937156,
+      "tag": "0000_mighty_blue_marvel",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1761080769253,
+      "tag": "0001_charming_nekra",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1761082224552,
+      "tag": "0002_smooth_hex",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1761083390819,
+      "tag": "0003_cold_princess_powerful",
       "breakpoints": true
     }
   ]

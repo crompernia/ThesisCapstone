@@ -29,6 +29,7 @@ DROP TABLE IF EXISTS accounts CASCADE;
 -- Replaces separate employees, hr_personnel, and admins tables
 CREATE TABLE accounts (
     id VARCHAR(255) PRIMARY KEY,
+    employee_number VARCHAR(50),
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     middle_name VARCHAR(255),
@@ -47,7 +48,9 @@ CREATE TABLE accounts (
     philhealth_number VARCHAR(255),
     pagibig_number VARCHAR(255),
     tin VARCHAR(255),
-    managed_branches VARCHAR(255)[] -- Array field for HR personnel to track which branches they manage
+    managed_branches VARCHAR(255)[], -- Array field for HR personnel to track which branches they manage
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Performance indexes
@@ -55,6 +58,7 @@ CREATE INDEX idx_accounts_email ON accounts(email);
 CREATE INDEX idx_accounts_role ON accounts(role);
 CREATE INDEX idx_accounts_status ON accounts(status);
 CREATE INDEX idx_accounts_branch ON accounts(branch);
+CREATE INDEX idx_accounts_employee_number ON accounts(employee_number);
 
 COMMENT ON TABLE accounts IS 'Unified accounts table for all users: Employees, HR Personnel, and Admins';
 COMMENT ON COLUMN accounts.role IS 'User role: Employee, HR, or Admin';
@@ -100,6 +104,20 @@ CREATE TABLE departments (
 );
 
 COMMENT ON TABLE departments IS 'Departments within each branch';
+
+-- ============================================
+-- POSITION-DEPARTMENT ALLOCATIONS
+-- ============================================
+-- Links positions to departments for allocation
+CREATE TABLE position_departments (
+    id SERIAL PRIMARY KEY,
+    position_id INT NOT NULL REFERENCES positions(id) ON DELETE CASCADE,
+    department_id INT NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(position_id, department_id)
+);
+
+COMMENT ON TABLE position_departments IS 'Allocations of positions to specific departments';
 
 -- ============================================
 -- ANNOUNCEMENTS
@@ -170,6 +188,37 @@ CREATE INDEX idx_attendance_date ON attendance(date DESC);
 COMMENT ON TABLE attendance IS 'Daily attendance records for all employees';
 COMMENT ON COLUMN attendance.hours_worked IS 'Total hours worked for the day';
 COMMENT ON COLUMN attendance.status IS 'Present, Late, Absent, or Leave';
+
+-- ============================================
+-- ATTENDANCE RECORDS (Aggregated Summary)
+-- ============================================
+-- Aggregated attendance records for each employee by period
+CREATE TABLE attendance_records (
+    id SERIAL PRIMARY KEY,
+    employee_id VARCHAR(255) NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    period VARCHAR(50) NOT NULL, -- e.g., '2024-10', 'Q4-2024', '2024'
+    days_attended INT DEFAULT 0,
+    lates INT DEFAULT 0,
+    absences INT DEFAULT 0,
+    available_leaves INT DEFAULT 0,
+    total_work_hours NUMERIC(8, 2) DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(employee_id, period)
+);
+
+-- Performance indexes
+CREATE INDEX idx_attendance_records_employee ON attendance_records(employee_id);
+CREATE INDEX idx_attendance_records_period ON attendance_records(period);
+CREATE INDEX idx_attendance_records_created_at ON attendance_records(created_at DESC);
+
+COMMENT ON TABLE attendance_records IS 'Aggregated attendance records for employees by period';
+COMMENT ON COLUMN attendance_records.period IS 'Period identifier (e.g., month: 2024-10, quarter: Q4-2024, year: 2024)';
+COMMENT ON COLUMN attendance_records.days_attended IS 'Number of days attended in the period';
+COMMENT ON COLUMN attendance_records.lates IS 'Number of late occurrences in the period';
+COMMENT ON COLUMN attendance_records.absences IS 'Number of absences in the period';
+COMMENT ON COLUMN attendance_records.available_leaves IS 'Available leave days at the end of the period';
+COMMENT ON COLUMN attendance_records.total_work_hours IS 'Total work hours in the period';
 
 -- ============================================
 -- SCHEDULING (Future Implementation)
@@ -279,19 +328,19 @@ INSERT INTO positions (title, rate) VALUES
 
 -- Sample admin account
 INSERT INTO accounts (id, first_name, last_name, email, password, role, status, date_hired, available_leaves) VALUES
-('ADMIN-001', 'Super', 'Admin', 'super@example.com', 'password', 'Admin', 'Active', '2020-01-01', 0);
+('3976ee29-6973-44f0-ae4a-ccabe26ebc92', 'Super', 'Admin', 'super@example.com', 'password', 'Admin', 'Active', '2020-01-01', 0);
 
 -- Sample HR account
 INSERT INTO accounts (id, first_name, last_name, email, password, role, status, date_hired, available_leaves, managed_branches) VALUES
-('HR-001', 'Olivia', 'Chen', 'olivia.chen.hr@example.com', 'password', 'HR', 'Active', '2021-01-15', 15, ARRAY['Headquarters', 'Downtown Office']);
+('1f1dda4d-f422-4553-a41c-9ce7f1312ff8', 'Olivia', 'Chen', 'olivia.chen.hr@example.com', 'password', 'HR', 'Active', '2021-01-15', 15, ARRAY['Headquarters', 'Downtown Office']);
 
 -- Sample employee accounts
-INSERT INTO accounts (id, first_name, last_name, middle_name, email, password, role, position, department, branch, status, date_hired, date_of_birth, gender, available_leaves, sss_number, philhealth_number, pagibig_number, tin) VALUES
-('EMP-00123', 'Maria', 'Rodriguez', 'Veronica', 'maria.rodriguez@example.com', 'password', 'Employee', 'Senior Software Engineer', 'Technology', 'Headquarters', 'Active', '2022-01-15', '2001-12-01', 'Female', 15, '34-1234567-8', '12-123456789-0', '1234-5678-9012', '123-456-789-000'),
-('EMP-00456', 'David', 'Lee', 'Sanchez', 'david.lee@example.com', 'password', 'Employee', 'Project Manager', 'Management', 'Headquarters', 'Active', '2021-05-20', '2001-10-01', 'Male', 15, '34-2345678-9', '12-234567890-1', '2345-6789-0123', '234-567-890-111'),
-('EMP-00789', 'James', 'White', 'Vin', 'james.white@example.com', 'password', 'Employee', 'UX Designer', 'Design', 'Downtown Office', 'Active', '2022-08-01', '1999-03-06', 'Male', 15, '34-3456789-0', '12-345678901-2', '3456-7890-1234', '345-678-901-222'),
-('EMP-01011', 'Emily', 'Carter', 'San', 'emily.carter@example.com', 'password', 'Employee', 'QA Tester', 'Technology', 'Remote', 'Active', '2023-02-10', '2002-04-20', 'Female', 12, '34-4567890-1', '12-456789012-3', '4567-8901-2345', '456-789-012-333'),
-('EMP-01121', 'Sarah', 'Williams', 'Rain', 'sarah.williams@example.com', 'password', 'Employee', 'Software Engineer', 'Technology', 'Headquarters', 'Active', '2023-06-22', '2000-05-25', 'Female', 15, '34-5678901-2', '12-567890123-4', '5678-9012-3456', '567-890-123-444');
+INSERT INTO accounts (id, employee_number, first_name, last_name, middle_name, email, password, role, position, department, branch, status, date_hired, date_of_birth, gender, available_leaves, sss_number, philhealth_number, pagibig_number, tin) VALUES
+('51b64979-853e-4307-9746-d787a4df2ef9', '10001', 'Maria', 'Rodriguez', 'Veronica', 'maria.rodriguez@example.com', 'password', 'Employee', 'Senior Software Engineer', 'Technology', 'Headquarters', 'Active', '2022-01-15', '2001-12-01', 'Female', 15, '34-1234567-8', '12-123456789-0', '1234-5678-9012', '123-456-789-000'),
+('d4b0a0a7-99fd-4464-95b8-c273d79b76ac', '10002', 'David', 'Lee', 'Sanchez', 'david.lee@example.com', 'password', 'Employee', 'Project Manager', 'Management', 'Headquarters', 'Active', '2021-05-20', '2001-10-01', 'Male', 15, '34-2345678-9', '12-234567890-1', '2345-6789-0123', '234-567-890-111'),
+('dc11906d-0dba-4eb8-a666-86e6b0272530', '10003', 'James', 'White', 'Vin', 'james.white@example.com', 'password', 'Employee', 'UX Designer', 'Design', 'Downtown Office', 'Active', '2022-08-01', '1999-03-06', 'Male', 15, '34-3456789-0', '12-345678901-2', '3456-7890-1234', '345-678-901-222'),
+('8e9e5ee1-d6e7-471a-916f-c9e42601c989', '10004', 'Emily', 'Carter', 'San', 'emily.carter@example.com', 'password', 'Employee', 'QA Tester', 'Technology', 'Remote', 'Active', '2023-02-10', '2002-04-20', 'Female', 12, '34-4567890-1', '12-456789012-3', '4567-8901-2345', '456-789-012-333'),
+('951c9e1c-a6c8-49d9-b532-c205e120433d', '10005', 'Sarah', 'Williams', 'Rain', 'sarah.williams@example.com', 'password', 'Employee', 'Software Engineer', 'Technology', 'Headquarters', 'Active', '2023-06-22', '2000-05-25', 'Female', 15, '34-5678901-2', '12-567890123-4', '5678-9012-3456', '567-890-123-444');
 
 -- Sample announcements
 INSERT INTO announcements (title, content, status, posted_by, created_at) VALUES

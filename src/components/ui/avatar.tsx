@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils"
 /**
  * The root component for an avatar.
  */
-const Avatar = React.forwardRef(({ className, ...props }, ref) => (
+const Avatar = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
   <AvatarPrimitive.Root
     ref={ref}
     className={cn(
@@ -30,7 +30,7 @@ Avatar.displayName = AvatarPrimitive.Root.displayName
 /**
  * The image to be displayed in the avatar.
  */
-const AvatarImage = React.forwardRef(({ className, ...props }, ref) => (
+const AvatarImage = React.forwardRef<HTMLImageElement, React.ImgHTMLAttributes<HTMLImageElement>>(({ className, ...props }, ref) => (
   <AvatarPrimitive.Image
     ref={ref}
     className={cn("aspect-square h-full w-full", className)}
@@ -43,7 +43,7 @@ AvatarImage.displayName = AvatarPrimitive.Image.displayName
  * A fallback to be displayed if the image fails to load.
  * Typically displays the user's initials.
  */
-const AvatarFallback = React.forwardRef(({ className, ...props }, ref) => (
+const AvatarFallback = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(({ className, ...props }, ref) => (
   <AvatarPrimitive.Fallback
     ref={ref}
     className={cn(

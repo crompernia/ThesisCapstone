@@ -3,7 +3,7 @@
  */
 'use server';
 
-import { createPosition, deletePosition } from '@/lib/data';
+import { createPosition, deletePosition, createDepartment, allocatePositionToDepartment, removePositionFromDepartment } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
 
 export async function createPositionAction(title: string, rate: string) {
@@ -30,5 +30,44 @@ export async function deletePositionAction(id: number) {
         return { success: true };
     } catch (e: any) {
         return { success: false, message: e.message || 'Failed to delete position.' };
+    }
+}
+
+export async function createDepartmentAction(name: string, branchId: number) {
+    if (!name || !branchId) {
+        return { success: false, message: 'Department name and branch ID are required.' };
+    }
+    try {
+        await createDepartment(name, branchId);
+        revalidatePath('/admin/positions');
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Failed to create department.' };
+    }
+}
+
+export async function allocatePositionAction(positionId: number, departmentId: number) {
+    if (!positionId || !departmentId) {
+        return { success: false, message: 'Position ID and department ID are required.' };
+    }
+    try {
+        await allocatePositionToDepartment(positionId, departmentId);
+        revalidatePath('/admin/positions');
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Failed to allocate position.' };
+    }
+}
+
+export async function removeAllocationAction(allocationId: number) {
+    if (!allocationId) {
+        return { success: false, message: 'Allocation ID is required.' };
+    }
+    try {
+        await removePositionFromDepartment(allocationId);
+        revalidatePath('/admin/positions');
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Failed to remove allocation.' };
     }
 }

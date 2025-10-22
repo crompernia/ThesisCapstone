@@ -30,7 +30,7 @@ const AlertDialogPortal = AlertDialogPrimitive.Portal
 /**
  * A semi-transparent overlay that is rendered behind the dialog.
  */
-const AlertDialogOverlay = React.forwardRef(({ className, ...props }, ref) => (
+const AlertDialogOverlay = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Overlay
     className={cn(
       "fixed inset-0 z-50 bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
@@ -45,7 +45,7 @@ AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName
 /**
  * The main content of the alert dialog.
  */
-const AlertDialogContent = React.forwardRef(({ className, ...props }, ref) => (
+const AlertDialogContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
   <AlertDialogPortal>
     <AlertDialogOverlay />
     <AlertDialogPrimitive.Content
@@ -63,7 +63,7 @@ AlertDialogContent.displayName = AlertDialogPrimitive.Content.displayName
 /**
  * The header of the alert dialog, containing the title and description.
  */
-const AlertDialogHeader = ({
+const AlertDialogHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className,
   ...props
 }) => (
@@ -80,7 +80,7 @@ AlertDialogHeader.displayName = "AlertDialogHeader"
 /**
  * The footer of the alert dialog, containing action buttons.
  */
-const AlertDialogFooter = ({
+const AlertDialogFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className,
   ...props
 }) => (
@@ -97,7 +97,7 @@ AlertDialogFooter.displayName = "AlertDialogFooter"
 /**
  * The title of the alert dialog.
  */
-const AlertDialogTitle = React.forwardRef(({ className, ...props }, ref) => (
+const AlertDialogTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Title
     ref={ref}
     className={cn("text-lg font-semibold", className)}
@@ -109,7 +109,7 @@ AlertDialogTitle.displayName = AlertDialogPrimitive.Title.displayName
 /**
  * The description of the alert dialog.
  */
-const AlertDialogDescription = React.forwardRef(({ className, ...props }, ref) => (
+const AlertDialogDescription = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Description
     ref={ref}
     className={cn("text-sm text-muted-foreground", className)}
@@ -122,7 +122,7 @@ AlertDialogDescription.displayName =
 /**
  * The action button that typically performs the primary action of the dialog.
  */
-const AlertDialogAction = React.forwardRef(({ className, ...props }, ref) => (
+const AlertDialogAction = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Action
     ref={ref}
     className={cn(buttonVariants(), className)}
@@ -134,7 +134,7 @@ AlertDialogAction.displayName = AlertDialogPrimitive.Action.displayName
 /**
  * The cancel button that closes the dialog.
  */
-const AlertDialogCancel = React.forwardRef(({ className, ...props }, ref) => (
+const AlertDialogCancel = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Cancel
     ref={ref}
     className={cn(

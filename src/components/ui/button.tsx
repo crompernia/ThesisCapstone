@@ -48,7 +48,14 @@ const buttonVariants = cva(
  * @param {ButtonProps} props - The properties for the button.
  * @returns {JSX.Element} The rendered button.
  */
-const Button = React.forwardRef(
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+  size?: "default" | "sm" | "lg" | "icon"
+  asChild?: boolean
+  className?: string
+}
+
+const Button = React.forwardRef<any, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     // If `asChild` is true, it renders the child as the button, passing the props.
     // Otherwise, it renders a standard <button> element.

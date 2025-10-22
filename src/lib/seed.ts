@@ -1,13 +1,14 @@
 /**
  * @fileoverview Database seeding script
- * Populates the database with initial sample data
+ * Populates the database with current NeonDB data
+ * Auto-generated from fetch-neondb-data.js
  */
 import { getDb } from './db.js';
 import * as schema from './schema.js';
 import { hashPassword } from './auth.js';
 
 async function seed() {
-  console.log('Starting database seeding...');
+  console.log('Starting database seeding with NeonDB data...');
 
   try {
     const db = await getDb();
@@ -19,231 +20,312 @@ async function seed() {
     // Insert branches
     console.log('Inserting branches...');
     await db.insert(schema.branches).values([
-      { name: 'Headquarters', coordinates: '14.5995,120.9842' },
-      { name: 'Downtown Office', coordinates: '14.5547,121.0244' },
-      { name: 'Remote', coordinates: '0.0000,0.0000' },
-    ]);
+  {
+    "id": 1,
+    "name": "Headquarters",
+    "coordinates": "14.5995,120.9842"
+  },
+  {
+    "id": 2,
+    "name": "Downtown Office",
+    "coordinates": "14.5547,121.0244"
+  },
+  {
+    "id": 3,
+    "name": "Remote",
+    "coordinates": "0.0000,0.0000"
+  }
+]);
 
     // Insert positions
     console.log('Inserting positions...');
     await db.insert(schema.positions).values([
-      { title: 'Senior Software Engineer', rate: '1200.00' },
-      { title: 'Project Manager', rate: '1500.00' },
-      { title: 'UX Designer', rate: '1000.00' },
-      { title: 'QA Tester', rate: '800.00' },
-      { title: 'Software Engineer', rate: '1000.00' },
-    ]);
+  {
+    "id": 1,
+    "title": "Senior Software Engineer",
+    "rate": "1200.00"
+  },
+  {
+    "id": 2,
+    "title": "Project Manager",
+    "rate": "1500.00"
+  },
+  {
+    "id": 3,
+    "title": "UX Designer",
+    "rate": "1000.00"
+  },
+  {
+    "id": 4,
+    "title": "QA Tester",
+    "rate": "800.00"
+  },
+  {
+    "id": 5,
+    "title": "Software Engineer",
+    "rate": "1000.00"
+  }
+]);
 
-    // Insert admin account (UUID will be auto-generated)
-    console.log('Inserting admin account...');
-    const [adminAccount] = await db.insert(schema.accounts).values({
-      firstName: 'Super',
-      lastName: 'Admin',
-      email: 'super@example.com',
-      password: hashedPassword,
-      role: 'Admin',
-      status: 'Active',
-      dateHired: '2020-01-01',
-      availableLeaves: 0,
-    }).returning();
+    // Insert departments
+    console.log('Inserting departments...');
+    await db.insert(schema.departments).values([]);
 
-    // Insert HR account
-    console.log('Inserting HR account...');
-    const [hrAccount] = await db.insert(schema.accounts).values({
-      firstName: 'Olivia',
-      lastName: 'Chen',
-      email: 'olivia.chen.hr@example.com',
-      password: hashedPassword,
-      role: 'HR',
-      status: 'Active',
-      dateHired: '2021-01-15',
-      availableLeaves: 15,
-      managedBranches: ['Headquarters', 'Downtown Office'],
-    }).returning();
+    // Insert position_departments
+    console.log('Inserting position_departments...');
+    await db.insert(schema.positionDepartments).values([
+  {
+    "id": 8,
+    "positionId": 9,
+    "departmentId": 4,
+    "createdAt": "2025-10-21T22:37:12.761Z"
+  },
+  {
+    "id": 9,
+    "positionId": 14,
+    "departmentId": 4,
+    "createdAt": "2025-10-21T22:37:18.233Z"
+  },
+  {
+    "id": 10,
+    "positionId": 15,
+    "departmentId": 4,
+    "createdAt": "2025-10-21T22:37:23.253Z"
+  },
+  {
+    "id": 11,
+    "positionId": 16,
+    "departmentId": 4,
+    "createdAt": "2025-10-21T22:37:27.451Z"
+  },
+  {
+    "id": 12,
+    "positionId": 17,
+    "departmentId": 4,
+    "createdAt": "2025-10-21T22:37:31.876Z"
+  }
+]);
 
-    // Insert employee accounts
-    console.log('Inserting employee accounts...');
-    const employees = await db.insert(schema.accounts).values([
-      {
-        employeeNumber: '10001',
-        firstName: 'Maria',
-        lastName: 'Rodriguez',
-        middleName: 'Veronica',
-        email: 'maria.rodriguez@example.com',
-        password: hashedPassword,
-        role: 'Employee',
-        position: 'Senior Software Engineer',
-        department: 'Technology',
-        branch: 'Headquarters',
-        status: 'Active',
-        dateHired: '2022-01-15',
-        dateOfBirth: '2001-12-01',
-        gender: 'Female',
-        availableLeaves: 15,
-        sssNumber: '34-1234567-8',
-        philhealthNumber: '12-123456789-0',
-        pagibigNumber: '1234-5678-9012',
-        tin: '123-456-789-000',
-      },
-      {
-        employeeNumber: '10002',
-        firstName: 'David',
-        lastName: 'Lee',
-        middleName: 'Sanchez',
-        email: 'david.lee@example.com',
-        password: hashedPassword,
-        role: 'Employee',
-        position: 'Project Manager',
-        department: 'Management',
-        branch: 'Headquarters',
-        status: 'Active',
-        dateHired: '2021-05-20',
-        dateOfBirth: '2001-10-01',
-        gender: 'Male',
-        availableLeaves: 15,
-        sssNumber: '34-2345678-9',
-        philhealthNumber: '12-234567890-1',
-        pagibigNumber: '2345-6789-0123',
-        tin: '234-567-890-111',
-      },
-      {
-        employeeNumber: '10003',
-        firstName: 'James',
-        lastName: 'White',
-        middleName: 'Vin',
-        email: 'james.white@example.com',
-        password: hashedPassword,
-        role: 'Employee',
-        position: 'UX Designer',
-        department: 'Design',
-        branch: 'Downtown Office',
-        status: 'Active',
-        dateHired: '2022-08-01',
-        dateOfBirth: '1999-03-06',
-        gender: 'Male',
-        availableLeaves: 15,
-        sssNumber: '34-3456789-0',
-        philhealthNumber: '12-345678901-2',
-        pagibigNumber: '3456-7890-1234',
-        tin: '345-678-901-222',
-      },
-      {
-        employeeNumber: '10004',
-        firstName: 'Emily',
-        lastName: 'Carter',
-        middleName: 'San',
-        email: 'emily.carter@example.com',
-        password: hashedPassword,
-        role: 'Employee',
-        position: 'QA Tester',
-        department: 'Technology',
-        branch: 'Remote',
-        status: 'Active',
-        dateHired: '2023-02-10',
-        dateOfBirth: '2002-04-20',
-        gender: 'Female',
-        availableLeaves: 12,
-        sssNumber: '34-4567890-1',
-        philhealthNumber: '12-456789012-3',
-        pagibigNumber: '4567-8901-2345',
-        tin: '456-789-012-333',
-      },
-      {
-        employeeNumber: '10005',
-        firstName: 'Sarah',
-        lastName: 'Williams',
-        middleName: 'Rain',
-        email: 'sarah.williams@example.com',
-        password: hashedPassword,
-        role: 'Employee',
-        position: 'Software Engineer',
-        department: 'Technology',
-        branch: 'Headquarters',
-        status: 'Active',
-        dateHired: '2023-06-22',
-        dateOfBirth: '2000-05-25',
-        gender: 'Female',
-        availableLeaves: 15,
-        sssNumber: '34-5678901-2',
-        philhealthNumber: '12-567890123-4',
-        pagibigNumber: '5678-9012-3456',
-        tin: '567-890-123-444',
-      },
-    ]).returning();
+    // Insert accounts (without password - will be hashed)
+    console.log('Inserting accounts...');
+    const accountInserts = [
+  {
+    "id": "3976ee29-6973-44f0-ae4a-ccabe26ebc92",
+    "employeeNumber": null,
+    "firstName": "Super",
+    "lastName": "Admin",
+    "middleName": null,
+    "email": "super@example.com",
+    "role": "Admin",
+    "position": null,
+    "department": null,
+    "branch": null,
+    "status": "Active",
+    "dateHired": "2020-01-01",
+    "dateOfBirth": null,
+    "gender": null,
+    "availableLeaves": 0,
+    "sssNumber": null,
+    "philhealthNumber": null,
+    "pagibigNumber": null,
+    "tin": null,
+    "managedBranches": null,
+    "createdAt": "2025-10-21T23:05:21.713Z",
+    "updatedAt": "2025-10-21T23:05:21.713Z"
+  },
+  {
+    "id": "1f1dda4d-f422-4553-a41c-9ce7f1312ff8",
+    "employeeNumber": null,
+    "firstName": "Olivia",
+    "lastName": "Chen",
+    "middleName": null,
+    "email": "olivia.chen.hr@example.com",
+    "role": "HR",
+    "position": null,
+    "department": null,
+    "branch": null,
+    "status": "Active",
+    "dateHired": "2021-01-15",
+    "dateOfBirth": null,
+    "gender": null,
+    "availableLeaves": 15,
+    "sssNumber": null,
+    "philhealthNumber": null,
+    "pagibigNumber": null,
+    "tin": null,
+    "managedBranches": [
+      "Headquarters",
+      "Downtown Office"
+    ],
+    "createdAt": "2025-10-21T23:05:21.758Z",
+    "updatedAt": "2025-10-21T23:05:21.758Z"
+  },
+  {
+    "id": "51b64979-853e-4307-9746-d787a4df2ef9",
+    "employeeNumber": "10001",
+    "firstName": "Maria",
+    "lastName": "Rodriguez",
+    "middleName": "Veronica",
+    "email": "maria.rodriguez@example.com",
+    "role": "Employee",
+    "position": "Senior Software Engineer",
+    "department": "Technology",
+    "branch": "Headquarters",
+    "status": "Active",
+    "dateHired": "2022-01-15",
+    "dateOfBirth": "2001-12-01",
+    "gender": "Female",
+    "availableLeaves": 15,
+    "sssNumber": "34-1234567-8",
+    "philhealthNumber": "12-123456789-0",
+    "pagibigNumber": "1234-5678-9012",
+    "tin": "123-456-789-000",
+    "managedBranches": null,
+    "createdAt": "2025-10-21T23:05:21.792Z",
+    "updatedAt": "2025-10-21T23:05:21.792Z"
+  },
+  {
+    "id": "d4b0a0a7-99fd-4464-95b8-c273d79b76ac",
+    "employeeNumber": "10002",
+    "firstName": "David",
+    "lastName": "Lee",
+    "middleName": "Sanchez",
+    "email": "david.lee@example.com",
+    "role": "Employee",
+    "position": "Project Manager",
+    "department": "Management",
+    "branch": "Headquarters",
+    "status": "Active",
+    "dateHired": "2021-05-20",
+    "dateOfBirth": "2001-10-01",
+    "gender": "Male",
+    "availableLeaves": 15,
+    "sssNumber": "34-2345678-9",
+    "philhealthNumber": "12-234567890-1",
+    "pagibigNumber": "2345-6789-0123",
+    "tin": "234-567-890-111",
+    "managedBranches": null,
+    "createdAt": "2025-10-21T23:05:21.792Z",
+    "updatedAt": "2025-10-21T23:05:21.792Z"
+  },
+  {
+    "id": "dc11906d-0dba-4eb8-a666-86e6b0272530",
+    "employeeNumber": "10003",
+    "firstName": "James",
+    "lastName": "White",
+    "middleName": "Vin",
+    "email": "james.white@example.com",
+    "role": "Employee",
+    "position": "UX Designer",
+    "department": "Design",
+    "branch": "Downtown Office",
+    "status": "Active",
+    "dateHired": "2022-08-01",
+    "dateOfBirth": "1999-03-06",
+    "gender": "Male",
+    "availableLeaves": 15,
+    "sssNumber": "34-3456789-0",
+    "philhealthNumber": "12-345678901-2",
+    "pagibigNumber": "3456-7890-1234",
+    "tin": "345-678-901-222",
+    "managedBranches": null,
+    "createdAt": "2025-10-21T23:05:21.792Z",
+    "updatedAt": "2025-10-21T23:05:21.792Z"
+  },
+  {
+    "id": "8e9e5ee1-d6e7-471a-916f-c9e42601c989",
+    "employeeNumber": "10004",
+    "firstName": "Emily",
+    "lastName": "Carter",
+    "middleName": "San",
+    "email": "emily.carter@example.com",
+    "role": "Employee",
+    "position": "QA Tester",
+    "department": "Technology",
+    "branch": "Remote",
+    "status": "Active",
+    "dateHired": "2023-02-10",
+    "dateOfBirth": "2002-04-20",
+    "gender": "Female",
+    "availableLeaves": 12,
+    "sssNumber": "34-4567890-1",
+    "philhealthNumber": "12-456789012-3",
+    "pagibigNumber": "4567-8901-2345",
+    "tin": "456-789-012-333",
+    "managedBranches": null,
+    "createdAt": "2025-10-21T23:05:21.792Z",
+    "updatedAt": "2025-10-21T23:05:21.792Z"
+  },
+  {
+    "id": "951c9e1c-a6c8-49d9-b532-c205e120433d",
+    "employeeNumber": "10005",
+    "firstName": "Sarah",
+    "lastName": "Williams",
+    "middleName": "Rain",
+    "email": "sarah.williams@example.com",
+    "role": "Employee",
+    "position": "Software Engineer",
+    "department": "Technology",
+    "branch": "Headquarters",
+    "status": "Active",
+    "dateHired": "2023-06-22",
+    "dateOfBirth": "2000-05-25",
+    "gender": "Female",
+    "availableLeaves": 15,
+    "sssNumber": "34-5678901-2",
+    "philhealthNumber": "12-567890123-4",
+    "pagibigNumber": "5678-9012-3456",
+    "tin": "567-890-123-444",
+    "managedBranches": null,
+    "createdAt": "2025-10-21T23:05:21.792Z",
+    "updatedAt": "2025-10-21T23:05:21.792Z"
+  }
+];
+
+    for (const account of accountInserts) {
+      await db.insert(schema.accounts).values({
+        ...account,
+        password: hashedPassword // Use hashed password
+      });
+    }
 
     // Insert announcements
     console.log('Inserting announcements...');
-    await db.insert(schema.announcements).values([
-      {
-        title: 'Welcome to the Company',
-        content: 'We are excited to have you join our team!',
-        status: 'Published',
-        postedBy: hrAccount.id,
-      },
-      {
-        title: 'Holiday Schedule',
-        content: 'Please note the upcoming holiday schedule for December.',
-        status: 'Published',
-        postedBy: hrAccount.id,
-      },
-      {
-        title: 'System Maintenance',
-        content: 'The HRMS will be under maintenance this weekend.',
-        status: 'Draft',
-        postedBy: hrAccount.id,
-      },
-    ]);
+    await db.insert(schema.announcements).values([]);
 
     // Insert leave requests
     console.log('Inserting leave requests...');
-    await db.insert(schema.leaveRequests).values([
-      {
-        employeeId: employees[0].id, // Maria
-        leaveType: 'Vacation Leave',
-        startDate: '2024-09-01',
-        endDate: '2024-09-05',
-        reason: 'Family trip to Japan.',
-        status: 'Pending',
-      },
-      {
-        employeeId: employees[1].id, // David
-        leaveType: 'Sick Leave',
-        startDate: '2024-08-20',
-        endDate: '2024-08-21',
-        reason: 'Fever and flu.',
-        status: 'Approved',
-      },
-      {
-        employeeId: employees[3].id, // Emily
-        leaveType: 'Vacation Leave',
-        startDate: '2024-07-20',
-        endDate: '2024-07-25',
-        reason: 'Annual vacation.',
-        status: 'Approved',
-      },
-    ]);
+    await db.insert(schema.leaveRequests).values([]);
 
-    console.log('Database seeding completed successfully!');
+    // Insert attendance
+    console.log('Inserting attendance...');
+    await db.insert(schema.attendance).values([]);
+
+    // Insert schedules
+    console.log('Inserting schedules...');
+    await db.insert(schema.schedules).values([]);
+
+    // Insert payslips
+    console.log('Inserting payslips...');
+    await db.insert(schema.payslips).values([]);
+
+    // Insert attendance records
+    console.log('Inserting attendance records...');
+    await db.insert(schema.attendanceRecords).values([]);
+
+    // Insert reports
+    console.log('Inserting reports...');
+    await db.insert(schema.reports).values([]);
+
+    console.log('✅ Database seeding completed successfully with NeonDB data!');
     console.log(`\n${'='.repeat(60)}`);
-    console.log('Created accounts (all passwords are "password"):');
+    console.log('📊 Seeded with current NeonDB data');
     console.log(`${'='.repeat(60)}`);
-    console.log(`\n📧 Admin Login:`);
-    console.log(`   Email: ${adminAccount.email}`);
-    console.log(`   ID: ${adminAccount.id}`);
-    console.log(`\n📧 HR Login:`);
-    console.log(`   Email: ${hrAccount.email}`);
-    console.log(`   ID: ${hrAccount.id}`);
-    console.log(`\n👥 Employee Logins:`);
-    employees.forEach((emp, idx) => {
-      console.log(`   ${idx + 1}. Employee #: ${emp.employeeNumber} | ${emp.email}`);
-    });
-    console.log(`\n${'='.repeat(60)}`);
-    console.log('🔐 Default Password: "password"');
-    console.log('💡 Employee Login: Use Employee Number (e.g., 10001)');
-    console.log('💡 HR/Admin Login: Use Email Address');
+    console.log(`\n🔐 Default Password: "password"`);
+    console.log('💡 All accounts use the same password');
     console.log(`${'='.repeat(60)}\n`);
   } catch (error) {
-    console.error('Error seeding database:', error);
+    console.error('❌ Error seeding database:', error);
     throw error;
   }
 }

@@ -33,6 +33,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { getEmployeeById, getBranches, getDepartmentsForBranch, getPositionsForDepartment } from '@/lib/data';
+import { updateEmployeeAction } from './actions';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const employeeSchema = z.object({
@@ -52,16 +53,31 @@ const employeeSchema = z.object({
  * Renders the form to edit an employee.
  * @returns {JSX.Element} The edit employee page component.
  */
-export default function EditEmployeePage({ params }) {
-  const [photoPreview, setPhotoPreview] = React.useState(null);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [branches, setBranches] = React.useState([]);
-  const [departments, setDepartments] = React.useState([]);
-  const [positions, setPositions] = React.useState([]);
+type FormValues = {
+    firstName: string;
+    lastName: string;
+    middleName?: string;
+    gender: string;
+    dob: string;
+    branch: string;
+    department: string;
+    position: string;
+    hireDate: string;
+    email: string;
+}
+
+type Branch = { id: number; name: string; coordinates?: string | null }
+
+export default function EditEmployeePage({ params }: { params: { id: string } }) {
+    const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
+    const [isLoading, setIsLoading] = React.useState<boolean>(true);
+    const [branches, setBranches] = React.useState<Branch[]>([]);
+    const [departments, setDepartments] = React.useState<string[]>([]);
+    const [positions, setPositions] = React.useState<string[]>([]);
   const router = useRouter();
   const { toast } = useToast();
 
-  const form = useForm({
+    const form = useForm<FormValues>({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
         firstName: '',
@@ -92,29 +108,29 @@ export default function EditEmployeePage({ params }) {
             if (employee) {
                 // Set initial form values
                 form.reset({
-                    firstName: employee.first_name,
-                    lastName: employee.last_name,
-                    middleName: employee.middle_name || '',
-                    gender: employee.gender,
-                    dob: employee.date_of_birth,
-                    branch: employee.branch,
-                    department: employee.department,
-                    position: employee.position,
-                    hireDate: employee.date_hired,
-                    email: employee.email,
+                    firstName: (employee as any).firstName ?? (employee as any).first_name ?? '',
+                    lastName: (employee as any).lastName ?? (employee as any).last_name ?? '',
+                    middleName: (employee as any).middleName ?? (employee as any).middle_name ?? '',
+                    gender: (employee as any).gender ?? '',
+                    dob: (employee as any).date_of_birth ?? (employee as any).dateOfBirth ?? '',
+                    branch: (employee as any).branch ?? '',
+                    department: (employee as any).department ?? '',
+                    position: (employee as any).position ?? '',
+                    hireDate: (employee as any).date_hired ?? (employee as any).dateHired ?? '',
+                    email: (employee as any).email ?? '',
                 });
-                
-                setPhotoPreview(`https://i.pravatar.cc/150?u=${employee.email}`);
+
+                setPhotoPreview(`https://i.pravatar.cc/150?u=${(employee as any).email}`);
                 setBranches(branchesData);
 
                 // Fetch and set departments and positions based on initial employee data
-                if (employee.branch) {
-                    const depts = await getDepartmentsForBranch(employee.branch);
-                    setDepartments(depts);
+                if ((employee as any).branch) {
+                    const depts = await getDepartmentsForBranch((employee as any).branch);
+                    setDepartments(depts || []);
                 }
-                if (employee.department) {
-                    const pos = await getPositionsForDepartment(employee.department);
-                    setPositions(pos);
+                if ((employee as any).department) {
+                    const pos = await getPositionsForDepartment((employee as any).department);
+                    setPositions(pos || []);
                 }
 
             } else {
@@ -137,7 +153,7 @@ export default function EditEmployeePage({ params }) {
   }, [params.id, form, toast]);
 
   React.useEffect(() => {
-    const fetchDepartments = async () => {
+        const fetchDepartments = async () => {
         if (watchedBranch) {
             const depts = await getDepartmentsForBranch(watchedBranch);
             setDepartments(depts);
@@ -153,7 +169,7 @@ export default function EditEmployeePage({ params }) {
   }, [watchedBranch, form]);
 
   React.useEffect(() => {
-    const fetchPositions = async () => {
+      const fetchPositions = async () => {
         if (watchedDepartment) {
             const pos = await getPositionsForDepartment(watchedDepartment);
             setPositions(pos);
@@ -166,19 +182,19 @@ export default function EditEmployeePage({ params }) {
   }, [watchedDepartment, form]);
 
 
-  const handlePhotoChange = (event) => {
-    const file = event.target.files?.[0];
+    const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result);
-      };
+            reader.onloadend = () => {
+                setPhotoPreview(typeof reader.result === 'string' ? reader.result : null);
+            };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = async (values) => {
-    const result = await updateEmployeeAction(params.id, values);
+    const handleSubmit = async (values: FormValues) => {
+        const result = await updateEmployeeAction(params.id, values as any);
 
     if (result.success) {
         toast({

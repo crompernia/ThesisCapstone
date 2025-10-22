@@ -42,14 +42,18 @@ import { useRouter } from 'next/navigation';
  * @param {{ params: { id: string } }} props - The props containing the employee ID from the URL.
  * @returns {JSX.Element} The payslip calculation page component.
  */
-export default function GenerateEmployeePayslipPage({ params }) {
+export default function GenerateEmployeePayslipPage({ params }: { params: { id: string } }) {
     const { toast } = useToast();
     const router = useRouter();
-    const [employee, setEmployee] = React.useState(null);
-    const [positions, setPositions] = React.useState([]);
+    type Position = { id: number; title: string; rate: number | string }
+    type Employee = { id: string; name: string; position?: string | null; employeeNumber?: string | null }
+    const [employee, setEmployee] = React.useState<Employee | null>(null);
+    const [positions, setPositions] = React.useState<Position[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [additionalEarnings, setAdditionalEarnings] = React.useState([{ id: 1, name: '', amount: '' }]);
     const [deductions, setDeductions] = React.useState([{ id: 1, name: '', amount: '' }]);
+    const [numberOfHoursPerDay, setNumberOfHoursPerDay] = React.useState(8);
+    const [minutesLate, setMinutesLate] = React.useState(0);
 
     // Mock data for attendance summary
     const dataSummary = {
@@ -83,18 +87,26 @@ export default function GenerateEmployeePayslipPage({ params }) {
     }, [params.id, toast]);
 
     const employeePosition = positions.find(p => p.title === employee?.position);
-    const hourlyRate = employeePosition?.rate ?? 0;
+    const hourlyRate = Number(employeePosition?.rate ?? 0);
     const overtimeRate = hourlyRate * 1.5;
 
     const basicPay = dataSummary.workedHours * hourlyRate;
     const overtimePay = dataSummary.overtimeHours * overtimeRate;
+
+    // Payslip late deduction calculation
+    // perMinute = (dailyRate / numberOfHours) / 60
+    // deduction = perMinute * minutesLate
+    // Infer dailyRate from hourlyRate * numberOfHoursPerDay when a dedicated dailyRate is not provided.
+    const dailyRate = hourlyRate * numberOfHoursPerDay;
+    const perMinuteRate = (dailyRate / (numberOfHoursPerDay || 1)) / 60;
+    const lateDeduction = perMinuteRate * (Number(minutesLate) || 0);
 
 
     const addEarning = () => {
         setAdditionalEarnings([...additionalEarnings, { id: Date.now(), name: '', amount: '' }]);
     };
 
-    const removeEarning = (id) => {
+    const removeEarning = (id: number) => {
         setAdditionalEarnings(additionalEarnings.filter(d => d.id !== id));
     };
 
@@ -102,21 +114,43 @@ export default function GenerateEmployeePayslipPage({ params }) {
         setDeductions([...deductions, { id: Date.now(), name: '', amount: '' }]);
     };
 
-    const removeDeduction = (id) => {
+    const removeDeduction = (id: number) => {
         setDeductions(deductions.filter(d => d.id !== id));
     };
     
     const handleCalculateAndSave = () => {
         // In a real application, you would send this data to the server.
-        console.log("Saving payslip data...");
+        const totalAdditional = additionalEarnings.reduce((s, a) => s + (Number(a.amount) || 0), 0);
+        const totalUserDeductions = deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+        const totalEarnings = basicPay + overtimePay + totalAdditional;
+        const totalDeductions = totalUserDeductions + lateDeduction;
+        const netPay = totalEarnings - totalDeductions;
+
+        const payload = {
+            employeeId: employee?.id,
+            period: 'manual',
+            totals: {
+                basicPay,
+                overtimePay,
+                additional: totalAdditional,
+                userDeductions: totalUserDeductions,
+                lateDeduction,
+                totalEarnings,
+                totalDeductions,
+                netPay,
+            }
+        };
+
+        console.log('Saving payslip data...', payload);
         toast({
             title: "Success",
-            description: `Payslip for ${employee.name} has been calculated and saved.`
+            description: `Payslip for ${employee?.name ?? 'Employee'} calculated. Net pay: ${formatCurrency(netPay)}`
         });
+        // TODO: send payload to server endpoint to persist payslip
         router.push('/hr/payslip-generation');
     };
 
-    const formatCurrency = (value) => {
+    const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('en-PH', {
             style: 'currency',
             currency: 'PHP',
@@ -163,8 +197,8 @@ export default function GenerateEmployeePayslipPage({ params }) {
             <div className="lg:col-span-1 space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><User /> {employee.name}</CardTitle>
-                        <CardDescription>{employee.position} - Employee #: {employee.employeeNumber}</CardDescription>
+                        <CardTitle className="flex items-center gap-2"><User /> {employee?.name ?? 'Employee'}</CardTitle>
+                        <CardDescription>{employee?.position ?? ''} - Employee #: {employee?.employeeNumber ?? ''}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="text-sm p-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 flex items-start gap-2">
@@ -195,6 +229,17 @@ export default function GenerateEmployeePayslipPage({ params }) {
                             <Input id="absences-paid" type="number" placeholder="e.g., 0" />
                             <p className="text-xs text-muted-foreground">Total absences this period: {dataSummary.absences}</p>
                          </div>
+                                 <Separator/>
+                                 <div className="space-y-2">
+                                     <Label htmlFor="hours-per-day">Work Hours per Day</Label>
+                                     <Input id="hours-per-day" type="number" value={numberOfHoursPerDay} onChange={(e) => setNumberOfHoursPerDay(Number(e.target.value || 0))} />
+                                     <p className="text-xs text-muted-foreground">Used to compute per-minute rate for late deductions.</p>
+                                 </div>
+                                 <div className="space-y-2">
+                                     <Label htmlFor="minutes-late">Minutes Late (total)</Label>
+                                     <Input id="minutes-late" type="number" value={minutesLate} onChange={(e) => setMinutesLate(Number(e.target.value || 0))} />
+                                     <p className="text-xs text-muted-foreground">Late deduction will be calculated automatically using the formula provided.</p>
+                                 </div>
                     </CardContent>
                 </Card>
             </div>
@@ -280,6 +325,23 @@ export default function GenerateEmployeePayslipPage({ params }) {
                                         </Button>
                                     </div>
                                 ))}
+                            </div>
+                        </div>
+                        {/* Summary */}
+                        <div className="p-4">
+                            <h4 className="font-semibold mb-2">Summary</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="text-sm text-muted-foreground">Total Earnings</div>
+                                <div className="text-right font-mono">{formatCurrency(basicPay + overtimePay + additionalEarnings.reduce((s, a) => s + (Number(a.amount) || 0), 0))}</div>
+
+                                <div className="text-sm text-muted-foreground">Total Deductions (incl. Late)</div>
+                                <div className="text-right font-mono">{formatCurrency(deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0) + lateDeduction)}</div>
+
+                                <div className="text-sm text-muted-foreground">Late Deduction</div>
+                                <div className="text-right font-mono">{formatCurrency(lateDeduction)}</div>
+
+                                <div className="text-sm text-muted-foreground">Net Pay</div>
+                                <div className="text-right font-mono">{formatCurrency((basicPay + overtimePay + additionalEarnings.reduce((s, a) => s + (Number(a.amount) || 0), 0)) - (deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0) + lateDeduction))}</div>
                             </div>
                         </div>
                     </CardContent>

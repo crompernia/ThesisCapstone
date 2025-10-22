@@ -11,8 +11,8 @@ import {cn} from '@/lib/utils';
  * @param {React.ComponentProps<'textarea'>} props - The properties for the textarea element.
  * @returns {JSX.Element} The rendered textarea element.
  */
-const Textarea = React.forwardRef(
-  ({className, ...props}, ref) => {
+const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
+  ({ className, ...props }, ref) => {
     return (
       <textarea
         className={cn(
@@ -22,9 +22,9 @@ const Textarea = React.forwardRef(
         ref={ref}
         {...props}
       />
-    );
+    )
   }
-);
+)
 Textarea.displayName = 'Textarea';
 
 export {Textarea};

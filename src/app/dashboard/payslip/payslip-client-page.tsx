@@ -83,7 +83,10 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
     autoTable(doc, {
       startY: 60,
       head: [['Earnings', 'Amount']],
-      body: payslipData.earnings.map(e => [e.name, formatCurrency(e.amount)]),
+      body: payslipData.earnings.map(e => [
+        e.name,
+        e.name === 'No. of Days' ? e.amount.toString() : formatCurrency(e.amount)
+      ]),
       foot: [['Gross Earnings', formatCurrency(totalEarnings)]],
       theme: 'striped',
       headStyles: { fillColor: [22, 163, 74] }, // Green
@@ -176,7 +179,9 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
                   {payslipData.earnings.map((item, index) => (
                     <li key={index} className="flex justify-between items-center text-sm">
                       <span>{item.name}</span>
-                      <span className="font-mono">{formatCurrency(item.amount)}</span>
+                      <span className="font-mono">
+                        {item.name === "No. of Days" ? item.amount : formatCurrency(item.amount)}
+                      </span>
                     </li>
                   ))}
                 </ul>

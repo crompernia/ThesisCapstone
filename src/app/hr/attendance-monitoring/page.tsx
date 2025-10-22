@@ -42,25 +42,30 @@ export default function AttendanceMonitoringPage() {
   React.useEffect(() => {
       document.title = "HR Attendance Monitoring";
       }, []);
-  const [attendanceData, setAttendanceData] = React.useState([]);
-  const [branches, setBranches] = React.useState([]);
-  const [departments, setDepartments] = React.useState([]);
-  const [positions, setPositions] = React.useState([]);
-  const [selectedBranch, setSelectedBranch] = React.useState('');
-  const [selectedDepartment, setSelectedDepartment] = React.useState('');
+  type AttendanceRow = { id: string; employeeNumber?: string; name?: string; position?: string; branch?: string; timeIn?: string | null; timeOut?: string | null; status?: string };
+  type BranchType = { id: number; name: string; coordinates: string | null };
+
+  const [attendanceData, setAttendanceData] = React.useState<AttendanceRow[]>([]);
+  const [branches, setBranches] = React.useState<BranchType[]>([]);
+  const [departments, setDepartments] = React.useState<string[]>([]);
+  const [positions, setPositions] = React.useState<string[]>([]);
+  const [selectedBranch, setSelectedBranch] = React.useState<string>('');
+  const [selectedDepartment, setSelectedDepartment] = React.useState<string>('');
   const today = new Date().toISOString().substring(0, 10);
+  const [selectedDate, setSelectedDate] = React.useState<string>(today);
+  const dateInputRef = React.useRef<HTMLInputElement | null>(null);
 
   React.useEffect(() => {
     const fetchInitialData = async () => {
         const [attendance, branchesData] = await Promise.all([
-            getDailyAttendanceData(today),
+            getDailyAttendanceData(selectedDate),
             getBranches()
         ]);
-        setAttendanceData(attendance);
-        setBranches(branchesData);
+  setAttendanceData(attendance as AttendanceRow[]);
+  setBranches(branchesData as BranchType[]);
     };
     fetchInitialData();
-  }, [today]);
+  }, [selectedDate]);
   
   React.useEffect(() => {
     const fetchDepartments = async () => {
@@ -103,8 +108,18 @@ export default function AttendanceMonitoringPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Input for selecting the date to view attendance for */}
-            <Input type="date" defaultValue={today} />
+            {/* Date input restored (inline in filter controls) */}
+            <div>
+              <input
+                id="attendance-date-input"
+                ref={dateInputRef}
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full border rounded px-2 py-1"
+                aria-label="Select attendance date"
+              />
+            </div>
             {/* Dropdown to filter by branch */}
             <Select value={selectedBranch} onValueChange={setSelectedBranch}>
               <SelectTrigger>
@@ -140,11 +155,40 @@ export default function AttendanceMonitoringPage() {
         </CardContent>
       </Card>
 
+      {/* Date navigator placed between filter and attendance */}
+      <div className="flex items-center justify-center">
+        <div className="inline-flex items-center gap-4 p-2">
+          <Button onClick={() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d.toISOString().slice(0,10)); }}>{'←'}</Button>
+          <div className="font-medium">{new Date(selectedDate).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
+          <Button onClick={() => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(d.toISOString().slice(0,10)); }}>{'→'}</Button>
+        </div>
+      </div>
+
       {/* Attendance Data Table */}
       <Card>
         <CardHeader>
             <CardTitle>Daily Attendance Tally</CardTitle>
-            <CardDescription>Showing results for {new Date(today).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}</CardDescription>
+            <div className="flex items-center justify-between w-full">
+              <CardDescription>Showing results for {new Date(selectedDate).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}</CardDescription>
+              <div className="flex gap-2">
+                <Button onClick={async () => {
+                  // create pdf of current attendanceData
+                  const jsPDF = (await import('jspdf')).default;
+                  const autoTable = (await import('jspdf-autotable')).default;
+                  const doc = new jsPDF();
+                  doc.setFontSize(16);
+                  doc.text(`Attendance - ${new Date(selectedDate).toLocaleDateString()}`, 14, 20);
+                  const body = attendanceData.map(r => [r.employeeNumber || '', r.name || '', r.position || '', r.branch || '', r.timeIn || '--', r.timeOut || '--', r.status || '']);
+                  autoTable(doc as any, {
+                    startY: 30,
+                    head: [['Employee ID', 'Name', 'Position', 'Branch', 'Time In', 'Time Out', 'Status']],
+                    body,
+                    styles: { fontSize: 9 }
+                  });
+                  doc.save(`attendance-${selectedDate}.pdf`);
+                }}>Create PDF file</Button>
+              </div>
+            </div>
         </CardHeader>
         <CardContent>
           {attendanceData.length > 0 ? (
@@ -171,7 +215,7 @@ export default function AttendanceMonitoringPage() {
                     <TableCell>{emp.timeOut || '--'}</TableCell>
                     <TableCell className="text-right">
                       {/* Badge color changes based on attendance status */}
-                      <Badge variant={emp.status === 'Present' ? 'default' : emp.status === 'Late' ? 'secondary' : 'destructive'} className={emp.status === 'Present' ? 'bg-green-500' : ''}>
+                      <Badge variant={emp.status === 'Present' ? 'default' : 'destructive'} className={emp.status === 'Present' ? 'bg-green-500' : 'bg-red-500'}>
                         {emp.status}
                       </Badge>
                     </TableCell>

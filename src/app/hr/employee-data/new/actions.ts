@@ -8,6 +8,7 @@ import { accounts } from '@/lib/schema';
 import { hashPassword } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 
 const employeeSchema = z.object({
   firstName: z.string().min(1),
@@ -31,7 +32,7 @@ export async function addEmployee(formData: FormData) {
   const validatedFields = employeeSchema.safeParse({
     firstName: formData.get('firstName'),
     lastName: formData.get('lastName'),
-    middleName: formData.get('middleName'),
+    middleName: formData.get('middleName') || undefined,
     gender: formData.get('gender'),
     dob: formData.get('dob'),
     position: formData.get('position'),
@@ -40,10 +41,10 @@ export async function addEmployee(formData: FormData) {
     hireDate: formData.get('hireDate'),
     email: formData.get('email'),
     phone: formData.get('phone'),
-    sssNumber: formData.get('sssNumber'),
-    philhealthNumber: formData.get('philhealthNumber'),
-    pagibigNumber: formData.get('pagibigNumber'),
-    tin: formData.get('tin'),
+    sssNumber: formData.get('sssNumber') || undefined,
+    philhealthNumber: formData.get('philhealthNumber') || undefined,
+    pagibigNumber: formData.get('pagibigNumber') || undefined,
+    tin: formData.get('tin') || undefined,
   });
 
   if (!validatedFields.success) {
@@ -70,16 +71,31 @@ export async function addEmployee(formData: FormData) {
     tin
   } = validatedFields.data;
 
-  // Generate a unique employee number for the new employee (DB will generate the UUID primary key)
-  const employeeNumber = `EMP-${String(Date.now()).slice(-5)}`;
-
+  // Generate a sequential numeric employee number (DB will generate the UUID primary key)
+  // Strategy: read existing employeeNumber values, extract numeric parts and pick max numeric value + 1
   try {
     const db = await getDb();
+
+    const existing = await db.select({ employeeNumber: accounts.employeeNumber }).from(accounts);
+    let maxNumeric = 10000; // start below 10001 so first generated will be 10001 when no seeds exist
+    for (const row of existing) {
+      const val = (row as any).employeeNumber as string | undefined;
+      if (!val) continue;
+      // extract all digits in the string and join them to form a number
+      const digits = val.match(/\d+/g);
+      if (!digits) continue;
+      const n = parseInt(digits.join(''), 10);
+      if (!Number.isNaN(n) && n > maxNumeric) maxNumeric = n;
+    }
+
+    const nextNum = maxNumeric + 1;
+    const employeeNumber = String(nextNum);
 
     // Hash the default password
     const hashedPassword = await hashPassword('password');
 
     await db.insert(accounts).values({
+      id: randomUUID(),
       employeeNumber,
       firstName,
       lastName,

@@ -3,7 +3,11 @@
 import { publishSchedule } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
 
-export async function publishScheduleAction(scheduleItems: { employeeId: string; shifts: string[] }[], weekStart: string) {
+// Accept scheduleItems with optional breaks array per employee
+export async function publishScheduleAction(
+    scheduleItems: { employeeId: string; shifts: string[]; breaks?: string[] }[],
+    weekStart: string
+) {
     if (!scheduleItems || !Array.isArray(scheduleItems) || !weekStart) {
         return { success: false, message: 'Invalid schedule payload.' };
     }

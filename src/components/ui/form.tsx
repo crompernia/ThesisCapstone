@@ -7,58 +7,52 @@
 "use client"
 
 import * as React from "react"
-import * as LabelPrimitive from "@radix-ui/react-label"
+// Note: we intentionally don't use the Radix Label primitive directly here.
 import { Slot } from "@radix-ui/react-slot"
 import {
   Controller,
   FormProvider,
   useFormContext,
+  ControllerProps,
 } from "react-hook-form"
 
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 
-/**
- * The FormProvider component from react-hook-form. It provides the form context
- * to all its children.
- */
+/** The FormProvider component from react-hook-form. */
 const Form = FormProvider
 
-const FormFieldContext = React.createContext(
-  {}
-)
+type FormFieldContextValue = { name: string } | null
+const FormFieldContext = React.createContext<FormFieldContextValue>(null)
 
-/**
- * A component that connects a form field to the form context. It uses the
- * Controller component from react-hook-form.
- */
-const FormField = ({
-  ...props
-}) => {
+/** A component that connects a form field to the form context. */
+// Accept a generic ControllerProps<any> so this wrapper is compatible with
+// controls from useForm<T>() for any T. This avoids type incompatibility
+// between Control<FormValues> and Control<FieldValues> when consumers pass
+// form.control from a typed useForm instance.
+const FormField = (props: ControllerProps<any>) => {
+  // ControllerProps includes `name`.
   return (
-    <FormFieldContext.Provider value={{ name: props.name }}>
+    <FormFieldContext.Provider value={{ name: (props as any).name }}>
       <Controller {...props} />
     </FormFieldContext.Provider>
   )
 }
 
-/**
- * A hook to get information about the current form field, such as its ID, name,
- * and validation state. It must be used within a FormField component.
- * @returns {object} The form field state.
- */
+/** Hook to get information about the current form field. */
+const FormItemContext = React.createContext<{ id: string } | null>(null)
+
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext)
   const itemContext = React.useContext(FormItemContext)
   const { getFieldState, formState } = useFormContext()
 
-  const fieldState = getFieldState(fieldContext.name, formState)
-
   if (!fieldContext) {
     throw new Error("useFormField should be used within <FormField>")
   }
 
-  const { id } = itemContext
+  const fieldState = getFieldState(fieldContext.name, formState)
+  const id = itemContext?.id ?? ""
 
   return {
     id,
@@ -70,15 +64,8 @@ const useFormField = () => {
   }
 }
 
-const FormItemContext = React.createContext(
-  {}
-)
-
-/**
- * A container for a single form item, including its label, input, description,
- * and error message.
- */
-const FormItem = React.forwardRef(({ className, ...props }, ref) => {
+/** A container for a single form item. */
+const FormItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => {
   const id = React.useId()
 
   return (
@@ -89,10 +76,8 @@ const FormItem = React.forwardRef(({ className, ...props }, ref) => {
 })
 FormItem.displayName = "FormItem"
 
-/**
- * The label for a form item.
- */
-const FormLabel = React.forwardRef(({ className, ...props }, ref) => {
+/** The label for a form item. */
+const FormLabel = React.forwardRef<HTMLLabelElement, React.LabelHTMLAttributes<HTMLLabelElement>>(({ className, ...props }, ref) => {
   const { error, formItemId } = useFormField()
 
   return (
@@ -106,11 +91,8 @@ const FormLabel = React.forwardRef(({ className, ...props }, ref) => {
 })
 FormLabel.displayName = "FormLabel"
 
-/**
- * A wrapper for the form input control. It connects the input to the form
- * context for accessibility.
- */
-const FormControl = React.forwardRef(({ ...props }, ref) => {
+/** A wrapper for the form input control. */
+const FormControl = React.forwardRef<HTMLElement, any>(({ ...props }, ref) => {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
 
   return (
@@ -129,10 +111,8 @@ const FormControl = React.forwardRef(({ ...props }, ref) => {
 })
 FormControl.displayName = "FormControl"
 
-/**
- * A description for the form item, providing additional context or instructions.
- */
-const FormDescription = React.forwardRef(({ className, ...props }, ref) => {
+/** A description for the form item. */
+const FormDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(({ className, ...props }, ref) => {
   const { formDescriptionId } = useFormField()
 
   return (
@@ -146,12 +126,10 @@ const FormDescription = React.forwardRef(({ className, ...props }, ref) => {
 })
 FormDescription.displayName = "FormDescription"
 
-/**
- * A message that displays validation errors for the form item.
- */
-const FormMessage = React.forwardRef(({ className, children, ...props }, ref) => {
+/** A message that displays validation errors for the form item. */
+const FormMessage = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(({ className, children, ...props }, ref) => {
   const { error, formMessageId } = useFormField()
-  const body = error ? String(error?.message ?? "") : children
+  const body = error ? String((error as any)?.message ?? "") : children
 
   if (!body) {
     return null

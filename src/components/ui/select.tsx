@@ -22,7 +22,8 @@ const SelectGroup = SelectPrimitive.Group
 const SelectValue = SelectPrimitive.Value
 
 /** The trigger that opens the select dropdown. */
-const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) => (
+type SelectTriggerProps = React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> & { className?: string; children?: React.ReactNode }
+const SelectTrigger = React.forwardRef<any, SelectTriggerProps>(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
@@ -40,7 +41,7 @@ const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) 
 SelectTrigger.displayName = SelectPrimitive.Trigger.displayName
 
 /** The button to scroll up in the select content. */
-const SelectScrollUpButton = React.forwardRef(({ className, ...props }, ref) => (
+const SelectScrollUpButton = React.forwardRef<any, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
   <SelectPrimitive.ScrollUpButton
     ref={ref}
     className={cn(
@@ -55,7 +56,7 @@ const SelectScrollUpButton = React.forwardRef(({ className, ...props }, ref) => 
 SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName
 
 /** The button to scroll down in the select content. */
-const SelectScrollDownButton = React.forwardRef(({ className, ...props }, ref) => (
+const SelectScrollDownButton = React.forwardRef<any, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
   <SelectPrimitive.ScrollDownButton
     ref={ref}
     className={cn(
@@ -67,11 +68,11 @@ const SelectScrollDownButton = React.forwardRef(({ className, ...props }, ref) =
     <ChevronDown className="h-4 w-4" />
   </SelectPrimitive.ScrollDownButton>
 ))
-SelectScrollDownButton.displayName =
-  SelectPrimitive.ScrollDownButton.displayName
+SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayName
 
 /** The content of the select dropdown, containing the list of options. */
-const SelectContent = React.forwardRef(({ className, children, position = "popper", ...props }, ref) => (
+type SelectContentProps = React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content> & { className?: string; children?: React.ReactNode; position?: 'popper' | 'popper' }
+const SelectContent = React.forwardRef<any, SelectContentProps>(({ className, children, position = "popper", ...props }, ref) => (
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
       ref={ref}
@@ -101,7 +102,7 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
 SelectContent.displayName = SelectPrimitive.Content.displayName
 
 /** A label for a group of options in the select dropdown. */
-const SelectLabel = React.forwardRef(({ className, ...props }, ref) => (
+const SelectLabel = React.forwardRef<any, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
   <SelectPrimitive.Label
     ref={ref}
     className={cn("py-1.5 pl-8 pr-2 text-sm font-semibold", className)}
@@ -111,7 +112,7 @@ const SelectLabel = React.forwardRef(({ className, ...props }, ref) => (
 SelectLabel.displayName = SelectPrimitive.Label.displayName
 
 /** An individual option in the select dropdown. */
-const SelectItem = React.forwardRef(({ className, children, ...props }, ref) => (
+const SelectItem = React.forwardRef<any, React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>>(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
@@ -132,7 +133,7 @@ const SelectItem = React.forwardRef(({ className, children, ...props }, ref) => 
 SelectItem.displayName = SelectPrimitive.Item.displayName
 
 /** A separator between groups of options in the select dropdown. */
-const SelectSeparator = React.forwardRef(({ className, ...props }, ref) => (
+const SelectSeparator = React.forwardRef<HTMLHRElement, React.HTMLAttributes<HTMLHRElement>>(({ className, ...props }, ref) => (
   <SelectPrimitive.Separator
     ref={ref}
     className={cn("-mx-1 my-1 h-px bg-muted", className)}
@@ -140,7 +141,6 @@ const SelectSeparator = React.forwardRef(({ className, ...props }, ref) => (
   />
 ))
 SelectSeparator.displayName = SelectPrimitive.Separator.displayName
-
 export {
   Select,
   SelectGroup,
