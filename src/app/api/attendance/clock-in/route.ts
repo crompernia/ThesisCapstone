@@ -71,11 +71,11 @@ export async function POST(req: Request) {
       // If timeIn is null, set it; also set status to Present
       const row = existing[0] as any;
       if (!row.timeIn) {
-        // store Date objects for timestamp columns
-        await db.update(attendance).set({ timeIn: now as any, status: 'Present' }).where(eq(attendance.id, row.id));
+        // store ISO strings for timestamp columns
+        await db.update(attendance).set({ timeIn: now.toISOString(), status: 'Present' }).where(eq(attendance.id, row.id));
       }
     } else {
-      await db.insert(attendance).values({ employeeId: employeeId as any, date: isoDate as any, timeIn: now as any, status: 'Present' } as any);
+      await db.insert(attendance).values({ employeeId: employeeId as any, date: isoDate as any, timeIn: now.toISOString(), status: 'Present', createdAt: now.toISOString() } as any);
     }
 
     return NextResponse.json({ success: true });

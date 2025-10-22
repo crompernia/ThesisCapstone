@@ -4,10 +4,10 @@
 'use server';
 
 import { getDb } from './db';
-import { format } from 'date-fns';
+import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { eq, and, desc, sql, inArray, ne, isNotNull, asc } from 'drizzle-orm';
 import * as schema from './schema';
-const { accounts, announcements, leaveRequests, branches, positions, schedules, attendance, departments, positionDepartments, attendanceRecords } = schema;
+const { accounts, announcements, leaveRequests, branches, positions, schedules, attendance, departments, positionDepartments, attendanceRecords, payslips } = schema;
 
 // Type definitions for database query results
 interface CountResult {
@@ -50,6 +50,7 @@ interface PayPeriodData {
   id: number;
   period: string;
   payDate: string;
+  dailyRate: number;
   earnings: Array<{ name: string; amount: number }>;
   deductions: Array<{ name: string; amount: number }>;
   net_pay: number;
@@ -573,61 +574,98 @@ export async function createLeaveRequest(data: {
 export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]> {
   const db = await getDb();
 
-  // Get employee's position
+  // Fetch employee position to get daily rate
   const employeeResult = await db
     .select({ position: accounts.position })
     .from(accounts)
     .where(eq(accounts.id, employeeId));
 
   const employeePosition = employeeResult[0]?.position;
-
-  // Get daily rate from positions table (hourly rate × 8 hours)
   let dailyRate = 0;
+
   if (employeePosition) {
     const positionResult = await db
       .select({ rate: positions.rate })
       .from(positions)
       .where(eq(positions.title, employeePosition));
 
-    const hourlyRate = positionResult[0]?.rate ? parseFloat(positionResult[0].rate) : 0;
-    dailyRate = hourlyRate * 8; // Convert hourly rate to daily rate
+    dailyRate = Number(positionResult[0]?.rate) || 0;
   }
 
-  // Function to get days worked for a specific month/year
-  const getDaysWorked = async (year: number, month: number): Promise<number> => {
-    const startDate = new Date(year, month - 1, 1); // month is 0-indexed
-    const endDate = new Date(year, month, 0); // Last day of the month
+  // Fetch payslips for the employee
+  const payslipResults = await db
+    .select()
+    .from(payslips)
+    .where(eq(payslips.employeeId, employeeId))
+    .orderBy(desc(payslips.payDate));
 
-    const attendanceResult = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(attendance)
-      .where(and(
-        eq(attendance.employeeId, employeeId),
-        sql`${attendance.date} >= ${startDate} AND ${attendance.date} <= ${endDate}`,
-        inArray(attendance.status, ['Present', 'Late']) // Count only days actually worked
-      ));
+  // Map payslip data to PayPeriodData format
+  const data: PayPeriodData[] = await Promise.all(payslipResults.map(async (payslip, index) => {
+    const periodDates = parsePayPeriod(payslip.payPeriod);
+    let daysAttended = payslip.daysWorked || 0;
 
-    return attendanceResult[0]?.count || 0;
-  };
+    if (periodDates) {
+      daysAttended = await getDaysAttended(employeeId, periodDates.startDate, periodDates.endDate);
+    }
 
-  // Get days worked for each period
-  const januaryDays = await getDaysWorked(2025, 1); // January 2025
-  const februaryDays = await getDaysWorked(2025, 2); // February 2025
-
-  // Calculate basic pay for each period
-  const januaryBasicPay = dailyRate * januaryDays;
-  const februaryBasicPay = dailyRate * februaryDays;
-
-  // This is a placeholder as there is no payslip table yet.
-  const data: PayPeriodData[] = [
-    {
-      id: 1,
-      period: "January 2025",
-      payDate: "2025-01-31",
+    return {
+      id: payslip.id,
+      period: payslip.payPeriod,
+      payDate: payslip.payDate as string, // Already in YYYY-MM-DD format from database
+      dailyRate,
       earnings: [
-        { name: "Daily Rate", amount: dailyRate },
-        { name: "No. of Days", amount: januaryDays },
-        { name: "BASIC PAY", amount: januaryBasicPay },
+        { name: "BASIC PAY", amount: Number(payslip.basicPay) },
+        { name: "Overtime", amount: Number(payslip.overtime) },
+        { name: "Night Differential", amount: Number(payslip.nightDifferential) },
+        { name: "RH OT", amount: 0 }, // Not in payslips table, set to 0
+        { name: "Special Holiday", amount: 0 }, // Not in payslips table, set to 0
+        { name: "SP OT", amount: 0 }, // Not in payslips table, set to 0
+        { name: "Salary Adjustment", amount: 0 }, // Not in payslips table, set to 0
+        { name: "Allowances", amount: Number(payslip.allowances) },
+        { name: "No. of Days", amount: daysAttended },
+      ],
+      deductions: [
+        { name: "Late/Undertime", amount: 0 }, // Not in payslips table, set to 0
+        { name: "SSS", amount: Number(payslip.sssDeduction) },
+        { name: "Philhealth", amount: Number(payslip.philhealthDeduction) },
+        { name: "Pag-Ibig", amount: Number(payslip.pagibigDeduction) },
+        { name: "Tax", amount: Number(payslip.taxDeduction) },
+        { name: "SSS Loan", amount: Number(payslip.sssLoan) },
+        { name: "HDMF Loan", amount: Number(payslip.hdmfLoan) },
+        { name: "Other Deduction", amount: Number(payslip.otherDeductions) },
+        { name: "Company Loan", amount: Number(payslip.companyLoan) },
+      ],
+      net_pay: Number(payslip.netPay),
+    };
+  }));
+
+  // Generate half-month periods from this month to a year later
+  const today = new Date();
+  const oneYearLater = subMonths(today, -12); // Add 12 months
+  const periods: PayPeriodData[] = [];
+
+  let idCounter = 1000; // Start from a high number to avoid conflicts with existing payslip ids
+
+  for (let date = new Date(today); date <= oneYearLater; date = subMonths(date, -1)) { // Increment by month
+    const monthStart = startOfMonth(date);
+    const monthEnd = endOfMonth(date);
+    const midMonth = new Date(monthStart);
+    midMonth.setDate(16); // 16th of the month
+
+    // First half: 1st to 15th
+    const firstHalfStart = monthStart;
+    const firstHalfEnd = new Date(monthStart);
+    firstHalfEnd.setDate(15);
+
+    const firstHalfDays = await getDaysAttended(employeeId, firstHalfStart, firstHalfEnd);
+
+    periods.push({
+      id: idCounter++,
+      period: `${format(firstHalfStart, 'MMM dd')} - ${format(firstHalfEnd, 'MMM dd, yyyy')}`,
+      payDate: format(firstHalfEnd, 'yyyy-MM-dd'),
+      dailyRate,
+      earnings: [
+        { name: "BASIC PAY", amount: 0 },
         { name: "Overtime", amount: 0 },
         { name: "Night Differential", amount: 0 },
         { name: "RH OT", amount: 0 },
@@ -635,28 +673,25 @@ export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]
         { name: "SP OT", amount: 0 },
         { name: "Salary Adjustment", amount: 0 },
         { name: "Allowances", amount: 0 },
+        { name: "No. of Days", amount: firstHalfDays },
       ],
-      deductions: [
-        { name: "Late/Undertime", amount: 0 },
-        { name: "SSS", amount: 0 },
-        { name: "Philhealth", amount: 0 },
-        { name: "Pag-Ibig", amount: 0 },
-        { name: "Tax", amount: 0 },
-        { name: "SSS Loan", amount: 0 },
-        { name: "HDMF Loan", amount: 0 },
-        { name: "Company Deduction", amount: 0 },
-        { name: "Company Loan", amount: 0 },
-      ],
+      deductions: [],
       net_pay: 0,
-    },
-    {
-      id: 2,
-      period: "February 2025",
-      payDate: "2025-02-31",
+    });
+
+    // Second half: 16th to end of month
+    const secondHalfStart = midMonth;
+    const secondHalfEnd = monthEnd;
+
+    const secondHalfDays = await getDaysAttended(employeeId, secondHalfStart, secondHalfEnd);
+
+    periods.push({
+      id: idCounter++,
+      period: `${format(secondHalfStart, 'MMM dd')} - ${format(secondHalfEnd, 'MMM dd, yyyy')}`,
+      payDate: format(secondHalfEnd, 'yyyy-MM-dd'),
+      dailyRate,
       earnings: [
-        { name: "Daily Rate", amount: dailyRate },
-        { name: "No. of Days", amount: februaryDays },
-        { name: "BASIC PAY", amount: februaryBasicPay },
+        { name: "BASIC PAY", amount: 0 },
         { name: "Overtime", amount: 0 },
         { name: "Night Differential", amount: 0 },
         { name: "RH OT", amount: 0 },
@@ -664,34 +699,15 @@ export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]
         { name: "SP OT", amount: 0 },
         { name: "Salary Adjustment", amount: 0 },
         { name: "Allowances", amount: 0 },
+        { name: "No. of Days", amount: secondHalfDays },
       ],
-      deductions: [
-        { name: "Late/Undertime", amount: 0 },
-        { name: "SSS", amount: 0 },
-        { name: "Philhealth", amount: 0 },
-        { name: "Tax", amount: 0 },
-        { name: "SSS Loan", amount: 0 },
-        { name: "HDMF Loan", amount: 0 },
-        { name: "Company Deduction", amount: 0 },
-        { name: "Company Loan", amount: 0 },
-      ],
+      deductions: [],
       net_pay: 0,
-    },
-]
+    });
+  }
 
-  // Calculate net_pay dynamically for each pay period
-  const excludedEarnings = ["Daily Rate", "No. of Days"];
-
-data.forEach((period) => {
-  const totalEarnings = period.earnings.reduce((sum, e) => {
-    return excludedEarnings.includes(e.name) ? sum : sum + e.amount;
-  }, 0);
-
-  const totalDeductions = period.deductions.reduce((sum, d) => sum + d.amount, 0);
-  period.net_pay = totalEarnings - totalDeductions;
-});
-
-  return data;
+  // Combine existing payslip data with generated periods
+  return [...data, ...periods];
 }
 
 export async function getSchedule(employeeId: string) {
@@ -1421,4 +1437,64 @@ export async function populateAttendanceRecords() {
     }
 
     console.log('Attendance records populated successfully');
+}
+
+// Helper function to parse pay period string into start and end dates
+function parsePayPeriod(period: string): { startDate: Date; endDate: Date } | null {
+    // Expected format: "MMM dd - MMM dd, yyyy" e.g., "Jan 01 - Jan 15, 2023"
+    const match = period.match(/^(\w{3}) (\d{2}) - (\w{3}) (\d{2}), (\d{4})$/);
+    if (!match) return null;
+
+    const [, startMonth, startDay, endMonth, endDay, year] = match;
+    const monthNames = {
+        Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+        Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11
+    };
+
+    const startDate = new Date(parseInt(year), monthNames[startMonth as keyof typeof monthNames], parseInt(startDay));
+    const endDate = new Date(parseInt(year), monthNames[endMonth as keyof typeof monthNames], parseInt(endDay));
+
+    return { startDate, endDate };
+}
+
+// Helper function to get days attended for a pay period from attendance records
+async function getDaysAttended(employeeId: string, startDate: Date, endDate: Date): Promise<number> {
+    const db = await getDb();
+
+    const attendanceRecords = await db
+        .select({
+            date: attendance.date,
+            timeIn: attendance.timeIn,
+            timeOut: attendance.timeOut,
+            status: attendance.status,
+            shiftStart: schedules.shiftStart,
+        })
+        .from(attendance)
+        .leftJoin(schedules, and(eq(attendance.employeeId, schedules.employeeId), eq(attendance.date, schedules.date)))
+        .where(and(
+            eq(attendance.employeeId, employeeId),
+            sql`${attendance.date} >= ${startDate.toISOString().slice(0, 10)}`,
+            sql`${attendance.date} <= ${endDate.toISOString().slice(0, 10)}`
+        ));
+
+    let daysAttended = 0;
+
+    for (const record of attendanceRecords) {
+        const timeIn = record.timeIn ? new Date(record.timeIn) : null;
+        const shiftStartStr = record.shiftStart || '09:00:00';
+        const [h, m] = shiftStartStr.split(':').map(Number);
+        const date = new Date(record.date);
+        const shiftStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m);
+
+        let minutesLate = 0;
+        if (timeIn && timeIn > shiftStart) {
+            minutesLate = Math.floor((timeIn.getTime() - shiftStart.getTime()) / (1000 * 60));
+        }
+
+        if (record.status === 'Present' || (timeIn && record.timeOut && minutesLate < 480)) {
+            daysAttended++;
+        }
+    }
+
+    return daysAttended;
 }

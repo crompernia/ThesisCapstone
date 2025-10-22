@@ -31,7 +31,8 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { getEmployeeById, getPositions } from '@/lib/data';
+import { getEmployeeById, getPositions, getAttendanceData } from '@/lib/data';
+import { getSSSDeduction, getPhilhealthDeduction, getPagibigDeduction } from '@/lib/payroll';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -54,6 +55,11 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
     const [deductions, setDeductions] = React.useState([{ id: 1, name: '', amount: '' }]);
     const [numberOfHoursPerDay, setNumberOfHoursPerDay] = React.useState(8);
     const [minutesLate, setMinutesLate] = React.useState(0);
+    const [attendanceData, setAttendanceData] = React.useState<any>(null);
+    const regularHolidayAmount = 0; // Read-only field for Regular holiday
+    const regularHolidayOvertimeAmount = 0; // Read-only field for Regular Holiday Overtime
+    const specialHolidayAmount = 0; // Read-only field for Special holiday
+    const specialHolidayOvertimeAmount = 0; // Read-only field for Special Holiday Overtime
 
     // Mock data for attendance summary
     const dataSummary = {
@@ -68,12 +74,16 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const [empData, posData] = await Promise.all([
+                const [empData, posData, attData] = await Promise.all([
                     getEmployeeById(params.id),
-                    getPositions()
+                    getPositions(),
+                    getAttendanceData(params.id)
                 ]);
-                setEmployee(empData);
-                setPositions(posData);
+                setEmployee(empData || { id: params.id, name: 'Unknown Employee', position: 'Unknown', employeeNumber: 'N/A' });
+                setPositions(posData.length > 0 ? posData : [{ id: 1, title: 'Unknown', rate: '0' }]);
+                setAttendanceData(attData || { summary: { lates: 0, absences: 0, daysAttended: 0, availableLeaves: 0, totalHours: 0 } });
+                // Set minutesLate from attendance data or default to 0
+                setMinutesLate(attData?.summary?.lates || 0);
             } catch (error) {
                 toast({
                     variant: 'destructive',
@@ -90,8 +100,11 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
     const hourlyRate = Number(employeePosition?.rate ?? 0);
     const overtimeRate = hourlyRate * 1.5;
 
-    const basicPay = dataSummary.workedHours * hourlyRate;
-    const overtimePay = dataSummary.overtimeHours * overtimeRate;
+    const basicPay = (dataSummary?.workedHours || 0) * hourlyRate;
+    const overtimePay = (dataSummary?.overtimeHours || 0) * overtimeRate;
+
+    // Calculate Monthly Salary Credit (MSC) for SSS based on standard 160 hours per month
+    const monthlySalaryCredit = hourlyRate * 160;
 
     // Payslip late deduction calculation
     // perMinute = (dailyRate / numberOfHours) / 60
@@ -100,6 +113,10 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
     const dailyRate = hourlyRate * numberOfHoursPerDay;
     const perMinuteRate = (dailyRate / (numberOfHoursPerDay || 1)) / 60;
     const lateDeduction = perMinuteRate * (Number(minutesLate) || 0);
+
+    const sssDeduction = getSSSDeduction(monthlySalaryCredit);
+    const philhealthDeduction = getPhilhealthDeduction(basicPay);
+    const pagibigDeduction = getPagibigDeduction(basicPay);
 
 
     const addEarning = () => {
@@ -118,36 +135,67 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
         setDeductions(deductions.filter(d => d.id !== id));
     };
     
-    const handleCalculateAndSave = () => {
-        // In a real application, you would send this data to the server.
-        const totalAdditional = additionalEarnings.reduce((s, a) => s + (Number(a.amount) || 0), 0);
+    const handleCalculateAndSave = async () => {
+        const totalAdditional = additionalEarnings.reduce((s, a) => s + (Number(a.amount) || 0), 0) + regularHolidayAmount + regularHolidayOvertimeAmount + specialHolidayAmount + specialHolidayOvertimeAmount;
         const totalUserDeductions = deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0);
         const totalEarnings = basicPay + overtimePay + totalAdditional;
-        const totalDeductions = totalUserDeductions + lateDeduction;
+        const totalDeductions = totalUserDeductions + lateDeduction + sssDeduction + philhealthDeduction + pagibigDeduction;
         const netPay = totalEarnings - totalDeductions;
 
+        // Get current date for pay period
+        const today = new Date();
+        const payPeriod = `${today.toLocaleString('default', { month: 'short' })} ${today.getFullYear()}`;
+
         const payload = {
-            employeeId: employee?.id,
-            period: 'manual',
-            totals: {
-                basicPay,
-                overtimePay,
-                additional: totalAdditional,
-                userDeductions: totalUserDeductions,
-                lateDeduction,
-                totalEarnings,
-                totalDeductions,
-                netPay,
-            }
+            employeeId: employee?.id || params.id,
+            payPeriod,
+            payDate: today.toISOString().split('T')[0], // YYYY-MM-DD format
+            basicPay,
+            overtime: overtimePay,
+            allowances: totalAdditional,
+            sssDeduction,
+            philhealthDeduction,
+            pagibigDeduction,
+            taxDeduction: 0,
+            sssLoan: 0,
+            hdmfLoan: 0,
+            companyLoan: 0,
+            otherDeductions: totalUserDeductions,
+            netPay,
+            daysWorked: (dataSummary?.workedHours || 0) / numberOfHoursPerDay,
+            dailyRate: hourlyRate * numberOfHoursPerDay,
+            nightDifferential: 0,
         };
 
-        console.log('Saving payslip data...', payload);
-        toast({
-            title: "Success",
-            description: `Payslip for ${employee?.name ?? 'Employee'} calculated. Net pay: ${formatCurrency(netPay)}`
-        });
-        // TODO: send payload to server endpoint to persist payslip
-        router.push('/hr/payslip-generation');
+        try {
+            const response = await fetch('/api/payslips', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save payslip');
+            }
+
+            const result = await response.json();
+
+            toast({
+                title: "Success",
+                description: `Payslip for ${employee?.name || 'Employee'} saved successfully. Net pay: ${formatCurrency(netPay)}`
+            });
+
+            router.push('/hr/payslip-generation');
+        } catch (error) {
+            console.error('Error saving payslip:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to save payslip. Please try again.',
+            });
+        }
     };
 
     const formatCurrency = (value: number) => {
@@ -202,8 +250,8 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
                     </CardHeader>
                     <CardContent>
                         <div className="text-sm p-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 flex items-start gap-2">
-                             <Info className="h-4 w-4 mt-0.5"/>
-                             <span>Hourly Rate: <strong>{formatCurrency(hourlyRate)}</strong></span>
+                              <Info className="h-4 w-4 mt-0.5"/>
+                              <span>Hourly Rate: <strong>{formatCurrency(hourlyRate)}</strong></span>
                         </div>
                     </CardContent>
                 </Card>
@@ -217,17 +265,21 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
                     <CardContent className="space-y-4">
                         <div className="flex justify-between p-2 rounded-lg bg-muted/50">
                             <span className="font-medium flex items-center gap-2"><Calendar/>Scheduled Hours</span>
-                            <span>{dataSummary.scheduledHours}</span>
+                            <span>{dataSummary?.scheduledHours || 160}</span>
                         </div>
                         <div className="flex justify-between p-2 rounded-lg bg-muted/50">
                             <span className="font-medium flex items-center gap-2"><ClipboardCheck/>Actual Worked Hours</span>
-                            <span>{dataSummary.workedHours}</span>
+                            <span>{dataSummary?.workedHours || 0}</span>
+                        </div>
+                        <div className="flex justify-between p-2 rounded-lg bg-muted/50">
+                            <span className="font-medium flex items-center gap-2"><Calendar/>No. of Days</span>
+                            <span>{attendanceData?.summary?.daysAttended || 0}</span>
                         </div>
                          <Separator/>
                          <div className="space-y-2">
-                            <Label htmlFor="absences-paid">Paid Absences (Days)</Label>
-                            <Input id="absences-paid" type="number" placeholder="e.g., 0" />
-                            <p className="text-xs text-muted-foreground">Total absences this period: {dataSummary.absences}</p>
+                             <Label htmlFor="absences-paid">Paid Absences (Days)</Label>
+                             <Input id="absences-paid" type="number" placeholder="e.g., 0" />
+                             <p className="text-xs text-muted-foreground">Total absences this period: {dataSummary?.absences || 0}</p>
                          </div>
                                  <Separator/>
                                  <div className="space-y-2">
@@ -237,8 +289,8 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
                                  </div>
                                  <div className="space-y-2">
                                      <Label htmlFor="minutes-late">Minutes Late (total)</Label>
-                                     <Input id="minutes-late" type="number" value={minutesLate} onChange={(e) => setMinutesLate(Number(e.target.value || 0))} />
-                                     <p className="text-xs text-muted-foreground">Late deduction will be calculated automatically using the formula provided.</p>
+                                     <Input id="minutes-late" type="number" value={minutesLate} readOnly className="bg-muted" />
+                                     <p className="text-xs text-muted-foreground">Late deduction will be calculated automatically using the formula provided. This value is pulled from the employee's attendance records.</p>
                                  </div>
                     </CardContent>
                 </Card>
@@ -293,6 +345,22 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
                                             </Button>
                                         </div>
                                     ))}
+                                    <div className="flex justify-between items-center">
+                                        <Label htmlFor="regular-holiday-amount" className="font-medium">Regular Holiday</Label>
+                                        <Input id="regular-holiday-amount" type="number" value={regularHolidayAmount} readOnly className="bg-muted w-44"/>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <Label htmlFor="regular-holiday-overtime-amount" className="font-medium">Regular Holiday Overtime</Label>
+                                        <Input id="regular-holiday-overtime-amount" type="number" value={regularHolidayOvertimeAmount} readOnly className="bg-muted w-44"/>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <Label htmlFor="special-holiday-amount" className="font-medium">Special Holiday</Label>
+                                        <Input id="special-holiday-amount" type="number" value={specialHolidayAmount} readOnly className="bg-muted w-44"/>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <Label htmlFor="special-holiday-overtime-amount" className="font-medium">Special Holiday Overtime</Label>
+                                        <Input id="special-holiday-overtime-amount" type="number" value={specialHolidayOvertimeAmount} readOnly className="bg-muted w-44"/>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -325,6 +393,18 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
                                         </Button>
                                     </div>
                                 ))}
+                                <div className="flex justify-between items-center">
+                                    <Label htmlFor="sss-deduction" className="font-medium">SSS Deduction</Label>
+                                    <Input id="sss-deduction" type="number" value={sssDeduction} readOnly className="bg-muted w-44"/>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <Label htmlFor="philhealth-deduction" className="font-medium">PhilHealth Deduction</Label>
+                                    <Input id="philhealth-deduction" type="number" value={philhealthDeduction} readOnly className="bg-muted w-44"/>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <Label htmlFor="pagibig-deduction" className="font-medium">Pag-IBIG Deduction</Label>
+                                    <Input id="pagibig-deduction" type="number" value={pagibigDeduction} readOnly className="bg-muted w-44"/>
+                                </div>
                             </div>
                         </div>
                         {/* Summary */}
@@ -332,16 +412,25 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
                             <h4 className="font-semibold mb-2">Summary</h4>
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="text-sm text-muted-foreground">Total Earnings</div>
-                                <div className="text-right font-mono">{formatCurrency(basicPay + overtimePay + additionalEarnings.reduce((s, a) => s + (Number(a.amount) || 0), 0))}</div>
+                                <div className="text-right font-mono">{formatCurrency(basicPay + overtimePay + additionalEarnings.reduce((s, a) => s + (Number(a.amount) || 0), 0) + regularHolidayAmount + regularHolidayOvertimeAmount + specialHolidayAmount + specialHolidayOvertimeAmount)}</div>
 
-                                <div className="text-sm text-muted-foreground">Total Deductions (incl. Late)</div>
-                                <div className="text-right font-mono">{formatCurrency(deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0) + lateDeduction)}</div>
+                                <div className="text-sm text-muted-foreground">Total Deductions (incl. Late, SSS, PhilHealth & Pag-IBIG)</div>
+                                <div className="text-right font-mono">{formatCurrency(deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0) + lateDeduction + sssDeduction + philhealthDeduction + pagibigDeduction)}</div>
 
                                 <div className="text-sm text-muted-foreground">Late Deduction</div>
                                 <div className="text-right font-mono">{formatCurrency(lateDeduction)}</div>
 
+                                <div className="text-sm text-muted-foreground">SSS Deduction</div>
+                                <div className="text-right font-mono">{formatCurrency(sssDeduction)}</div>
+
+                                <div className="text-sm text-muted-foreground">PhilHealth Deduction</div>
+                                <div className="text-right font-mono">{formatCurrency(philhealthDeduction)}</div>
+
+                                <div className="text-sm text-muted-foreground">Pag-IBIG Deduction</div>
+                                <div className="text-right font-mono">{formatCurrency(pagibigDeduction)}</div>
+
                                 <div className="text-sm text-muted-foreground">Net Pay</div>
-                                <div className="text-right font-mono">{formatCurrency((basicPay + overtimePay + additionalEarnings.reduce((s, a) => s + (Number(a.amount) || 0), 0)) - (deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0) + lateDeduction))}</div>
+                                <div className="text-right font-mono">{formatCurrency((basicPay + overtimePay + additionalEarnings.reduce((s, a) => s + (Number(a.amount) || 0), 0) + regularHolidayAmount + regularHolidayOvertimeAmount + specialHolidayAmount + specialHolidayOvertimeAmount) - (deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0) + lateDeduction + sssDeduction + philhealthDeduction + pagibigDeduction))}</div>
                             </div>
                         </div>
                     </CardContent>

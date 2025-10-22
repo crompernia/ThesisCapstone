@@ -61,8 +61,8 @@ export async function POST(req: Request) {
 
     const row = existing[0] as any;
     const timeIn = row.timeIn ? new Date(row.timeIn) : null;
-  // Update timeOut and compute hours (store Date object for timestamp)
-  await db.update(attendance).set({ timeOut: now as any }).where(eq(attendance.id, row.id));
+  // Update timeOut and compute hours (store ISO string for timestamp)
+  await db.update(attendance).set({ timeOut: now.toISOString() }).where(eq(attendance.id, row.id));
 
     let hoursWorked = 0;
     if (timeIn) {

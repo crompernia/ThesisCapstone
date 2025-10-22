@@ -43,12 +43,15 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
       setSelectedPeriod(String(payPeriods[0].id));
     }
   }, [payPeriods]);
-  
+
   const payslipData = payPeriods?.find(p => String(p.id) === selectedPeriod);
 
+  const excludedEarnings = ['Overtime', 'Night Differential', 'RH OT', 'Special Holiday', 'Salary Adjustment', 'Allowances', 'SP OT', 'BASIC PAY'];
   const totalEarnings = payslipData?.earnings.reduce((sum, item) => sum + item.amount, 0) ?? 0;
   const totalDeductions = payslipData?.deductions.reduce((sum, item) => sum + item.amount, 0) ?? 0;
   const netPay = payslipData?.net_pay ?? 0;
+  const dailyRate = 0;
+  const noOfDays = payslipData?.earnings.find(item => item.name === "No. of Days")?.amount || 0;
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-PH', {
@@ -76,18 +79,25 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
     doc.text(`Pay Date: ${payslipData.payDate}`, 14, 50);
 
     // Earnings Table
-    const totalEarnings = payslipData.earnings
-      .filter(e => e.name !== 'No. of Days' && e.name !== 'Daily Rate')
-      .reduce((sum, e) => sum + e.amount, 0);
+    const filteredEarnings = payslipData.earnings.filter(e => !excludedEarnings.includes(e.name) && e.name !== 'No. of Days' && e.name !== 'Daily Rate' && e.name !== 'Basic Pay');
+    const totalEarnings = filteredEarnings.reduce((sum, e) => sum + e.amount, 0);
 
     autoTable(doc, {
       startY: 60,
       head: [['Earnings', 'Amount']],
-      body: payslipData.earnings.map(e => [
+      body: payslipData.earnings.filter(e => !excludedEarnings.includes(e.name) && e.name !== 'No. of Days' && e.name !== 'Basic Pay').map(e => [
         e.name,
-        e.name === 'No. of Days' ? e.amount.toString() : formatCurrency(e.amount)
+        formatCurrency(e.amount)
       ]),
-      foot: [['Gross Earnings', formatCurrency(totalEarnings)]],
+      foot: [
+        ['Daily Rate', formatCurrency(dailyRate * 8)],
+        ['No. of Days', noOfDays.toString()],
+        ['Basic Pay', formatCurrency((dailyRate * 8) * noOfDays)],
+        ['Overtime', formatCurrency(0)],
+        ['Night Differential', formatCurrency(0)],
+        ['Regular Holiday', formatCurrency(0)],
+        ['RH OT', formatCurrency(0)]
+      ],
       theme: 'striped',
       headStyles: { fillColor: [22, 163, 74] }, // Green
       footStyles: { fillColor: [244, 244, 245], textColor: [15, 23, 42], fontStyle: 'bold' },
@@ -98,8 +108,11 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
     autoTable(doc, {
       startY: lastTableY + 10,
       head: [['Deductions', 'Amount']],
-      body: payslipData.deductions.map(d => [d.name, `(${formatCurrency(d.amount)})`]),
-      foot: [['Total Deductions', `(${formatCurrency(totalDeductions)})`]],
+      body: payslipData.deductions.map(d => [d.name, formatCurrency(d.amount)]),
+      foot: [
+        ['Late/Undertime', formatCurrency(0)],
+        ['Total Deductions', `(${formatCurrency(totalDeductions)})`]
+      ],
       theme: 'striped',
       headStyles: { fillColor: [220, 38, 38] }, // Red
       footStyles: { fillColor: [244, 244, 245], textColor: [15, 23, 42], fontStyle: 'bold' },
@@ -176,11 +189,11 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
                 <h3 className="font-semibold text-lg mb-4 text-green-600">Earnings</h3>
 
                 <ul className="space-y-2">
-                  {payslipData.earnings.map((item, index) => (
+                  {payslipData.earnings.filter(item => !excludedEarnings.includes(item.name) && item.name !== "No. of Days" && item.name !== "Basic Pay").map((item, index) => (
                     <li key={index} className="flex justify-between items-center text-sm">
                       <span>{item.name}</span>
                       <span className="font-mono">
-                        {item.name === "No. of Days" ? item.amount : formatCurrency(item.amount)}
+                        {formatCurrency(item.amount)}
                       </span>
                     </li>
                   ))}
@@ -188,13 +201,63 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
 
                 <Separator className="my-4" />
                 <div className="flex justify-between items-center font-semibold">
-                  <span>Gross Earnings</span>
+                  <span>Daily Rate</span>
                   <span className="font-mono">
-                    {formatCurrency(
-                      payslipData.earnings
-                        .filter(item => !["Daily Rate", "No. of Days"].includes(item.name))
-                        .reduce((sum, e) => sum + e.amount, 0)
-                    )}
+                    {formatCurrency(dailyRate * 8)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center font-semibold">
+                  <span>No. of Days</span>
+                  <span className="font-mono">
+                    {noOfDays}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center font-semibold">
+                  <span>Basic Pay</span>
+                  <span className="font-mono">
+                    {formatCurrency((dailyRate * 8) * noOfDays)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center font-semibold">
+                  <span>Overtime</span>
+                  <span className="font-mono">
+                    {formatCurrency(0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center font-semibold">
+                  <span>Night Differential</span>
+                  <span className="font-mono">
+                    {formatCurrency(0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center font-semibold">
+                  <span>Regular Holiday</span>
+                  <span className="font-mono">
+                    {formatCurrency(0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center font-semibold">
+                  <span>RH OT</span>
+                  <span className="font-mono">
+                    {formatCurrency(0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center font-semibold">
+                  <span>Special Holiday</span>
+                  <span className="font-mono">
+                    {formatCurrency(0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center font-semibold">
+                  <span>SP OT</span>
+                  <span className="font-mono">
+                    {formatCurrency(0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center font-semibold">
+                  <span>Allowance</span>
+                  <span className="font-mono">
+                    {formatCurrency(0)}
                   </span>
                 </div>
               </div>
@@ -206,11 +269,44 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
                         {payslipData.deductions.map((item, index) => (
                             <li key={index} className="flex justify-between items-center text-sm">
                                 <span>{item.name}</span>
-                                <span className="font-mono">({formatCurrency(item.amount)})</span>
+                                <span className="font-mono">{formatCurrency(item.amount)}</span>
                             </li>
                         ))}
                         </ul>
                         <Separator className="my-4"/>
+                        <div className="flex justify-between items-center font-semibold">
+                            <span>Late/Undertime</span>
+                            <span className="font-mono">{formatCurrency(0)}</span>
+                        </div>
+                        <div className="flex justify-between items-center font-semibold">
+                            <span>SSS</span>
+                            <span className="font-mono">{formatCurrency(0)}</span>
+                        </div>
+                        <div className="flex justify-between items-center font-semibold">
+                            <span>Pag-ibig</span>
+                            <span className="font-mono">{formatCurrency(0)}</span>
+                        </div>
+                        <div className="flex justify-between items-center font-semibold">
+                            <span>Tax</span>
+                            <span className="font-mono">{formatCurrency(0)}</span>
+                        </div>
+                        <div className="flex justify-between items-center font-semibold">
+                            <span>HDMF Loan</span>
+                            <span className="font-mono">{formatCurrency(0)}</span>
+                        </div>
+                        <div className="flex justify-between items-center font-semibold">
+                            <span>Other Deduction</span>
+                            <span className="font-mono">{formatCurrency(0)}</span>
+                        </div>
+                        <div className="flex justify-between items-center font-semibold">
+                            <span>Company Deduction</span>
+                            <span className="font-mono">{formatCurrency(0)}</span>
+                        </div>
+                        <div className="flex justify-between items-center font-semibold">
+                            <span>Company Loan</span>
+                            <span className="font-mono">{formatCurrency(0)}</span>
+                        </div>
+                        <Separator className="my-4" />
                         <div className="flex justify-between items-center font-semibold">
                             <span>Total Deductions</span>
                             <span className="font-mono">({formatCurrency(totalDeductions)})</span>
@@ -219,10 +315,10 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
                 </div>
             </CardContent>
             <CardFooter className="bg-muted/30 p-6">
-                {/* Net Pay Section: The final take-home pay. */}
+                {/* Gross Pay and Net Pay Section: Gross pay is the sum of all earnings, net pay is the final take-home pay. */}
                 <div className="w-full flex justify-between items-center">
-                    <span className="text-xl font-bold font-headline">Net Pay</span>
-                    <span className="text-2xl font-bold font-headline text-primary">{formatCurrency(netPay)}</span>
+                    <span className="text-xl font-bold font-headline">Gross Pay: <span className="text-2xl font-bold font-headline text-primary">{formatCurrency(totalEarnings)}</span></span>
+                    <span className="text-xl font-bold font-headline">Net Pay: <span className="text-2xl font-bold font-headline text-primary">{formatCurrency(netPay)}</span></span>
                 </div>
             </CardFooter>
           </>
