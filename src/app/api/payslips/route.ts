@@ -1,7 +1,7 @@
 import { getDb } from "@/lib/db";
-import { payslips } from "@/lib/schema";
+import { payslips, accounts } from "@/lib/schema";
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export async function POST(request: Request) {
   try {
@@ -29,12 +29,28 @@ export async function POST(request: Request) {
       nightDifferential,
     } = body;
 
+    // Ensure daysWorked is an integer
+    const daysWorkedInt = Math.round(Number(daysWorked));
+
+    // Check if employee exists
+    const employeeExists = await db
+      .select()
+      .from(accounts)
+      .where(eq(accounts.id, employeeId))
+      .limit(1);
+
+    if (employeeExists.length === 0) {
+      return NextResponse.json(
+        { error: "Employee not found" },
+        { status: 404 }
+      );
+    }
+
     // Check if payslip already exists for this employee and period
     const existingPayslip = await db
       .select()
       .from(payslips)
-      .where(eq(payslips.employeeId, employeeId))
-      .where(eq(payslips.payPeriod, payPeriod));
+      .where(and(eq(payslips.employeeId, employeeId), eq(payslips.payPeriod, payPeriod)));
 
     let result;
     if (existingPayslip.length > 0) {
@@ -55,7 +71,7 @@ export async function POST(request: Request) {
           companyLoan,
           otherDeductions,
           netPay,
-          daysWorked,
+          daysWorked: daysWorkedInt,
           dailyRate,
           nightDifferential,
         })
@@ -81,12 +97,20 @@ export async function POST(request: Request) {
           companyLoan,
           otherDeductions,
           netPay,
-          daysWorked,
+          daysWorked: daysWorkedInt,
           dailyRate,
           nightDifferential,
         })
         .returning();
     }
+
+    console.log('Payslip saved successfully:', {
+      id: result[0].id,
+      employeeId: result[0].employeeId,
+      payPeriod: result[0].payPeriod,
+      netPay: result[0].netPay,
+      action: existingPayslip.length > 0 ? "updated" : "created"
+    });
 
     return NextResponse.json({
       success: true,
@@ -95,8 +119,9 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Error saving payslip:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: "Failed to save payslip" },
+      { error: `Failed to save payslip: ${errorMessage}` },
       { status: 500 }
     );
   }

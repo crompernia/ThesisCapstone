@@ -273,39 +273,6 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
                             </li>
                         ))}
                         </ul>
-                        <Separator className="my-4"/>
-                        <div className="flex justify-between items-center font-semibold">
-                            <span>Late/Undertime</span>
-                            <span className="font-mono">{formatCurrency(0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center font-semibold">
-                            <span>SSS</span>
-                            <span className="font-mono">{formatCurrency(0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center font-semibold">
-                            <span>Pag-ibig</span>
-                            <span className="font-mono">{formatCurrency(0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center font-semibold">
-                            <span>Tax</span>
-                            <span className="font-mono">{formatCurrency(0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center font-semibold">
-                            <span>HDMF Loan</span>
-                            <span className="font-mono">{formatCurrency(0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center font-semibold">
-                            <span>Other Deduction</span>
-                            <span className="font-mono">{formatCurrency(0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center font-semibold">
-                            <span>Company Deduction</span>
-                            <span className="font-mono">{formatCurrency(0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center font-semibold">
-                            <span>Company Loan</span>
-                            <span className="font-mono">{formatCurrency(0)}</span>
-                        </div>
                         <Separator className="my-4" />
                         <div className="flex justify-between items-center font-semibold">
                             <span>Total Deductions</span>

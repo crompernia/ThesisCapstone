@@ -136,6 +136,16 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
     };
     
     const handleCalculateAndSave = async () => {
+        // Validate required fields
+        if (!employee?.id) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Employee information is missing.',
+            });
+            return;
+        }
+
         const totalAdditional = additionalEarnings.reduce((s, a) => s + (Number(a.amount) || 0), 0) + regularHolidayAmount + regularHolidayOvertimeAmount + specialHolidayAmount + specialHolidayOvertimeAmount;
         const totalUserDeductions = deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0);
         const totalEarnings = basicPay + overtimePay + totalAdditional;
@@ -145,11 +155,13 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
         // Get current date for pay period
         const today = new Date();
         const payPeriod = `${today.toLocaleString('default', { month: 'short' })} ${today.getFullYear()}`;
+        // Set pay date to the last day of the current month
+        const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
         const payload = {
             employeeId: employee?.id || params.id,
             payPeriod,
-            payDate: today.toISOString().split('T')[0], // YYYY-MM-DD format
+            payDate: lastDayOfMonth.toISOString().split('T')[0], // YYYY-MM-DD format
             basicPay,
             overtime: overtimePay,
             allowances: totalAdditional,
@@ -162,8 +174,8 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
             companyLoan: 0,
             otherDeductions: totalUserDeductions,
             netPay,
-            daysWorked: (dataSummary?.workedHours || 0) / numberOfHoursPerDay,
-            dailyRate: hourlyRate * numberOfHoursPerDay,
+            daysWorked: Math.max(0, (dataSummary?.workedHours || 0) / numberOfHoursPerDay), // Ensure non-negative
+            dailyRate: Math.max(0, hourlyRate * numberOfHoursPerDay), // Ensure non-negative
             nightDifferential: 0,
         };
 
@@ -176,25 +188,28 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
                 body: JSON.stringify(payload),
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to save payslip');
-            }
-
             const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to save payslip');
+            }
 
             toast({
                 title: "Success",
-                description: `Payslip for ${employee?.name || 'Employee'} saved successfully. Net pay: ${formatCurrency(netPay)}`
+                description: `Payslip for ${employee?.name || 'Employee'} saved successfully. Earnings: ${formatCurrency(totalEarnings)}, Net pay: ${formatCurrency(netPay)}`
             });
 
             router.push('/hr/payslip-generation');
         } catch (error) {
             console.error('Error saving payslip:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Failed to save payslip. Please try again.';
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Failed to save payslip. Please try again.',
+                description: errorMessage,
             });
+        } finally {
+            // Reset loading state if needed
         }
     };
 
