@@ -134,6 +134,8 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        console.log("Admin login: Starting authorization for:", credentials?.email);
+
         if (!credentials?.email || !credentials?.password) {
           console.error("Admin login: Missing credentials");
           return null;
@@ -141,6 +143,10 @@ export const authOptions: NextAuthOptions = {
 
         try {
           const db = await getDb();
+          console.log("Admin login: Database connection established");
+
+          console.log("Admin login: Looking for user with email:", credentials.email);
+
           const [user] = await db
             .select()
             .from(accounts)
@@ -148,27 +154,40 @@ export const authOptions: NextAuthOptions = {
 
           if (!user) {
             console.error("Admin login: User not found", credentials.email);
+            console.log("Admin login: Available admin emails in DB:");
+            const admins = await db.select({ email: accounts.email, role: accounts.role, firstName: accounts.firstName, lastName: accounts.lastName }).from(accounts).where(eq(accounts.role, "Admin"));
+            console.log("Available admins:", admins);
             return null;
           }
+
+          console.log("Admin login: Found user:", {
+            id: user.id,
+            name: `${user.firstName} ${user.lastName}`,
+            email: user.email,
+            role: user.role,
+            status: user.status
+          });
 
           if (user.role !== "Admin") {
-            console.error("Admin login: Invalid role", user.role);
+            console.error("Admin login: Invalid role", user.role, "expected Admin");
             return null;
           }
 
+          console.log("Admin login: Checking password...");
           const isPasswordValid = await compare(credentials.password, user.password);
+          console.log("Admin login: Password valid:", isPasswordValid);
 
           if (!isPasswordValid) {
-            console.error("Admin login: Invalid password");
+            console.error("Admin login: Invalid password for user", user.email);
             return null;
           }
 
           if (user.status !== "Active") {
-            console.error("Admin login: Inactive account");
+            console.error("Admin login: Inactive account", user.status, "for user", user.email);
             return null;
           }
 
-          console.log("Admin login successful:", user.id);
+          console.log("Admin login successful:", user.id, user.email);
           return {
             id: user.id,
             email: user.email,

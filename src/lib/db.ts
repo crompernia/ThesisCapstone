@@ -48,10 +48,12 @@ async function initializeDb(): Promise<DrizzleDB> {
   }
 }
 
-// Initialize on module load
-initializeDb().catch((err) => {
-  console.error('Failed to initialize database on startup:', err);
-});
+// Initialize on module load - only if DATABASE_URL is set
+if (process.env.DATABASE_URL || process.env.POSTGRES_URL) {
+  initializeDb().catch((err) => {
+    console.error('Failed to initialize database on startup:', err);
+  });
+}
 
 /**
  * Get the Drizzle database instance.
