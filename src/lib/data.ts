@@ -875,6 +875,11 @@ export async function getSchedule(employeeId: string) {
             hours = 0;
         }
 
+        // Deduct break time if break exists
+        if (breakStr !== '-') {
+            hours -= 1;
+        }
+
         return {
             day: dayName,
             date: dateStr,
