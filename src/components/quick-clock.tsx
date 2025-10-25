@@ -6,12 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Clock, X, Loader2 } from 'lucide-react';
 
 export default function QuickClock() {
-  const [open, setOpen] = React.useState(false);
-  const [isProcessing, setIsProcessing] = React.useState(false);
-  const [autoAction, setAutoAction] = React.useState<'in' | 'out' | null>(null);
-  const videoRef = React.useRef<HTMLVideoElement | null>(null);
-  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
+   const [open, setOpen] = React.useState(false);
+   const [isProcessing, setIsProcessing] = React.useState(false);
+   const [autoAction, setAutoAction] = React.useState<'in' | 'out' | null>(null);
+   const [showClockIn, setShowClockIn] = React.useState(true);
+   const videoRef = React.useRef<HTMLVideoElement | null>(null);
+   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+   const [error, setError] = React.useState<string | null>(null);
 
   const getPosition = async (): Promise<GeolocationPosition> => {
     if (!navigator.geolocation) throw new Error('Geolocation not available');
@@ -37,6 +38,19 @@ export default function QuickClock() {
     }
   };
 
+  const checkClockInStatus = async () => {
+    try {
+      const res = await fetch('/api/attendance/check-status');
+      if (res.ok) {
+        const data = await res.json();
+        setShowClockIn(!data.hasClockedInToday);
+      }
+    } catch (e) {
+      // If error, default to showing both buttons
+      setShowClockIn(true);
+    }
+  };
+
   React.useEffect(() => {
     // If modal closed, stop camera and clear any auto action
     if (!open) {
@@ -45,6 +59,8 @@ export default function QuickClock() {
     } else {
       // start camera immediately when opened (for both manual and programmatic open)
       startCamera();
+      // Check if user has already clocked in today
+      checkClockInStatus();
     }
   }, [open]);
 
@@ -101,6 +117,8 @@ export default function QuickClock() {
       // notify other parts of the app that quick-clock completed a clock-in
       window.dispatchEvent(new CustomEvent('quick-clock-done', { detail: { action: 'in' } }));
       alert('Clock-in successful');
+      // After clock-in, hide the clock-in button
+      setShowClockIn(false);
     } catch (e: any) {
       setError(e.message || 'Error');
     } finally {
@@ -169,10 +187,10 @@ export default function QuickClock() {
               <canvas ref={canvasRef} className="hidden" />
             </div>
             <div className="flex gap-2 justify-center">
-              <Button onClick={handleClockIn} disabled={isProcessing}>{isProcessing ? <Loader2 className="animate-spin" /> : 'Clock In'}</Button>
-              <Button variant="outline" onClick={handleClockOut} disabled={isProcessing}>{isProcessing ? <Loader2 className="animate-spin" /> : 'Clock Out'}</Button>
-              <Button variant="ghost" onClick={() => setOpen(false)}><X /></Button>
-            </div>
+               {showClockIn && <Button variant="outline" onClick={handleClockIn} disabled={isProcessing}>{isProcessing ? <Loader2 className="animate-spin" /> : 'Clock In'}</Button>}
+               <Button variant="outline" onClick={handleClockOut} disabled={isProcessing}>{isProcessing ? <Loader2 className="animate-spin" /> : 'Clock Out'}</Button>
+               <Button variant="ghost" onClick={() => setOpen(false)}><X /></Button>
+             </div>
           </div>
 
         </DialogContent>

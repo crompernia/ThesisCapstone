@@ -163,7 +163,7 @@ export async function getDailyAttendanceData(date: string): Promise<unknown[]> {
             attendance_status: attendance.status,
         })
         .from(accounts)
-        .leftJoin(attendance, and(eq(attendance.employeeId, accounts.id), eq(attendance.date, targetDate)))
+        .leftJoin(attendance, and(eq(attendance.employeeId, accounts.id), eq(attendance.date, sql`${targetDate.toISOString().slice(0, 10)}`)))
         .where(and(eq(accounts.role, 'Employee'), eq(accounts.status, 'Active')));
 
     return result.map(a => {
@@ -295,13 +295,18 @@ export async function getEmployeesWithPayslipStatus() {
 
     return result.map(a => {
         const hasBenefits = a.sss_number && a.philhealth_number && a.pagibig_number && a.tin;
+
+        // For now, keep as 'Pending' since we need to check payslips table
+        // This will be updated when we implement the payslip status check
+        const payslipStatus = 'Pending';
+
         return {
             id: a.id,
             employeeNumber: a.employee_number,
             name: `${a.first_name} ${a.last_name}`,
             position: a.position,
             department: a.department,
-            payslipStatus: 'Pending', // No payslip table yet
+            payslipStatus,
             benefitsStatus: hasBenefits ? 'Complete' : 'Incomplete',
         };
     });
@@ -324,6 +329,71 @@ export async function getEmployeesForScheduling() {
         name: `${a.first_name} ${a.last_name}`,
         shift: '9:00 - 17:00' // Default shift
     }));
+}
+
+export async function getSchedulesForWeek(weekStart: string) {
+    const db = await getDb();
+    const startDate = new Date(weekStart);
+    const weekDates: string[] = [];
+    for (let i = 0; i < 5; i++) {
+        const d = new Date(startDate);
+        d.setDate(startDate.getDate() + i);
+        weekDates.push(format(d, 'yyyy-MM-dd'));
+    }
+
+    const rows = await db
+        .select({
+            employeeId: schedules.employeeId,
+            date: schedules.date,
+            shiftStart: schedules.shiftStart,
+            shiftEnd: schedules.shiftEnd,
+            notes: schedules.notes
+        })
+        .from(schedules)
+        .where(inArray(schedules.date, weekDates))
+        .orderBy(schedules.employeeId, schedules.date);
+
+    // Group by employeeId
+    const schedulesByEmployee: Record<string, any[]> = {};
+    for (const row of rows) {
+        if (!schedulesByEmployee[row.employeeId]) {
+            schedulesByEmployee[row.employeeId] = [];
+        }
+        schedulesByEmployee[row.employeeId].push(row);
+    }
+
+    // Convert to shifts, breaks, overtime arrays
+    const result: Record<string, { shifts: string[], breaks: string[], overtimeAllowed: boolean[] }> = {};
+    for (const [employeeId, schs] of Object.entries(schedulesByEmployee)) {
+        const shifts: string[] = [];
+        const breaks: string[] = [];
+        const overtimeAllowed: boolean[] = [];
+        for (let i = 0; i < 5; i++) {
+            const date = weekDates[i];
+            const sch = schs.find(s => s.date === date);
+            if (sch) {
+                    const start = sch.shiftStart ? sch.shiftStart.slice(0, 5) : '';
+                    const end = sch.shiftEnd ? sch.shiftEnd.slice(0, 5) : '';
+                    shifts.push(start && end ? `${start} - ${end}` : '');
+                    overtimeAllowed.push(false); // default false since not in schema
+                    let breakStr = '';
+                    try {
+                        if (sch.notes) {
+                            const parsed = typeof sch.notes === 'string' ? JSON.parse(sch.notes) : sch.notes;
+                            if (parsed && parsed.break) breakStr = parsed.break;
+                        }
+                    } catch (e) {}
+                    breaks.push(breakStr);
+                } else {
+                    shifts.push('');
+                    breaks.push('');
+                    overtimeAllowed.push(false);
+                }
+        }
+        result[employeeId] = { shifts, breaks, overtimeAllowed };
+    }
+
+    return result;
 }
     // Fetch Employee Data from Database
 export async function getEmployeeDashboardData(employeeid: string) {
@@ -399,7 +469,7 @@ export async function getAttendanceData(employeeId: string) {
     const availableLeaves = accountResult[0]?.availableLeaves || 0;
     const hireDate = accountResult[0]?.dateHired ? new Date(accountResult[0].dateHired) : now;
 
-    // Get attendance records with schedules for the current month
+    // Get attendance records for current month
     const attendanceRecords = await db
         .select({
             date: attendance.date,
@@ -415,11 +485,9 @@ export async function getAttendanceData(employeeId: string) {
         .orderBy(desc(attendance.date));
 
     let daysAttended = 0;
-    let lates = 0; // sum of minutes late
+    let absences = 0;
     let totalHours = 0;
     const records: Array<{ date: string; timeIn: string | null; timeOut: string | null; status: string }> = [];
-
-    let lateAbsences = 0; // records where late >= 480 minutes
 
     for (const record of attendanceRecords) {
         const timeIn = record.timeIn ? new Date(record.timeIn) : null;
@@ -434,22 +502,16 @@ export async function getAttendanceData(employeeId: string) {
         }
 
         let status = record.status || 'Present';
-        if (minutesLate >= 480) {
-            status = 'Absent';
-            lateAbsences++;
-        } else if (minutesLate > 0) {
-            status = 'Late';
-            lates += minutesLate;
-        }
-
-        if (timeIn && timeOut && minutesLate < 480) {
+        if (status === 'Present' || status === 'Late') {
             daysAttended++;
+        } else if (status === 'Absent') {
+            absences++;
         }
 
         totalHours += Number(record.hoursWorked) || 0;
 
         // Format for display
-        const fmtTime = (d: Date | null) => d ? d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null;
+        const fmtTime = (d: Date | null) => d ? d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--';
         records.push({
             date: record.date as string,
             timeIn: fmtTime(timeIn),
@@ -461,46 +523,68 @@ export async function getAttendanceData(employeeId: string) {
     // Calculate total working days from hire date to now (weekdays only)
     const totalWorkingDaysFromHire = calculateWorkingDays(hireDate, now);
 
-    // Get all attendance records from hire date to now
+    // Get all attendance records from hire date to now for totalDaysAttended
     const allAttendanceRecords = await db
         .select({
             date: attendance.date,
             timeIn: attendance.timeIn,
             timeOut: attendance.timeOut,
+            status: attendance.status,
             shiftStart: schedules.shiftStart,
         })
         .from(attendance)
         .leftJoin(schedules, and(eq(attendance.employeeId, schedules.employeeId), eq(attendance.date, schedules.date)))
         .where(and(eq(attendance.employeeId, employeeId), sql`${attendance.date} >= ${hireDate.toISOString().slice(0, 10)}`, sql`${attendance.date} <= ${now.toISOString().slice(0, 10)}`));
 
+    // Debug logging for all employees
+    console.log(`[DEBUG] Employee ${employeeId}: hireDate=${hireDate.toISOString().slice(0, 10)}, now=${now.toISOString().slice(0, 10)}`);
+    console.log(`[DEBUG] Found ${allAttendanceRecords.length} attendance records`);
+
     let validAttendanceDays = 0;
-    let totalLateAbsences = 0;
+    let totalAbsences = 0;
+    let totalLates = 0; // lates from hire date to now
 
     for (const record of allAttendanceRecords) {
         const timeIn = record.timeIn ? new Date(record.timeIn) : null;
         const shiftStartStr = record.shiftStart || '09:00:00';
         const [h, m] = shiftStartStr.split(':').map(Number);
-        const shiftStart = new Date(timeIn ? timeIn.getFullYear() : now.getFullYear(), timeIn ? timeIn.getMonth() : now.getMonth(), timeIn ? timeIn.getDate() : now.getDate(), h, m);
+        const date = new Date(record.date);
+        const shiftStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m);
 
         let minutesLate = 0;
         if (timeIn && timeIn > shiftStart) {
             minutesLate = Math.floor((timeIn.getTime() - shiftStart.getTime()) / (1000 * 60));
         }
 
-        if (timeIn && record.timeOut && minutesLate < 480) {
+        const status = record.status;
+        if (employeeId === '399d1d75-041b-46d7-ad68-297495bbf917') {
+            console.log(`[DEBUG] Record ${record.date}: timeIn=${timeIn}, status=${status}, minutesLate=${minutesLate}`);
+        }
+
+        // Count based on status (Present or Late = attended)
+        if (status === 'Present' || status === 'Late') {
             validAttendanceDays++;
-        } else if (minutesLate >= 480) {
-            totalLateAbsences++;
+            if (status === 'Late' || minutesLate > 5) {
+                totalLates += minutesLate;
+            }
+        } else if (status === 'Absent') {
+            totalAbsences++;
         }
     }
 
-    // Absences = total working days from hire - valid attendance days + late absences
-    const absences = totalWorkingDaysFromHire - validAttendanceDays + totalLateAbsences;
+    console.log(`[DEBUG] Employee ${employeeId} - validAttendanceDays=${validAttendanceDays}, totalWorkingDaysFromHire=${totalWorkingDaysFromHire}`);
+
+    // Absences = total working days from hire - valid attendance days
+    totalAbsences = totalWorkingDaysFromHire - validAttendanceDays;
+
+    // Calculate total working days from hire date to now (excluding weekends)
+    const totalDaysAttended = validAttendanceDays;
 
     return {
         summary: {
             daysAttended,
-            lates,
+            totalDaysAttended,
+            lates: totalLates,
             absences,
             availableLeaves,
             totalHours: Math.round(totalHours * 100) / 100, // round to 2 decimals
@@ -706,8 +790,8 @@ export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]
     });
   }
 
-  // Combine existing payslip data with generated periods
-  return [...data, ...periods];
+  // Return only HR-generated payslip data
+  return data;
 }
 
 export async function getSchedule(employeeId: string) {
@@ -719,6 +803,11 @@ export async function getSchedule(employeeId: string) {
     const diffToMonday = (day + 6) % 7; // days since Monday
     const monday = new Date(today);
     monday.setDate(today.getDate() - diffToMonday);
+
+    // If today is Saturday or Sunday, show next week's schedule
+    if (day === 0 || day === 6) {
+        monday.setDate(monday.getDate() + 7);
+    }
 
     // Build the 5 dates (Mon-Fri) as ISO strings yyyy-MM-dd
     const weekDates: string[] = [];
@@ -752,13 +841,22 @@ export async function getSchedule(employeeId: string) {
         const timeIn = formatTimeShort(r.shiftStart as any);
         const timeOut = formatTimeShort(r.shiftEnd as any);
 
-        // Extract break from notes if available. notes may be null or a JSON string/object
+        // Calculate break time dynamically: 3 hours after shift start, 1 hour duration
         let breakStr = '-';
         try {
-            if (r.notes) {
-                // If notes is a stringified JSON, parse it; if it's an object, use it
-                const parsed = typeof r.notes === 'string' ? JSON.parse(r.notes) : r.notes;
-                if (parsed && parsed.break) breakStr = parsed.break;
+            if (r.shiftStart) {
+                const [h, m] = String(r.shiftStart).split(':').map(Number);
+                const shiftStartMinutes = h * 60 + m;
+                const breakStartMinutes = shiftStartMinutes + (3 * 60); // 3 hours after start
+                const breakEndMinutes = breakStartMinutes + 60; // 1 hour break
+
+                const breakStartHour = Math.floor(breakStartMinutes / 60);
+                const breakStartMin = breakStartMinutes % 60;
+                const breakEndHour = Math.floor(breakEndMinutes / 60);
+                const breakEndMin = breakEndMinutes % 60;
+
+                const formatTime = (h: number, m: number) => `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                breakStr = `${formatTime(breakStartHour, breakStartMin)} - ${formatTime(breakEndHour, breakEndMin)}`;
             }
         } catch (e) {
             breakStr = '-';
@@ -795,7 +893,7 @@ export async function getSchedule(employeeId: string) {
  * scheduleItems: Array of { employeeId: string, shifts: string[] } where shifts is 5 items (Mon-Fri)
  * weekStart: ISO date string for the Monday of the week (yyyy-MM-dd)
  */
-export async function publishSchedule(scheduleItems: { employeeId: string; shifts: string[]; breaks?: string[] }[], weekStart: string) {
+export async function publishSchedule(scheduleItems: { employeeId: string; shifts: string[]; breaks?: string[]; overtimeAllowed?: boolean[] }[], weekStart: string) {
     const db = await getDb();
     console.log('publishSchedule called with', { count: scheduleItems.length, weekStart });
     // Helper to normalize time strings like "9:00 - 17:00" into ["09:00:00","17:00:00"].
@@ -846,6 +944,8 @@ export async function publishSchedule(scheduleItems: { employeeId: string; shift
             const [shiftStart, shiftEnd] = times;
             // get break time string from scheduleItems if provided
             const breakStr = (item.breaks && item.breaks[dayOffset]) ? String(item.breaks[dayOffset]).trim() : null;
+            // get overtime allowed flag from scheduleItems if provided
+            const overtimeAllowed = (item.overtimeAllowed && item.overtimeAllowed[dayOffset]) ? item.overtimeAllowed[dayOffset] : false;
 
             // Check existing record
             const existing = await db.select().from(schedules).where(and(eq(schedules.employeeId, employeeId), eq(schedules.date, isoDate)));
@@ -1317,6 +1417,7 @@ export async function removePositionFromDepartment(allocationId: number): Promis
 
 export async function populateAttendanceRecords() {
     const db = await getDb();
+    const now = new Date();
 
     // Get all employees from accounts table with their details
     const employees = await db.select({
@@ -1327,7 +1428,8 @@ export async function populateAttendanceRecords() {
         position: accounts.position,
         department: accounts.department,
         branch: accounts.branch,
-        availableLeaves: accounts.availableLeaves
+        availableLeaves: accounts.availableLeaves,
+        dateHired: accounts.dateHired
     }).from(accounts).where(eq(accounts.role, 'Employee'));
 
     for (const employee of employees) {
@@ -1379,14 +1481,14 @@ export async function populateAttendanceRecords() {
                     minutesLate = Math.floor((timeIn.getTime() - shiftStart.getTime()) / (1000 * 60));
                 }
 
-                if (record.status === 'Present' || (timeIn && record.timeOut && minutesLate < 480)) {
+                const status = record.status;
+                if (status === 'Present' || status === 'Late') {
                     daysAttended++;
-                } else if (record.status === 'Absent' || minutesLate >= 480) {
+                    if (status === 'Late') {
+                        lates += minutesLate;
+                    }
+                } else if (status === 'Absent') {
                     absences++;
-                }
-
-                if (minutesLate > 0 && minutesLate < 480) {
-                    lates += minutesLate;
                 }
 
                 totalWorkHours += Number(record.hoursWorked) || 0;
@@ -1401,6 +1503,11 @@ export async function populateAttendanceRecords() {
             // Absences = total working days - days attended (since absences are already counted above)
             absences = totalWorkingDays - daysAttended;
 
+            // Calculate total working days from hire date +1 to now (excluding weekends)
+            const hireDate = new Date(employee.dateHired || now);
+            const adjustedHireDate = new Date(hireDate.getTime() + 24 * 60 * 60 * 1000);
+            const totalDaysAttended = calculateWorkingDays(adjustedHireDate, now);
+
             // Upsert into attendance_records with employee details
             await db.insert(attendanceRecords).values({
                 employeeId,
@@ -1412,6 +1519,7 @@ export async function populateAttendanceRecords() {
                 branch: employee.branch,
                 period,
                 daysAttended,
+                totalDaysAttended,
                 lates,
                 absences,
                 availableLeaves,
@@ -1426,6 +1534,7 @@ export async function populateAttendanceRecords() {
                     department: employee.department,
                     branch: employee.branch,
                     daysAttended,
+                    totalDaysAttended,
                     lates,
                     absences,
                     availableLeaves,
@@ -1491,10 +1600,81 @@ async function getDaysAttended(employeeId: string, startDate: Date, endDate: Dat
             minutesLate = Math.floor((timeIn.getTime() - shiftStart.getTime()) / (1000 * 60));
         }
 
-        if (record.status === 'Present' || (timeIn && record.timeOut && minutesLate < 480)) {
+        if (record.status === 'Present' || record.status === 'Late') {
             daysAttended++;
         }
     }
 
     return daysAttended;
+}
+
+export async function getEmployeeAbsenceSummary() {
+    const db = await getDb();
+
+    // Get all employees with their hire dates
+    const employees = await db
+        .select({
+            id: accounts.id,
+            employeeNumber: accounts.employeeNumber,
+            firstName: accounts.firstName,
+            lastName: accounts.lastName,
+            position: accounts.position,
+            department: accounts.department,
+            branch: accounts.branch,
+            dateHired: accounts.dateHired,
+        })
+        .from(accounts)
+        .where(and(eq(accounts.role, 'Employee'), eq(accounts.status, 'Active')));
+
+    const absenceSummaries = await Promise.all(
+        employees.map(async (employee) => {
+            const hireDate = new Date(employee.dateHired);
+            const now = new Date();
+
+            // Get all attendance records for this employee from hire date to now
+            const attendanceRecords = await db
+                .select({
+                    date: attendance.date,
+                    status: attendance.status,
+                    timeIn: attendance.timeIn,
+                })
+                .from(attendance)
+                .where(and(
+                    eq(attendance.employeeId, employee.id),
+                    sql`${attendance.date} >= ${hireDate.toISOString().slice(0, 10)}`,
+                    sql`${attendance.date} <= ${now.toISOString().slice(0, 10)}`
+                ))
+                .orderBy(attendance.date);
+
+            // Calculate total working days from hire date to now (weekdays only)
+            const totalWorkingDays = calculateWorkingDays(hireDate, now);
+
+            // Count absences - only where status is explicitly 'Absent'
+            let totalAbsences = 0;
+            const absenceDates: string[] = [];
+
+            for (const record of attendanceRecords) {
+                if (record.status === 'Absent') {
+                    totalAbsences++;
+                    absenceDates.push(record.date as string);
+                }
+            }
+
+            return {
+                id: employee.id,
+                employeeNumber: employee.employeeNumber,
+                name: `${employee.firstName} ${employee.lastName}`,
+                position: employee.position,
+                department: employee.department,
+                branch: employee.branch,
+                dateHired: employee.dateHired,
+                totalWorkingDays,
+                totalAbsences,
+                absenceDates,
+                absenceRate: totalWorkingDays > 0 ? Math.round((totalAbsences / totalWorkingDays) * 100 * 100) / 100 : 0, // percentage with 2 decimal places
+            };
+        })
+    );
+
+    return absenceSummaries;
 }

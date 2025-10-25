@@ -16,11 +16,13 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "npx tsx src/lib/seed.ts",
     "db:update-passwords": "npx tsx src/lib/update-passwords.ts",
-    "db:update-leaves": "npx tsx src/lib/update-leaves.ts"
+    "db:update-leaves": "npx tsx src/lib/update-leaves.ts",
+    "attendance:mark-absent": "npx tsx scripts/mark-absent-records.js"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.8.0",
     "@genkit-ai/next": "^1.8.0",
+    "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^4.1.3",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
@@ -61,6 +63,7 @@
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.54.2",
+    "react-time-picker": "^8.0.2",
     "recharts": "^2.15.1",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",

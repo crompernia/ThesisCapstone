@@ -66,7 +66,41 @@ export async function POST(req: Request) {
 
     let hoursWorked = 0;
     if (timeIn) {
-      hoursWorked = Math.round(((now.getTime() - timeIn.getTime()) / (1000 * 60 * 60)) * 100) / 100;
+      // Calculate total time worked
+      const totalMinutes = (now.getTime() - timeIn.getTime()) / (1000 * 60);
+
+      // Get break time from schedule - calculate as 3 hours after shift start
+      let breakMinutes = 0;
+      const sched = await db.select({ shiftStart: schedules.shiftStart, notes: schedules.notes }).from(schedules).where(and(eq(schedules.employeeId, employeeId), eq(schedules.date, isoDate)));
+      if (sched.length > 0) {
+        try {
+          const shiftStart = sched[0].shiftStart;
+          if (shiftStart) {
+            const [h, m] = shiftStart.split(':').map(Number);
+            const shiftStartMinutes = h * 60 + m;
+            // Break starts 3 hours after shift start
+            const breakStart = shiftStartMinutes + (3 * 60); // 3 hours = 180 minutes
+            const breakEnd = breakStart + 60; // 1 hour break
+
+            // Calculate overlap between work time and break time
+            const workStartMinutes = timeIn.getHours() * 60 + timeIn.getMinutes();
+            const workEndMinutes = now.getHours() * 60 + now.getMinutes();
+
+            // Find overlap between work period and break period
+            const overlapStart = Math.max(workStartMinutes, breakStart);
+            const overlapEnd = Math.min(workEndMinutes, breakEnd);
+            breakMinutes = Math.max(0, overlapEnd - overlapStart);
+          }
+        } catch (e) {
+          // If calculation fails, assume no break deduction
+          breakMinutes = 0;
+        }
+      }
+
+      // Subtract break time from total minutes
+      const netMinutes = Math.max(0, totalMinutes - breakMinutes);
+      hoursWorked = Math.round((netMinutes / 60) * 100) / 100;
+
       await db.update(attendance).set({ hoursWorked: hoursWorked as any }).where(eq(attendance.id, row.id));
     }
 

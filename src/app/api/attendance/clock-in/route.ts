@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { accounts, attendance } from '@/lib/schema';
+import { accounts, attendance, schedules } from '@/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { getCurrentUserId } from '@/lib/auth';
 import { branches } from '@/lib/schema';
@@ -62,6 +62,12 @@ export async function POST(req: Request) {
           }
         }
       }
+    }
+
+    // Check if employee has a schedule for today
+    const scheduleCheck = await db.select().from(schedules).where(and(eq(schedules.employeeId, employeeId), eq(schedules.date, isoDate)));
+    if (scheduleCheck.length === 0) {
+      return NextResponse.json({ success: false, message: 'No schedule assigned for today. Cannot clock in.' }, { status: 403 });
     }
 
     // Upsert attendance: if a record exists for employee + date, update timeIn if empty; otherwise insert

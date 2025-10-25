@@ -21,6 +21,7 @@ import {
 import { Input } from "./ui/input";
 import { Card, CardContent } from "./ui/card";
 import { useToast } from "../hooks/use-toast";
+import { DateTimeDisplay } from "./date-time-display";
 
 // Unified schema for login form validation.
 const loginFormSchema = z.object({
@@ -170,6 +171,7 @@ export function LoginForm() {
   return (
     <Card>
       <CardContent className="p-6">
+        <DateTimeDisplay />
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-4">
             <FormField
@@ -180,7 +182,7 @@ export function LoginForm() {
                   <FormLabel>Username</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Employee ID (e.g., 10023), HR email (.hr), or Admin email (admin)"
+                      placeholder="Credentials (ID, email)"
                       {...field}
                       disabled={isLoading}
                     />

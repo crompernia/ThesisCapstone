@@ -43,7 +43,17 @@ export function getPagibigDeduction(msc: number): number {
  * @returns Tax deduction
  */
 export function getTaxDeduction(taxableIncome: number): number {
-  // Simplified tax calculation - this should be replaced with actual tax brackets
-  // For demonstration, using a flat 15% rate
-  return taxableIncome * 0.15;
+   // Simplified tax calculation - this should be replaced with actual tax brackets
+   // For demonstration, using a flat 15% rate
+   return taxableIncome * 0.15;
+}
+
+/**
+ * Calculates prorated deductions for half-month pay periods.
+ * @param fullDeduction - Full monthly deduction amount
+ * @param isHalfMonth - Whether this is for a half-month period
+ * @returns Prorated deduction amount
+ */
+export function getProratedDeduction(fullDeduction: number, isHalfMonth: boolean = false): number {
+   return isHalfMonth ? fullDeduction / 2 : fullDeduction;
 }

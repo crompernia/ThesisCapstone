@@ -120,7 +120,7 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                     email: (employee as any).email ?? '',
                 });
 
-                setPhotoPreview(`https://i.pravatar.cc/150?u=${(employee as any).email}`);
+                setPhotoPreview("/default-avatar.png");
                 setBranches(branchesData);
 
                 // Fetch and set departments and positions based on initial employee data
@@ -275,7 +275,7 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                 <h3 className="text-lg font-medium">Employee Photo</h3>
                 <div className="flex items-center gap-6">
                 <Avatar className="h-24 w-24">
-                    <AvatarImage src={photoPreview ?? undefined} alt="Employee photo preview" />
+                    <AvatarImage src={photoPreview ?? "/default-avatar.png"} alt="Employee photo preview" />
                     <AvatarFallback>
                     <UserPlus />
                     </AvatarFallback>

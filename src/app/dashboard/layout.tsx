@@ -28,6 +28,7 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import QuickClock from '@/components/quick-clock';
 import * as React from 'react';
+import { DateTimeDisplay } from "@/components/date-time-display";
 // Temporary any-casts to work around UI prop typing mismatches in layout
 const SidebarProviderAny: any = (SidebarProvider as any) || (undefined as any);
 const SidebarAny: any = (Sidebar as any) || (undefined as any);
@@ -60,6 +61,8 @@ export default async function DashboardLayout({
     name: session.user.name || "Employee",
     email: session.user.email || "employee@example.com"
   };
+
+  const firstName = employee.name.split(' ')[0];
 
   return (
     <SidebarProviderAny>
@@ -120,8 +123,14 @@ export default async function DashboardLayout({
       {/* Main Content Area */}
       <SidebarInsetAny>
         <header className="flex items-center justify-between p-4 border-b">
-          <SidebarTriggerAny />
-          <UserNav employeeName={employee.name} employeeEmail={employee.email} />
+          <div className="flex items-center gap-4">
+            <SidebarTriggerAny />
+            <span className="text-lg font-medium">Welcome, {firstName}</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <DateTimeDisplay />
+            <UserNav employeeName={employee.name} employeeEmail={employee.email} />
+          </div>
         </header>
         <main className="p-4 sm:p-6 lg:p-8 bg-muted/40 min-h-[calc(100vh-65px)]">
             {children}

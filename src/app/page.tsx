@@ -14,16 +14,13 @@ export default function LoginPage() {
         <div className="flex justify-center mb-6">
           <Logo className="h-20 w-auto" />
         </div>
-        <h1 className="text-3xl font-bold text-center mb-2 font-headline">
-          Employee Dashboard
-        </h1>
-        <p className="text-muted-foreground text-center mb-8">
+        <p className="text-black text-2xl text-center mb-8">
           Welcome back. Please login to your account.
         </p>
 
         <LoginForm />
 
-        <p className="text-xs text-muted-foreground text-center mt-8">
+        <p className="text-xs text-muted-foreground text-left mt-8">
           © {new Date().getFullYear()} Chumplace Inc. All rights reserved.
         </p>
       </div>

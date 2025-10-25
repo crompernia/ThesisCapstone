@@ -69,7 +69,7 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
           <div className="flex items-start gap-6">
             <Avatar className="h-24 w-24">
               <AvatarImage
-                src={`https://i.pravatar.cc/150?u=${employee.email}`}
+                src="/default-avatar.png"
                 alt={employee.name}
               />
               <AvatarFallback>{initials}</AvatarFallback>

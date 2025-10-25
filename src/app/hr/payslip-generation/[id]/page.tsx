@@ -32,7 +32,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { getEmployeeById, getPositions, getAttendanceData } from '@/lib/data';
-import { getSSSDeduction, getPhilhealthDeduction, getPagibigDeduction } from '@/lib/payroll';
+import { getSSSDeduction, getPhilhealthDeduction, getPagibigDeduction, getProratedDeduction } from '@/lib/payroll';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -55,7 +55,8 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
     const [deductions, setDeductions] = React.useState([{ id: 1, name: '', amount: '' }]);
     const [numberOfHoursPerDay, setNumberOfHoursPerDay] = React.useState(8);
     const [minutesLate, setMinutesLate] = React.useState(0);
-    const [attendanceData, setAttendanceData] = React.useState<any>(null);
+    const [attendanceData, setAttendanceData] = React.useState<any>({ summary: { lates: 0, absences: 0, daysAttended: 0, totalDaysAttended: 0, availableLeaves: 0, totalHours: 0 } });
+    const [selectedHalf, setSelectedHalf] = React.useState<'1st' | '2nd'>('1st');
     const regularHolidayAmount = 0; // Read-only field for Regular holiday
     const regularHolidayOvertimeAmount = 0; // Read-only field for Regular Holiday Overtime
     const specialHolidayAmount = 0; // Read-only field for Special holiday
@@ -81,7 +82,7 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
                 ]);
                 setEmployee(empData || { id: params.id, name: 'Unknown Employee', position: 'Unknown', employeeNumber: 'N/A' });
                 setPositions(posData.length > 0 ? posData : [{ id: 1, title: 'Unknown', rate: '0' }]);
-                setAttendanceData(attData || { summary: { lates: 0, absences: 0, daysAttended: 0, availableLeaves: 0, totalHours: 0 } });
+                setAttendanceData(attData || { summary: { lates: 0, absences: 0, daysAttended: 0, totalDaysAttended: 0, availableLeaves: 0, totalHours: 0 } });
                 // Set minutesLate from attendance data or default to 0
                 setMinutesLate(attData?.summary?.lates || 0);
             } catch (error) {
@@ -100,8 +101,14 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
     const hourlyRate = Number(employeePosition?.rate ?? 0);
     const overtimeRate = hourlyRate * 1.5;
 
-    const basicPay = (dataSummary?.workedHours || 0) * hourlyRate;
-    const overtimePay = (dataSummary?.overtimeHours || 0) * overtimeRate;
+    // Adjust calculations for half-month pay period
+    const halfMonthHours = selectedHalf === '1st' ? 80 : 80; // Assuming 160 hours per month, split into two halves
+    const halfMonthWorkedHours = (dataSummary?.workedHours || 0) / 2; // Split worked hours between halves
+    const halfMonthOvertimeHours = (dataSummary?.overtimeHours || 0) / 2; // Split overtime hours between halves
+
+    const dailyRate = hourlyRate * numberOfHoursPerDay;
+    const basicPay = dailyRate * (attendanceData?.summary?.daysAttended || 0);
+    const overtimePay = halfMonthOvertimeHours * overtimeRate;
 
     // Calculate Monthly Salary Credit (MSC) for SSS based on standard 160 hours per month
     const monthlySalaryCredit = hourlyRate * 160;
@@ -110,13 +117,13 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
     // perMinute = (dailyRate / numberOfHours) / 60
     // deduction = perMinute * minutesLate
     // Infer dailyRate from hourlyRate * numberOfHoursPerDay when a dedicated dailyRate is not provided.
-    const dailyRate = hourlyRate * numberOfHoursPerDay;
     const perMinuteRate = (dailyRate / (numberOfHoursPerDay || 1)) / 60;
     const lateDeduction = perMinuteRate * (Number(minutesLate) || 0);
 
-    const sssDeduction = getSSSDeduction(monthlySalaryCredit);
-    const philhealthDeduction = getPhilhealthDeduction(basicPay);
-    const pagibigDeduction = getPagibigDeduction(basicPay);
+    const isHalfMonth = true; // Since we're implementing bi-monthly, all payslips are now half-month
+    const sssDeduction = getProratedDeduction(getSSSDeduction(monthlySalaryCredit), isHalfMonth);
+    const philhealthDeduction = getProratedDeduction(getPhilhealthDeduction(basicPay), isHalfMonth);
+    const pagibigDeduction = getProratedDeduction(getPagibigDeduction(basicPay), isHalfMonth);
 
 
     const addEarning = () => {
@@ -134,7 +141,23 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
     const removeDeduction = (id: number) => {
         setDeductions(deductions.filter(d => d.id !== id));
     };
-    
+
+    const updateAdditionalEarningName = (id: number, name: string) => {
+        setAdditionalEarnings(additionalEarnings.map(ear => ear.id === id ? { ...ear, name } : ear));
+    };
+
+    const updateAdditionalEarningAmount = (id: number, amount: string) => {
+        setAdditionalEarnings(additionalEarnings.map(ear => ear.id === id ? { ...ear, amount } : ear));
+    };
+
+    const updateDeductionName = (id: number, name: string) => {
+        setDeductions(deductions.map(ded => ded.id === id ? { ...ded, name } : ded));
+    };
+
+    const updateDeductionAmount = (id: number, amount: string) => {
+        setDeductions(deductions.map(ded => ded.id === id ? { ...ded, amount } : ded));
+    };
+
     const handleCalculateAndSave = async () => {
         // Validate required fields
         if (!employee?.id) {
@@ -154,14 +177,16 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
 
         // Get current date for pay period
         const today = new Date();
-        const payPeriod = `${today.toLocaleString('default', { month: 'short' })} ${today.getFullYear()}`;
-        // Set pay date to the last day of the current month
-        const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const payPeriod = `${today.toLocaleString('default', { month: 'short' })} ${today.getFullYear()} - ${selectedHalf} Half`;
+        // Set pay date to the 15th for 1st half, last day of month for 2nd half
+        const payDate = selectedHalf === '1st'
+            ? new Date(today.getFullYear(), today.getMonth(), 15)
+            : new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
         const payload = {
             employeeId: employee?.id || params.id,
             payPeriod,
-            payDate: lastDayOfMonth.toISOString().split('T')[0], // YYYY-MM-DD format
+            payDate: payDate.toISOString().split('T')[0], // YYYY-MM-DD format
             basicPay,
             overtime: overtimePay,
             allowances: totalAdditional,
@@ -174,7 +199,7 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
             companyLoan: 0,
             otherDeductions: totalUserDeductions,
             netPay,
-            daysWorked: Math.max(0, (dataSummary?.workedHours || 0) / numberOfHoursPerDay), // Ensure non-negative
+            daysWorked: Math.max(0, attendanceData?.summary?.daysAttended || 0), // Use actual days attended from attendance data
             dailyRate: Math.max(0, hourlyRate * numberOfHoursPerDay), // Ensure non-negative
             nightDifferential: 0,
         };
@@ -290,6 +315,10 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
                             <span className="font-medium flex items-center gap-2"><Calendar/>No. of Days</span>
                             <span>{attendanceData?.summary?.daysAttended || 0}</span>
                         </div>
+                        <div className="flex justify-between p-2 rounded-lg bg-muted/50">
+                            <span className="font-medium flex items-center gap-2"><Calendar/>Total Days Attended</span>
+                            <span>{attendanceData?.summary?.totalDaysAttended || 0}</span>
+                        </div>
                          <Separator/>
                          <div className="space-y-2">
                              <Label htmlFor="absences-paid">Paid Absences (Days)</Label>
@@ -301,6 +330,34 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
                                      <Label htmlFor="hours-per-day">Work Hours per Day</Label>
                                      <Input id="hours-per-day" type="number" value={numberOfHoursPerDay} onChange={(e) => setNumberOfHoursPerDay(Number(e.target.value || 0))} />
                                      <p className="text-xs text-muted-foreground">Used to compute per-minute rate for late deductions.</p>
+                                 </div>
+                                 <div className="space-y-2">
+                                     <Label htmlFor="pay-period">Pay Period</Label>
+                                     <div className="flex items-center space-x-4">
+                                         <div className="flex items-center space-x-2">
+                                             <input
+                                                 type="radio"
+                                                 id="1st-half"
+                                                 name="pay-period"
+                                                 value="1st"
+                                                 checked={selectedHalf === '1st'}
+                                                 onChange={(e) => setSelectedHalf(e.target.value as '1st' | '2nd')}
+                                             />
+                                             <Label htmlFor="1st-half">1st Half (1-15)</Label>
+                                         </div>
+                                         <div className="flex items-center space-x-2">
+                                             <input
+                                                 type="radio"
+                                                 id="2nd-half"
+                                                 name="pay-period"
+                                                 value="2nd"
+                                                 checked={selectedHalf === '2nd'}
+                                                 onChange={(e) => setSelectedHalf(e.target.value as '1st' | '2nd')}
+                                             />
+                                             <Label htmlFor="2nd-half">2nd Half (16-End)</Label>
+                                         </div>
+                                     </div>
+                                     <p className="text-xs text-muted-foreground">Select the half of the month for this payslip.</p>
                                  </div>
                                  <div className="space-y-2">
                                      <Label htmlFor="minutes-late">Minutes Late (total)</Label>
@@ -348,11 +405,22 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
                                             <div className="grid grid-cols-2 gap-2 flex-1">
                                                 <div className="space-y-1">
                                                     <Label htmlFor={`earning-name-${index}`} className="sr-only">Earning Name</Label>
-                                                    <Input id={`earning-name-${index}`} placeholder="e.g., Holiday Bonus"/>
+                                                    <Input
+                                                        id={`earning-name-${index}`}
+                                                        placeholder="e.g., Holiday Bonus"
+                                                        value={earning.name}
+                                                        onChange={(e) => updateAdditionalEarningName(earning.id, e.target.value)}
+                                                    />
                                                 </div>
                                                 <div className="space-y-1">
                                                     <Label htmlFor={`earning-amount-${index}`} className="sr-only">Amount</Label>
-                                                    <Input id={`earning-amount-${index}`} type="number" placeholder="e.g., 1000.00"/>
+                                                    <Input
+                                                        id={`earning-amount-${index}`}
+                                                        type="number"
+                                                        placeholder="e.g., 1000.00"
+                                                        value={earning.amount}
+                                                        onChange={(e) => updateAdditionalEarningAmount(earning.id, e.target.value)}
+                                                    />
                                                 </div>
                                             </div>
                                             <Button variant="ghost" size="icon" onClick={() => removeEarning(earning.id)}>
@@ -396,11 +464,22 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
                                         <div className="grid grid-cols-2 gap-2 flex-1">
                                             <div className="space-y-1">
                                                 <Label htmlFor={`ded-name-${index}`} className="sr-only">Deduction Name</Label>
-                                                <Input id={`ded-name-${index}`} placeholder="e.g., Government Loan"/>
+                                                <Input
+                                                    id={`ded-name-${index}`}
+                                                    placeholder="e.g., Government Loan"
+                                                    value={ded.name}
+                                                    onChange={(e) => updateDeductionName(ded.id, e.target.value)}
+                                                />
                                             </div>
                                             <div className="space-y-1">
                                                 <Label htmlFor={`ded-amount-${index}`} className="sr-only">Amount</Label>
-                                                <Input id={`ded-amount-${index}`} type="number" placeholder="e.g., 500.00"/>
+                                                <Input
+                                                    id={`ded-amount-${index}`}
+                                                    type="number"
+                                                    placeholder="e.g., 500.00"
+                                                    value={ded.amount}
+                                                    onChange={(e) => updateDeductionAmount(ded.id, e.target.value)}
+                                                />
                                             </div>
                                         </div>
                                         <Button variant="ghost" size="icon" onClick={() => removeDeduction(ded.id)}>

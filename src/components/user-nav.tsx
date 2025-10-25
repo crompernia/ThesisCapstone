@@ -48,7 +48,7 @@ export function UserNav({ employeeName, employeeEmail }: UserNavProps) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={`https://i.pravatar.cc/150?u=${employeeEmail}`} alt={employeeName} />
+            <AvatarImage src="/default-avatar.png" alt={employeeName} />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </Button>

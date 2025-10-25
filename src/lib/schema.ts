@@ -218,6 +218,7 @@ export const attendanceRecords = pgTable("attendance_records", {
 	branch: varchar("branch", { length: 255 }),
 	period: varchar("period", { length: 50 }).notNull(),
 	daysAttended: integer("days_attended").default(0),
+	totalDaysAttended: integer("total_days_attended").default(0),
 	lates: integer("lates").default(0),
 	absences: integer("absences").default(0),
 	availableLeaves: integer("available_leaves").default(0),

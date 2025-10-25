@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search } from "lucide-react";
-import { getDailyAttendanceData, getBranches, getDepartmentsForBranch, getPositionsForDepartment } from "@/lib/data";
+import { getDailyAttendanceData, getBranches, getDepartmentsForBranch, getPositionsForDepartment, getEmployeeAbsenceSummary } from "@/lib/data";
 
 /**
  * Renders the HR attendance monitoring page.
@@ -46,6 +46,7 @@ export default function AttendanceMonitoringPage() {
   type BranchType = { id: number; name: string; coordinates: string | null };
 
   const [attendanceData, setAttendanceData] = React.useState<AttendanceRow[]>([]);
+  const [absenceData, setAbsenceData] = React.useState<any[]>([]);
   const [branches, setBranches] = React.useState<BranchType[]>([]);
   const [departments, setDepartments] = React.useState<string[]>([]);
   const [positions, setPositions] = React.useState<string[]>([]);
@@ -54,15 +55,18 @@ export default function AttendanceMonitoringPage() {
   const today = new Date().toISOString().substring(0, 10);
   const [selectedDate, setSelectedDate] = React.useState<string>(today);
   const dateInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [viewMode, setViewMode] = React.useState<'daily' | 'absence'>('daily');
 
   React.useEffect(() => {
     const fetchInitialData = async () => {
-        const [attendance, branchesData] = await Promise.all([
+        const [attendance, branchesData, absence] = await Promise.all([
             getDailyAttendanceData(selectedDate),
-            getBranches()
+            getBranches(),
+            getEmployeeAbsenceSummary()
         ]);
-  setAttendanceData(attendance as AttendanceRow[]);
-  setBranches(branchesData as BranchType[]);
+   setAttendanceData(attendance as AttendanceRow[]);
+   setBranches(branchesData as BranchType[]);
+   setAbsenceData(absence);
     };
     fetchInitialData();
   }, [selectedDate]);
@@ -98,14 +102,41 @@ export default function AttendanceMonitoringPage() {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold font-headline">Attendance Monitoring</h1>
       
-      {/* Filtering Controls */}
+      {/* View Mode Toggle */}
       <Card>
         <CardHeader>
-          <CardTitle>Filter Employees</CardTitle>
+          <CardTitle>View Mode</CardTitle>
           <CardDescription>
-            Search and filter employee attendance for a specific date.
+            Switch between daily attendance view and absence summary view.
           </CardDescription>
         </CardHeader>
+        <CardContent>
+          <div className="flex gap-4">
+            <Button
+              variant={viewMode === 'daily' ? 'default' : 'outline'}
+              onClick={() => setViewMode('daily')}
+            >
+              Daily Attendance
+            </Button>
+            <Button
+              variant={viewMode === 'absence' ? 'default' : 'outline'}
+              onClick={() => setViewMode('absence')}
+            >
+              Absence Summary
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Filtering Controls */}
+      {viewMode === 'daily' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Filter Employees</CardTitle>
+            <CardDescription>
+              Search and filter employee attendance for a specific date.
+            </CardDescription>
+          </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Date input restored (inline in filter controls) */}
@@ -154,8 +185,10 @@ export default function AttendanceMonitoringPage() {
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Date navigator placed between filter and attendance */}
+      {viewMode === 'daily' && (
       <div className="flex items-center justify-center">
         <div className="inline-flex items-center gap-4 p-2">
           <Button onClick={() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d.toISOString().slice(0,10)); }}>{'←'}</Button>
@@ -163,8 +196,10 @@ export default function AttendanceMonitoringPage() {
           <Button onClick={() => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(d.toISOString().slice(0,10)); }}>{'→'}</Button>
         </div>
       </div>
+      )}
 
       {/* Attendance Data Table */}
+      {viewMode === 'daily' && (
       <Card>
         <CardHeader>
             <CardTitle>Daily Attendance Tally</CardTitle>
@@ -228,6 +263,55 @@ export default function AttendanceMonitoringPage() {
           )}
         </CardContent>
       </Card>
+      )}
+
+      {/* Absence Summary Table */}
+      {viewMode === 'absence' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Employee Absence Summary</CardTitle>
+            <CardDescription>
+              Summary of absences for all employees from their hire date to present.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {absenceData.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Employee ID</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Position</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Branch</TableHead>
+                    <TableHead>Total Working Days</TableHead>
+                    <TableHead>Total Absences</TableHead>
+                    <TableHead>Absence Rate (%)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {absenceData.map((emp: any) => (
+                    <TableRow key={emp.id}>
+                      <TableCell className="font-mono text-xs">{emp.employeeNumber}</TableCell>
+                      <TableCell className="font-medium">{emp.name}</TableCell>
+                      <TableCell>{emp.position}</TableCell>
+                      <TableCell>{emp.department}</TableCell>
+                      <TableCell>{emp.branch}</TableCell>
+                      <TableCell>{emp.totalWorkingDays}</TableCell>
+                      <TableCell className="text-red-600 font-semibold">{emp.totalAbsences}</TableCell>
+                      <TableCell className={emp.absenceRate > 10 ? 'text-red-600 font-semibold' : ''}>
+                        {emp.absenceRate}%
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-muted-foreground text-center">No absence data available.</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

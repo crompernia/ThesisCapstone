@@ -1,4 +1,4 @@
-import { pgTable, index, foreignKey, unique, serial, uuid, date, timestamp, varchar, numeric, text, integer, time, jsonb } from "drizzle-orm/pg-core"
+import { pgTable, index, foreignKey, unique, serial, uuid, date, timestamp, varchar, numeric, text, integer, time, jsonb, boolean } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 
@@ -71,6 +71,7 @@ export const schedules = pgTable("schedules", {
 	date: date().notNull(),
 	shiftStart: time("shift_start").notNull(),
 	shiftEnd: time("shift_end").notNull(),
+	overtimeAllowed: boolean("overtime_allowed").default(false),
 	notes: text(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 }, (table) => [

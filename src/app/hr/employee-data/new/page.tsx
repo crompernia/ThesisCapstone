@@ -214,7 +214,7 @@ export default function AddEmployeePage() {
                 <h3 className="text-lg font-medium">Employee Photo</h3>
                 <div className="flex items-center gap-6">
                 <Avatar className="h-24 w-24">
-                    <AvatarImage src={photoPreview ?? undefined} alt="Employee photo preview" />
+                    <AvatarImage src={photoPreview ?? "/default-avatar.png"} alt="Employee photo preview" />
                     <AvatarFallback>
                     <UserPlus />
                     </AvatarFallback>

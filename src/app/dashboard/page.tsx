@@ -45,7 +45,7 @@ export default async function EmployeeDashboardPage() {
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
                     <AvatarImage
-                      src={`https://i.pravatar.cc/150?u=${employee.email}`}
+                      src="/default-avatar.png"
                       alt={employee.name}
                     />
                     <AvatarFallback>
@@ -138,6 +138,7 @@ export default async function EmployeeDashboardPage() {
               mode="single"
               selected={new Date()}
               className="rounded-md"
+              classNames={{}}
             />
           </CardContent>
         </Card>

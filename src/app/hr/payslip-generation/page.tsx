@@ -81,7 +81,7 @@ export default function PayslipGenerationPage() {
       <div>
         <h1 className="text-3xl font-bold font-headline">Payslip Generation</h1>
         <p className="text-muted-foreground">
-          Select an employee to generate or view their payslip.
+          Select an employee to generate or view their payslip. Employees receive wages twice per month (1st and 2nd half).
         </p>
       </div>
 
@@ -145,8 +145,7 @@ export default function PayslipGenerationPage() {
         <CardHeader>
           <CardTitle>Employee List</CardTitle>
           <CardDescription>
-            Select an employee to proceed with payslip generation for the
-            current pay period.
+            Select an employee to proceed with payslip generation. Each employee receives two payslips per month (1st and 2nd half).
           </CardDescription>
         </CardHeader>
         <CardContent>

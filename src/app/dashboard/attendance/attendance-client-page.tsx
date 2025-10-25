@@ -32,7 +32,7 @@ import autoTable from "jspdf-autotable";
  * @returns {JSX.Element} The attendance page client component.
  */
 type AttendanceRecord = { date: string; timeIn?: string | null; timeOut?: string | null; status?: string };
-type AttendanceSummary = { daysAttended: number; lates: number; absences: number; availableLeaves: number; totalHours: number };
+type AttendanceSummary = { daysAttended: number; totalDaysAttended: number; lates: number; absences: number; availableLeaves: number; totalHours: number };
 
 export default function AttendanceClientPage({ attendanceSummary, attendanceRecords, employeeName }: { attendanceSummary: AttendanceSummary; attendanceRecords: AttendanceRecord[]; employeeName: string }) {
   React.useEffect(() => {
@@ -138,7 +138,7 @@ export default function AttendanceClientPage({ attendanceSummary, attendanceReco
       </div>
 
       {/* Attendance Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Days Attended</CardTitle>
@@ -147,6 +147,16 @@ export default function AttendanceClientPage({ attendanceSummary, attendanceReco
           <CardContent>
             <div className="text-2xl font-bold">{attendanceSummary.daysAttended}</div>
             <p className="text-xs text-muted-foreground">out of 22 working days</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Days Attended</CardTitle>
+            <CheckCircle />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{attendanceSummary.totalDaysAttended}</div>
+            <p className="text-xs text-muted-foreground">Career total</p>
           </CardContent>
         </Card>
         <Card>

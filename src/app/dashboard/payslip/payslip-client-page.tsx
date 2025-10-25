@@ -50,8 +50,15 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
   const totalEarnings = payslipData?.earnings.reduce((sum, item) => sum + item.amount, 0) ?? 0;
   const totalDeductions = payslipData?.deductions.reduce((sum, item) => sum + item.amount, 0) ?? 0;
   const netPay = payslipData?.net_pay ?? 0;
-  const dailyRate = 0;
+  const dailyRate = payslipData?.dailyRate ?? 0;
   const noOfDays = payslipData?.earnings.find(item => item.name === "No. of Days")?.amount || 0;
+  const basicPay = payslipData?.earnings.find(item => item.name === "BASIC PAY")?.amount || 0;
+  const overtime = payslipData?.earnings.find(item => item.name === "Overtime")?.amount || 0;
+  const nightDifferential = payslipData?.earnings.find(item => item.name === "Night Differential")?.amount || 0;
+  const regularHoliday = payslipData?.earnings.find(item => item.name === "RH OT")?.amount || 0;
+  const specialHoliday = payslipData?.earnings.find(item => item.name === "Special Holiday")?.amount || 0;
+  const spOt = payslipData?.earnings.find(item => item.name === "SP OT")?.amount || 0;
+  const allowances = payslipData?.earnings.find(item => item.name === "Allowances")?.amount || 0;
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-PH', {
@@ -90,13 +97,13 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
         formatCurrency(e.amount)
       ]),
       foot: [
-        ['Daily Rate', formatCurrency(dailyRate * 8)],
+        ['Daily Rate', formatCurrency(dailyRate)],
         ['No. of Days', noOfDays.toString()],
-        ['Basic Pay', formatCurrency((dailyRate * 8) * noOfDays)],
-        ['Overtime', formatCurrency(0)],
-        ['Night Differential', formatCurrency(0)],
-        ['Regular Holiday', formatCurrency(0)],
-        ['RH OT', formatCurrency(0)]
+        ['Basic Pay', formatCurrency(basicPay)],
+        ['Overtime', formatCurrency(overtime)],
+        ['Night Differential', formatCurrency(nightDifferential)],
+        ['Regular Holiday', formatCurrency(regularHoliday)],
+        ['RH OT', formatCurrency(regularHoliday)]
       ],
       theme: 'striped',
       headStyles: { fillColor: [22, 163, 74] }, // Green
@@ -190,7 +197,7 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
 
                 <ul className="space-y-2">
                   {payslipData.earnings.filter(item => !excludedEarnings.includes(item.name) && item.name !== "No. of Days" && item.name !== "Basic Pay").map((item, index) => (
-                    <li key={index} className="flex justify-between items-center text-sm">
+                    <li key={index} className="flex justify-between items-center">
                       <span>{item.name}</span>
                       <span className="font-mono">
                         {formatCurrency(item.amount)}
@@ -200,64 +207,64 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
                 </ul>
 
                 <Separator className="my-4" />
-                <div className="flex justify-between items-center font-semibold">
+                <div className="flex justify-between items-center">
                   <span>Daily Rate</span>
                   <span className="font-mono">
                     {formatCurrency(dailyRate * 8)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center font-semibold">
+                <div className="flex justify-between items-center">
                   <span>No. of Days</span>
                   <span className="font-mono">
                     {noOfDays}
                   </span>
                 </div>
-                <div className="flex justify-between items-center font-semibold">
+                <div className="flex justify-between items-center">
                   <span>Basic Pay</span>
                   <span className="font-mono">
-                    {formatCurrency((dailyRate * 8) * noOfDays)}
+                    {formatCurrency(basicPay)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center font-semibold">
+                <div className="flex justify-between items-center">
                   <span>Overtime</span>
                   <span className="font-mono">
-                    {formatCurrency(0)}
+                    {formatCurrency(overtime)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center font-semibold">
+                <div className="flex justify-between items-center">
                   <span>Night Differential</span>
                   <span className="font-mono">
-                    {formatCurrency(0)}
+                    {formatCurrency(nightDifferential)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center font-semibold">
+                <div className="flex justify-between items-center">
                   <span>Regular Holiday</span>
                   <span className="font-mono">
-                    {formatCurrency(0)}
+                    {formatCurrency(regularHoliday)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center font-semibold">
+                <div className="flex justify-between items-center">
                   <span>RH OT</span>
                   <span className="font-mono">
-                    {formatCurrency(0)}
+                    {formatCurrency(regularHoliday)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center font-semibold">
+                <div className="flex justify-between items-center">
                   <span>Special Holiday</span>
                   <span className="font-mono">
-                    {formatCurrency(0)}
+                    {formatCurrency(specialHoliday)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center font-semibold">
+                <div className="flex justify-between items-center">
                   <span>SP OT</span>
                   <span className="font-mono">
-                    {formatCurrency(0)}
+                    {formatCurrency(spOt)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center font-semibold">
+                <div className="flex justify-between items-center">
                   <span>Allowance</span>
                   <span className="font-mono">
-                    {formatCurrency(0)}
+                    {formatCurrency(allowances)}
                   </span>
                 </div>
               </div>
