@@ -80,28 +80,30 @@ export default async function HRDashboardPage() {
                     <CardDescription>A log of recent system and employee actions.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {recentActivities.length > 0 ? (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Activity</TableHead>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead>Time</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {recentActivities.map(activity => (
-                                    <TableRow key={activity.id}>
-                                        <TableCell className="font-medium">{activity.activity}</TableCell>
-                                        <TableCell><Badge variant="outline">{activity.type}</Badge></TableCell>
-                                        <TableCell className="text-muted-foreground">{activity.timestamp}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    ) : (
-                        <p className="text-muted-foreground text-center">No recent activity.</p>
-                    )}
+                  {recentActivities.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Employee ID</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Activity</TableHead>
+                          <TableHead>Time</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {recentActivities.map(activity => (
+                          <TableRow key={activity.id}>
+                            <TableCell className="font-mono text-xs">{activity.employeeNumber}</TableCell>
+                            <TableCell className="font-medium">{activity.employeeName}</TableCell>
+                            <TableCell>{activity.activity}</TableCell>
+                            <TableCell className="text-muted-foreground">{activity.timestamp}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-muted-foreground text-center">No recent activity.</p>
+                  )}
                 </CardContent>
             </Card>
             {/* Quick Actions Card: Provides shortcuts to common HR tasks. */}
@@ -126,7 +128,7 @@ export default async function HRDashboardPage() {
                     <Button asChild variant="outline" className="h-20 flex-col gap-1">
                         <Link href="/hr/payslip-generation">
                             <Wallet />
-                            <span>Run Payroll</span>
+                            <span>Payroll</span>
                         </Link>
                     </Button>
                      <Button asChild variant="outline" className="h-20 flex-col gap-1">

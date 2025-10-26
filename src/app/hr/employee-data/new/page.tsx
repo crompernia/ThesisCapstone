@@ -58,12 +58,26 @@ const employeeSchema = z.object({
     position: z.string().min(1, "Position is required."),
     hireDate: z.string().min(1, "Date of hire is required."),
     email: z.string().email("Invalid email address."),
-    phone: z.string().min(1, "Phone number is required."),
+    phone: z.string().min(1, "Phone number is required.").refine((val) => {
+        return /^\+63\s\d{3}\s\d{3}\s\d{4}$/.test(val);
+    }, "Phone number must be in format +63 XXX XXX XXXX"),
     photo: z.any().optional(),
-    sssNumber: z.string().optional(),
-    philhealthNumber: z.string().optional(),
-    pagibigNumber: z.string().optional(),
-    tin: z.string().optional(),
+    sssNumber: z.string().optional().refine((val) => {
+        if (!val) return true; // Allow empty
+        return /^\d{2}-\d{7}-\d{1}$/.test(val);
+    }, "SSS number must be in format XX-XXXXXXX-X"),
+    philhealthNumber: z.string().optional().refine((val) => {
+        if (!val) return true; // Allow empty
+        return /^\d{2}-\d{9}-\d{1}$/.test(val);
+    }, "PhilHealth number must be in format XX-XXXXXXXXX-X"),
+    pagibigNumber: z.string().optional().refine((val) => {
+        if (!val) return true; // Allow empty
+        return /^\d{4}-\d{4}-\d{4}$/.test(val);
+    }, "Pag-IBIG number must be in format XXXX-XXXX-XXXX"),
+    tin: z.string().optional().refine((val) => {
+        if (!val) return true; // Allow empty
+        return /^\d{3}-\d{3}-\d{3}-\d{3}$/.test(val);
+    }, "TIN must be in format XXX-XXX-XXX-XXX"),
 });
 
 /**
@@ -164,10 +178,19 @@ export default function AddEmployeePage() {
   const handleSubmit = async (values) => {
     const formData = new FormData();
     for (const key in values) {
-      formData.append(key, values[key]);
+      if (key === 'photo' && values[key]) {
+        // Convert the File object to base64 string for storage
+        const file = values[key];
+        const base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(file);
+        });
+        formData.append(key, base64);
+      } else {
+        formData.append(key, values[key]);
+      }
     }
-    // We can add photo handling here if needed, e.g., uploading to storage
-    // and appending a URL to formData. For now, we pass the data.
 
     const result = await addEmployee(formData);
 
@@ -396,7 +419,26 @@ export default function AddEmployeePage() {
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>SSS Number</FormLabel>
-                                <FormControl><Input placeholder="e.g., 00-0000000-0" {...field} /></FormControl>
+                                <FormControl>
+                                    <Input
+                                        placeholder="12-3456789-0"
+                                        {...field}
+                                        onChange={(e) => {
+                                            let value = e.target.value.replace(/[^0-9-]/g, ''); // Remove non-digits and non-hyphens
+                                            // Auto-format as user types
+                                            if (value.length > 2 && value[2] !== '-') {
+                                                value = value.slice(0, 2) + '-' + value.slice(2);
+                                            }
+                                            if (value.length > 10 && value[10] !== '-') {
+                                                value = value.slice(0, 10) + '-' + value.slice(10);
+                                            }
+                                            if (value.length > 12) {
+                                                value = value.slice(0, 12); // Limit to 12 characters
+                                            }
+                                            field.onChange(value);
+                                        }}
+                                    />
+                                </FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -407,7 +449,26 @@ export default function AddEmployeePage() {
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>PhilHealth Number</FormLabel>
-                                <FormControl><Input placeholder="e.g., 00-000000000-0" {...field} /></FormControl>
+                                <FormControl>
+                                    <Input
+                                        placeholder="12-345678901-2"
+                                        {...field}
+                                        onChange={(e) => {
+                                            let value = e.target.value.replace(/[^0-9-]/g, ''); // Remove non-digits and non-hyphens
+                                            // Auto-format as user types
+                                            if (value.length > 2 && value[2] !== '-') {
+                                                value = value.slice(0, 2) + '-' + value.slice(2);
+                                            }
+                                            if (value.length > 12 && value[12] !== '-') {
+                                                value = value.slice(0, 12) + '-' + value.slice(12);
+                                            }
+                                            if (value.length > 14) {
+                                                value = value.slice(0, 14); // Limit to 14 characters
+                                            }
+                                            field.onChange(value);
+                                        }}
+                                    />
+                                </FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -420,7 +481,26 @@ export default function AddEmployeePage() {
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Pag-IBIG Number</FormLabel>
-                                <FormControl><Input placeholder="e.g., 0000-0000-0000" {...field} /></FormControl>
+                                <FormControl>
+                                    <Input
+                                        placeholder="1234-5678-9012"
+                                        {...field}
+                                        onChange={(e) => {
+                                            let value = e.target.value.replace(/[^0-9-]/g, ''); // Remove non-digits and non-hyphens
+                                            // Auto-format as user types
+                                            if (value.length > 4 && value[4] !== '-') {
+                                                value = value.slice(0, 4) + '-' + value.slice(4);
+                                            }
+                                            if (value.length > 9 && value[9] !== '-') {
+                                                value = value.slice(0, 9) + '-' + value.slice(9);
+                                            }
+                                            if (value.length > 14) {
+                                                value = value.slice(0, 14); // Limit to 14 characters
+                                            }
+                                            field.onChange(value);
+                                        }}
+                                    />
+                                </FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -431,7 +511,29 @@ export default function AddEmployeePage() {
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>TIN</FormLabel>
-                                <FormControl><Input placeholder="e.g., 000-000-000-000" {...field} /></FormControl>
+                                <FormControl>
+                                    <Input
+                                        placeholder="123-456-789-012"
+                                        {...field}
+                                        onChange={(e) => {
+                                            let value = e.target.value.replace(/[^0-9-]/g, ''); // Remove non-digits and non-hyphens
+                                            // Auto-format as user types
+                                            if (value.length > 3 && value[3] !== '-') {
+                                                value = value.slice(0, 3) + '-' + value.slice(3);
+                                            }
+                                            if (value.length > 7 && value[7] !== '-') {
+                                                value = value.slice(0, 7) + '-' + value.slice(7);
+                                            }
+                                            if (value.length > 11 && value[11] !== '-') {
+                                                value = value.slice(0, 11) + '-' + value.slice(11);
+                                            }
+                                            if (value.length > 15) {
+                                                value = value.slice(0, 15); // Limit to 15 characters
+                                            }
+                                            field.onChange(value);
+                                        }}
+                                    />
+                                </FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -462,7 +564,35 @@ export default function AddEmployeePage() {
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Phone Number</FormLabel>
-                            <FormControl><Input placeholder="+63 555 123 4567" {...field} /></FormControl>
+                            <FormControl>
+                                <Input
+                                    placeholder="+63 912 345 6789"
+                                    {...field}
+                                    onChange={(e) => {
+                                        let value = e.target.value.replace(/[^0-9+\s]/g, ''); // Remove non-digits, non-plus, non-space
+                                        // Auto-format as Philippine number
+                                        if (value.startsWith('+63') || value.startsWith('63')) {
+                                            // Remove any existing +63 or 63 prefix to reformat
+                                            let cleanValue = value.replace(/^\+?63/, '');
+                                            // Remove all spaces and non-digits
+                                            cleanValue = cleanValue.replace(/\s/g, '').replace(/[^0-9]/g, '');
+                                            // Format as +63 XXX XXX XXXX
+                                            if (cleanValue.length > 0) {
+                                                value = '+63';
+                                                if (cleanValue.length > 0) value += ' ' + cleanValue.slice(0, 3);
+                                                if (cleanValue.length > 3) value += ' ' + cleanValue.slice(3, 6);
+                                                if (cleanValue.length > 6) value += ' ' + cleanValue.slice(6, 10);
+                                            }
+                                        } else if (value.length === 0 || value === '+') {
+                                            value = '+63 ';
+                                        }
+                                        if (value.length > 17) {
+                                            value = value.slice(0, 17); // Limit to 17 characters (+63 XXX XXX XXXX)
+                                        }
+                                        field.onChange(value);
+                                    }}
+                                />
+                            </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}

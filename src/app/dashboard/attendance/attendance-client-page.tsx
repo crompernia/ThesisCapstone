@@ -32,9 +32,11 @@ import autoTable from "jspdf-autotable";
  * @returns {JSX.Element} The attendance page client component.
  */
 type AttendanceRecord = { date: string; timeIn?: string | null; timeOut?: string | null; status?: string };
-type AttendanceSummary = { daysAttended: number; totalDaysAttended: number; lates: number; absences: number; availableLeaves: number; totalHours: number };
+type AttendanceSummary = { daysAttended: number; totalDaysAttended: number; lates: number; absences: number; availableLeaves: number; totalHours: number; totalWorkingDays: number };
 
-export default function AttendanceClientPage({ attendanceSummary, attendanceRecords, employeeName }: { attendanceSummary: AttendanceSummary; attendanceRecords: AttendanceRecord[]; employeeName: string }) {
+type ScheduleItem = { day: string; date: string; timeIn: string; timeOut: string; break: string; hours: number };
+
+export default function AttendanceClientPage({ attendanceSummary, attendanceRecords, employeeName, scheduleData }: { attendanceSummary: AttendanceSummary; attendanceRecords: AttendanceRecord[]; employeeName: string; scheduleData?: ScheduleItem[] }) {
   React.useEffect(() => {
           document.title = "Employee Attendance";
           }, []);
@@ -81,7 +83,7 @@ export default function AttendanceClientPage({ attendanceSummary, attendanceReco
         if (idx !== -1) {
           const updated = [...prev];
           if (d?.action === 'in') {
-            updated[idx] = { ...updated[idx], timeIn: timeStr, status: 'Present' };
+            updated[idx] = { ...updated[idx], timeIn: timeStr, status: d?.status || 'Present' };
             alert('Clocked in successfully');
           } else if (d?.action === 'out') {
             updated[idx] = { ...updated[idx], timeOut: timeStr };
@@ -93,7 +95,7 @@ export default function AttendanceClientPage({ attendanceSummary, attendanceReco
           date: today,
           timeIn: d?.action === 'in' ? timeStr : null,
           timeOut: d?.action === 'out' ? timeStr : null,
-          status: d?.action === 'in' ? 'Present' : 'Present',
+          status: d?.action === 'in' ? (d?.status || 'Present') : 'Present',
         };
         return [newRecord, ...prev];
       });
@@ -113,14 +115,70 @@ export default function AttendanceClientPage({ attendanceSummary, attendanceReco
     window.dispatchEvent(new CustomEvent('quick-clock', { detail: { action: 'out' } }));
   };
 
+  const getCurrentStatus = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayRecord = records.find(r => r.date === today);
+
+    // Check if currently on break
+    if (scheduleData && todayRecord?.timeIn && !todayRecord?.timeOut) {
+      const now = new Date();
+      const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
+
+      // Find today's schedule
+      const todaySchedule = scheduleData.find(s => s.date === today);
+      if (todaySchedule && todaySchedule.break && todaySchedule.break !== '-') {
+        // Parse break time (format: "12:00 - 13:00")
+        const breakMatch = todaySchedule.break.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
+        if (breakMatch) {
+          const [_, breakStartStr, breakEndStr] = breakMatch;
+          const [startHour, startMin] = breakStartStr.split(':').map(Number);
+          const [endHour, endMin] = breakEndStr.split(':').map(Number);
+
+          const breakStartMinutes = startHour * 60 + startMin;
+          const breakEndMinutes = endHour * 60 + endMin;
+
+          // Check if current time is within break period (±5 minutes tolerance)
+          if (currentTime >= breakStartMinutes - 5 && currentTime <= breakEndMinutes + 5) {
+            return 'break';
+          }
+        }
+      }
+    }
+
+    // Default status logic
+    if (todayRecord?.timeOut) {
+      return 'default'; // Completed
+    } else if (todayRecord?.timeIn) {
+      return 'secondary'; // Working
+    } else {
+      return 'outline'; // Not Started
+    }
+  };
+
+  const getCurrentStatusText = () => {
+    const status = getCurrentStatus();
+    switch (status) {
+      case 'break':
+        return 'On Break';
+      case 'default':
+        return 'Completed';
+      case 'secondary':
+        return 'Working';
+      case 'outline':
+      default:
+        return 'Not Started';
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex justify-between items-start">
-        <div>
-            <h1 className="text-3xl font-bold font-headline">Attendance Record</h1>
-            <p className="text-muted-foreground">Your attendance summary for the current month.</p>
-        </div>
+         <div>
+              <h1 className="text-3xl font-bold font-headline">Attendance Record</h1>
+              <p className="text-muted-foreground">Your attendance summary for the current half-month period.</p>
+
+          </div>
         <div className="flex gap-2">
           <Button onClick={handleClockIn} disabled={isClocking} variant="secondary">
             {isClocking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Clock className="mr-2"/>}
@@ -135,20 +193,33 @@ export default function AttendanceClientPage({ attendanceSummary, attendanceReco
           Download PDF
           </Button>
         </div>
+
+        {/* Current Status Display */}
+        <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              <span className="font-medium">Today's Status:</span>
+            </div>
+            <Badge variant={getCurrentStatus()} className={getCurrentStatus() === 'break' ? 'bg-yellow-500' : ''}>
+              {getCurrentStatusText()}
+            </Badge>
+          </div>
+        </div>
       </div>
 
       {/* Attendance Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Days Attended</CardTitle>
-            <CheckCircle />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{attendanceSummary.daysAttended}</div>
-            <p className="text-xs text-muted-foreground">out of 22 working days</p>
-          </CardContent>
-        </Card>
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">Days Attended</CardTitle>
+             <CheckCircle />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold">{attendanceSummary.daysAttended}</div>
+             <p className="text-xs text-muted-foreground">out of {attendanceSummary.totalWorkingDays} working days</p>
+           </CardContent>
+         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Days Attended</CardTitle>

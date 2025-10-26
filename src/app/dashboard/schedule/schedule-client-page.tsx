@@ -40,7 +40,7 @@ export default function ScheduleClientPage({ schedule, employeeName }) {
   // Get today's day name to highlight in the schedule.
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
   const todaysSchedule = schedule.find(s => s.day === today);
-  const totalWeeklyHours = schedule.reduce((acc, s) => acc + (s.hours || 0), 0);
+  const totalWeeklyHours = schedule.reduce((acc, s) => acc + (s.hours > 0 ? s.hours : 0), 0);
   const weekDescription = schedule.length > 0 ? `Week of ${schedule[0].date} to ${schedule[schedule.length - 1].date}` : 'Current Week';
 
   const handleDownloadPdf = () => {

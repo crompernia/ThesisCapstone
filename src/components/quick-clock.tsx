@@ -113,9 +113,10 @@ export default function QuickClock() {
         const j = await res.json().catch(() => ({}));
         throw new Error(j?.message || 'Clock-in failed');
       }
+      const json = await res.json();
       setOpen(false);
       // notify other parts of the app that quick-clock completed a clock-in
-      window.dispatchEvent(new CustomEvent('quick-clock-done', { detail: { action: 'in' } }));
+      window.dispatchEvent(new CustomEvent('quick-clock-done', { detail: { action: 'in', status: json.status } }));
       alert('Clock-in successful');
       // After clock-in, hide the clock-in button
       setShowClockIn(false);

@@ -26,6 +26,7 @@ export const accounts = pgTable("accounts", {
 	philhealthNumber: varchar("philhealth_number", { length: 255 }),
 	pagibigNumber: varchar("pagibig_number", { length: 255 }),
 	tin: varchar({ length: 255 }),
+	photo: varchar({ length: 500 }),
 	managedBranches: varchar("managed_branches", { length: 255 }).array(),
 	createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),

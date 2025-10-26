@@ -2,7 +2,7 @@
  * @fileoverview This file defines the Attendance page for the employee dashboard.
  * It displays an employee's attendance summary and a detailed log of their attendance records.
  */
-import { getAttendanceData, getEmployeeName } from "@/lib/data";
+import { getAttendanceData, getEmployeeName, getSchedule } from "@/lib/data";
 import AttendanceClientPage from "./attendance-client-page";
 import { getCurrentUserId } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -19,6 +19,7 @@ export default async function AttendancePage() {
 
   const { summary: attendanceSummary, records: attendanceRecords } = await getAttendanceData(employeeId);
   const employeeName = await getEmployeeName(employeeId);
+  const scheduleData = await getSchedule(employeeId);
 
-  return <AttendanceClientPage attendanceSummary={attendanceSummary} attendanceRecords={attendanceRecords} employeeName={employeeName} />;
+  return <AttendanceClientPage attendanceSummary={attendanceSummary} attendanceRecords={attendanceRecords} employeeName={employeeName} scheduleData={scheduleData} />;
 }

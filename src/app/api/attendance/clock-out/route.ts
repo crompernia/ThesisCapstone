@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     // Resolve employeeId
     let employeeId: string | null = null;
     if (employeeNumber) {
-      const res = await db.select({ id: accounts.id }).from(accounts).where(eq(accounts.employeeNumber, employeeNumber));
+      const res = await db.select({ id: accounts.id, dateHired: accounts.dateHired }).from(accounts).where(eq(accounts.employeeNumber, employeeNumber));
       const emp = res[0];
       if (!emp) return NextResponse.json({ success: false, message: 'Employee not found' }, { status: 404 });
       employeeId = emp.id;
@@ -26,16 +26,29 @@ export async function POST(req: Request) {
       employeeId = userId;
     }
 
+    // Get employee's hire date to check if clock-out is allowed
+    const empData = await db.select({ dateHired: accounts.dateHired }).from(accounts).where(eq(accounts.id, employeeId));
+    const hireDate = empData[0]?.dateHired;
+    if (!hireDate) return NextResponse.json({ success: false, message: 'Employee hire date not found' }, { status: 400 });
+
     const now = new Date();
     const isoDate = now.toISOString().slice(0, 10);
 
+    // Check if current date is before hire date
+    const hireDateStr = new Date(hireDate).toISOString().slice(0, 10);
+    if (isoDate < hireDateStr) {
+      return NextResponse.json({ success: false, message: 'Cannot clock out before hire date' }, { status: 403 });
+    }
+
     // Geofence check
     if (latitude && longitude) {
-      const acc = await db.select({ branch: accounts.branch }).from(accounts).where(eq(accounts.id, employeeId));
+      const acc = await db.select({ branch: accounts.branch, role: accounts.role }).from(accounts).where(eq(accounts.id, employeeId));
       const branchName = acc[0]?.branch;
+      const userRole = acc[0]?.role;
+
       // Allow remote employees to clock out from anywhere
       if (branchName && branchName.toLowerCase() === 'remote') {
-        // skip geofence
+        // skip geofence for Remote employees
       } else if (branchName) {
         const b = await db.select().from(branches).where(eq(branches.name, branchName));
         if (b.length > 0) {

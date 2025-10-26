@@ -23,6 +23,7 @@ import {
   Users,
   Megaphone,
   ClipboardList,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
@@ -63,17 +64,17 @@ export default async function HRDashboardLayout({
           </div>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarMenu>
+          <SidebarMenu className="space-y-0.5">
             <SidebarMenuItem>
               <Link href="/hr/dashboard" passHref>
-                <SidebarMenuButton tooltip="Dashboard">
+                <SidebarMenuButton tooltip="Dashboard" className="w-full justify-start">
                   <LayoutDashboard />
                   Dashboard
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Scheduling" asChild>
+              <SidebarMenuButton tooltip="Scheduling" asChild className="w-full justify-start">
                <Link href="/hr/scheduling">
                  <CalendarPlus />
                    Scheduling
@@ -82,15 +83,23 @@ export default async function HRDashboardLayout({
             </SidebarMenuItem>
             <SidebarMenuItem>
               <Link href="/hr/attendance-monitoring" passHref>
-                <SidebarMenuButton tooltip="Attendance">
+                <SidebarMenuButton tooltip="Attendance Monitoring" className="w-full justify-start">
                   <ClipboardCheck />
-                  Attendance
+                  Attendance Monitoring
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <Link href="/hr/attendance" passHref>
+                <SidebarMenuButton tooltip="Clock In/Out" className="w-full justify-start">
+                  <Clock />
+                  Clock In/Out
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <Link href="/hr/payslip-generation" passHref>
-                <SidebarMenuButton tooltip="Payslips">
+                <SidebarMenuButton tooltip="Payslips" className="w-full justify-start">
                   <Wallet />
                   Payslip Generation
                 </SidebarMenuButton>
@@ -98,7 +107,7 @@ export default async function HRDashboardLayout({
             </SidebarMenuItem>
             <SidebarMenuItem>
               <Link href="/hr/employee-data" passHref>
-                <SidebarMenuButton tooltip="Employee Data">
+                <SidebarMenuButton tooltip="Employee Data" className="w-full justify-start">
                   <Users />
                   Employee Data
                 </SidebarMenuButton>
@@ -106,7 +115,7 @@ export default async function HRDashboardLayout({
             </SidebarMenuItem>
             <SidebarMenuItem>
               <Link href="/hr/announcements" passHref>
-                <SidebarMenuButton tooltip="Announcements">
+                <SidebarMenuButton tooltip="Announcements" className="w-full justify-start">
                   <Megaphone />
                   Announcements
                 </SidebarMenuButton>
@@ -114,7 +123,7 @@ export default async function HRDashboardLayout({
             </SidebarMenuItem>
              <SidebarMenuItem>
               <Link href="/hr/leave-approvals" passHref>
-                <SidebarMenuButton tooltip="Leave Approvals">
+                <SidebarMenuButton tooltip="Leave Approvals" className="w-full justify-start">
                   <ClipboardList />
                   Leave Approvals
                 </SidebarMenuButton>

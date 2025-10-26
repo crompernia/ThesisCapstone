@@ -17,6 +17,11 @@ async function pushSchema() {
 
     for (const statement of statements) {
       if (statement.trim()) {
+        // Skip any statements that affect the accounts table to preserve existing entries
+        if (statement.toLowerCase().includes('accounts')) {
+          console.log('Skipping accounts-related statement to preserve data');
+          continue;
+        }
         try {
           await client.query(statement);
           console.log('Executed statement successfully');

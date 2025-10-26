@@ -21,13 +21,14 @@ import { signOut } from "next-auth/react";
 interface UserNavProps {
   employeeName: string;
   employeeEmail: string;
+  employeePhoto?: string;
 }
 
 /**
  * Renders a user navigation dropdown menu.
  * Displays the user's avatar, name, email, and provides links to profile, settings, and logout.
  */
-export function UserNav({ employeeName, employeeEmail }: UserNavProps) {
+export function UserNav({ employeeName, employeeEmail, employeePhoto }: UserNavProps) {
   // Generate initials from the employee's name for the avatar fallback.
   const initials = employeeName
     .split(' ')
@@ -48,7 +49,7 @@ export function UserNav({ employeeName, employeeEmail }: UserNavProps) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="/default-avatar.png" alt={employeeName} />
+            <AvatarImage src={employeePhoto || "/default-avatar.png"} alt={employeeName} />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </Button>

@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     // Resolve employeeId: prefer provided employeeNumber (used on login page), otherwise use authenticated user
     let employeeId: string | null = null;
     if (employeeNumber) {
-      const res = await db.select({ id: accounts.id }).from(accounts).where(eq(accounts.employeeNumber, employeeNumber));
+      const res = await db.select({ id: accounts.id, dateHired: accounts.dateHired }).from(accounts).where(eq(accounts.employeeNumber, employeeNumber));
       const emp = res[0];
       if (!emp) return NextResponse.json({ success: false, message: 'Employee not found' }, { status: 404 });
       employeeId = emp.id;
@@ -26,18 +26,32 @@ export async function POST(req: Request) {
       if (!userId) return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 });
       employeeId = userId;
     }
-  const now = new Date();
-  // Keep date comparison as YYYY-MM-DD string (matches Drizzle date column mapping in this project)
-  const isoDate = now.toISOString().slice(0, 10); // YYYY-MM-DD
+
+    // Get employee's hire date to check if clock-in is allowed
+    const empData = await db.select({ dateHired: accounts.dateHired }).from(accounts).where(eq(accounts.id, employeeId));
+    const hireDate = empData[0]?.dateHired;
+    if (!hireDate) return NextResponse.json({ success: false, message: 'Employee hire date not found' }, { status: 400 });
+
+    const now = new Date();
+    // Keep date comparison as YYYY-MM-DD string (matches Drizzle date column mapping in this project)
+    const isoDate = now.toISOString().slice(0, 10); // YYYY-MM-DD
+
+    // Check if current date is before hire date
+    const hireDateStr = new Date(hireDate).toISOString().slice(0, 10);
+    if (isoDate < hireDateStr) {
+      return NextResponse.json({ success: false, message: 'Cannot clock in before hire date' }, { status: 403 });
+    }
 
     // Geofence check: if coordinates provided, verify distance against branch coordinates.
     if (latitude && longitude) {
       // Resolve employee's branch from accounts
-      const acc = await db.select({ branch: accounts.branch }).from(accounts).where(eq(accounts.id, employeeId));
+      const acc = await db.select({ branch: accounts.branch, role: accounts.role }).from(accounts).where(eq(accounts.id, employeeId));
       const branchName = acc[0]?.branch;
+      const userRole = acc[0]?.role;
+
       // Allow remote employees to clock in from anywhere
       if (branchName && branchName.toLowerCase() === 'remote') {
-        // skip geofence for Remote
+        // skip geofence for Remote employees
       } else if (branchName) {
         const b = await db.select().from(branches).where(eq(branches.name, branchName));
         if (b.length > 0) {
@@ -70,21 +84,58 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'No schedule assigned for today. Cannot clock in.' }, { status: 403 });
     }
 
+    // Validate clock-in time against scheduled shift times
+    const schedule = scheduleCheck[0];
+    const shiftStartTime = schedule.shiftStart;
+    const shiftEndTime = schedule.shiftEnd;
+
+    // Create Date objects for shift start and end
+    const shiftStartDate = new Date(`${isoDate}T${shiftStartTime}`);
+    const shiftEndDate = new Date(`${isoDate}T${shiftEndTime}`);
+
+    // Define clock-in window: 2 hours before shift start to shift end time
+    const earlyClockInLimit = new Date(shiftStartDate.getTime() - (2 * 60 * 60 * 1000)); // 2 hours before
+    const lateClockInLimit = shiftEndDate; // Until shift end
+
+    if (now < earlyClockInLimit) {
+      return NextResponse.json({
+        success: false,
+        message: `Cannot clock in more than 2 hours before your shift start time (${shiftStartTime}).`
+      }, { status: 403 });
+    }
+
+    if (now > lateClockInLimit) {
+      return NextResponse.json({
+        success: false,
+        message: 'Cannot clock in after your shift end time.'
+      }, { status: 403 });
+    }
+
+    // Check if clock-in is within grace period (on time) or late
+    const gracePeriodEnd = new Date(shiftStartDate.getTime() + (5 * 60 * 1000)); // 5 minutes after shift start
+    let clockInStatus = 'Present';
+
+    if (now <= gracePeriodEnd) {
+      clockInStatus = 'Present'; // On time within grace period
+    } else if (now > gracePeriodEnd && now <= lateClockInLimit) {
+      clockInStatus = 'Late'; // Late but within allowed window
+    }
+
     // Upsert attendance: if a record exists for employee + date, update timeIn if empty; otherwise insert
     const existing = await db.select().from(attendance).where(and(eq(attendance.employeeId, employeeId), eq(attendance.date, isoDate)));
 
     if (existing.length > 0) {
-      // If timeIn is null, set it; also set status to Present
+      // If timeIn is null, set it; also set status based on clock-in time
       const row = existing[0] as any;
       if (!row.timeIn) {
         // store ISO strings for timestamp columns
-        await db.update(attendance).set({ timeIn: now.toISOString(), status: 'Present' }).where(eq(attendance.id, row.id));
+        await db.update(attendance).set({ timeIn: now.toISOString(), status: clockInStatus }).where(eq(attendance.id, row.id));
       }
     } else {
-      await db.insert(attendance).values({ employeeId: employeeId as any, date: isoDate as any, timeIn: now.toISOString(), status: 'Present', createdAt: now.toISOString() } as any);
+      await db.insert(attendance).values({ employeeId: employeeId as any, date: isoDate as any, timeIn: now.toISOString(), status: clockInStatus, createdAt: now.toISOString() } as any);
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, status: clockInStatus });
   } catch (err: any) {
     console.error('[clock-in] server error', err);
     // Return error message/stack to help debugging (temporary)

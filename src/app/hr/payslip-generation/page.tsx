@@ -48,9 +48,13 @@ export default function PayslipGenerationPage() {
     document.title = "HR Payslip Generation";
   }, []);
   const [employees, setEmployees] = React.useState<any[]>([]);
+  const [filteredEmployees, setFilteredEmployees] = React.useState<any[]>([]);
   const [branches, setBranches] = React.useState<any[]>([]);
   const [departments, setDepartments] = React.useState<any[]>([]);
   const [selectedBranch, setSelectedBranch] = React.useState<string>("");
+  const [selectedDepartment, setSelectedDepartment] = React.useState<string>("");
+  const [selectedPayslipStatus, setSelectedPayslipStatus] = React.useState<string>("");
+  const [searchQuery, setSearchQuery] = React.useState<string>("");
 
   React.useEffect(() => {
     const fetchInitialData = async () => {
@@ -59,6 +63,7 @@ export default function PayslipGenerationPage() {
         getBranches(),
       ]);
       setEmployees(employeesData);
+      setFilteredEmployees(employeesData);
       setBranches(branchesData);
     };
     fetchInitialData();
@@ -75,6 +80,82 @@ export default function PayslipGenerationPage() {
     };
     fetchDepartments();
   }, [selectedBranch]);
+
+  const handleSearch = () => {
+    let filtered = employees;
+
+    // Filter by search query (name or employee number)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(emp =>
+        emp.name.toLowerCase().includes(query) ||
+        emp.employeeNumber.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by branch
+    if (selectedBranch) {
+      filtered = filtered.filter(emp => emp.branch === selectedBranch);
+    }
+
+    // Filter by department
+    if (selectedDepartment) {
+      filtered = filtered.filter(emp => emp.department === selectedDepartment);
+    }
+
+    // Filter by payslip status
+    if (selectedPayslipStatus) {
+      const statusMap: { [key: string]: string } = {
+        'generated': 'Settled',
+        'pending': 'Pending'
+      };
+      const mappedStatus = statusMap[selectedPayslipStatus];
+      if (mappedStatus) {
+        filtered = filtered.filter(emp => emp.payslipStatus === mappedStatus);
+      }
+    }
+
+    // Sort by employee number (numerically if possible, otherwise lexicographically)
+    filtered.sort((a, b) => {
+      const aNum = parseInt(a.employeeNumber);
+      const bNum = parseInt(b.employeeNumber);
+
+      // If both are valid numbers, sort numerically
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return aNum - bNum;
+      }
+
+      // Otherwise sort lexicographically
+      return a.employeeNumber.localeCompare(b.employeeNumber);
+    });
+
+    setFilteredEmployees(filtered);
+  };
+
+  // Auto-filter when filters change (except search query which requires button click)
+  React.useEffect(() => {
+    handleSearch();
+  }, [selectedBranch, selectedDepartment, selectedPayslipStatus, employees]);
+
+  // Also sort initial employees list
+  React.useEffect(() => {
+    if (employees.length > 0) {
+      const sortedEmployees = [...employees].sort((a, b) => {
+        const aNum = parseInt(a.employeeNumber);
+        const bNum = parseInt(b.employeeNumber);
+
+        // If both are valid numbers, sort numerically
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+          return aNum - bNum;
+        }
+
+        // Otherwise sort lexicographically
+        return a.employeeNumber.localeCompare(b.employeeNumber);
+      });
+      setEmployees(sortedEmployees);
+      setFilteredEmployees(sortedEmployees);
+    }
+  }, [employees.length > 0]); // Only run when employees are first loaded
 
   return (
     <div className="space-y-6">
@@ -98,6 +179,8 @@ export default function PayslipGenerationPage() {
             <Input
               placeholder="Search by name or ID..."
               className="lg:col-span-2"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
             <Select value={selectedBranch} onValueChange={setSelectedBranch}>
               <SelectTrigger>
@@ -111,7 +194,11 @@ export default function PayslipGenerationPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select disabled={!selectedBranch || departments.length === 0}>
+            <Select
+              value={selectedDepartment}
+              onValueChange={setSelectedDepartment}
+              disabled={!selectedBranch || departments.length === 0}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select Department" />
               </SelectTrigger>
@@ -123,16 +210,16 @@ export default function PayslipGenerationPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select>
+            <Select value={selectedPayslipStatus} onValueChange={setSelectedPayslipStatus}>
               <SelectTrigger>
                 <SelectValue placeholder="Payslip Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="generated">Generated</SelectItem>
+                <SelectItem value="generated">Settled</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
               </SelectContent>
             </Select>
-            <Button className="w-full">
+            <Button className="w-full" onClick={handleSearch}>
               <Search className="mr-2" />
               Search
             </Button>
@@ -149,7 +236,7 @@ export default function PayslipGenerationPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {employees.length > 0 ? (
+          {filteredEmployees.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -162,7 +249,7 @@ export default function PayslipGenerationPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {employees.map((emp) => (
+                {filteredEmployees.map((emp) => (
                   <TableRow key={emp.id}>
                     <TableCell className="font-mono text-xs">
                       {emp.employeeNumber}
@@ -186,12 +273,12 @@ export default function PayslipGenerationPage() {
                     <TableCell>
                       <Badge
                         variant={
-                          emp.payslipStatus === "Generated"
+                          emp.payslipStatus === "Settled"
                             ? "default"
                             : "secondary"
                         }
                         className={
-                          emp.payslipStatus === "Generated"
+                          emp.payslipStatus === "Settled"
                             ? "bg-green-500"
                             : ""
                         }
@@ -203,7 +290,7 @@ export default function PayslipGenerationPage() {
                       <Button asChild variant="outline" size="sm">
                         <Link href={`/hr/payslip-generation/${emp.id}`}>
                           <FileCog className="mr-2" />
-                          {emp.payslipStatus === "Generated"
+                          {emp.payslipStatus === "Settled"
                             ? "View/Edit"
                             : "Generate"}
                         </Link>
@@ -215,7 +302,7 @@ export default function PayslipGenerationPage() {
             </Table>
           ) : (
             <p className="text-muted-foreground text-center">
-              No employees found matching your criteria.
+              {employees.length === 0 ? "No employees found." : "No employees found matching your filter criteria."}
             </p>
           )}
         </CardContent>

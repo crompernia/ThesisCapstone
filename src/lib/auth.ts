@@ -63,6 +63,7 @@ export const authOptions: NextAuthOptions = {
             branch: user.branch ?? undefined,
             position: user.position ?? undefined,
             department: user.department ?? undefined,
+            photo: user.photo ?? undefined,
           };
         } catch (error) {
           console.error("Employee login error:", error);
@@ -210,6 +211,7 @@ export const authOptions: NextAuthOptions = {
         token.position = user.position;
         token.department = user.department;
         token.managedBranches = user.managedBranches;
+        token.photo = user.photo;
       }
       return token;
     },
@@ -221,6 +223,7 @@ export const authOptions: NextAuthOptions = {
         session.user.position = token.position as string;
         session.user.department = token.department as string;
         session.user.managedBranches = token.managedBranches as string[];
+        session.user.photo = token.photo as string;
       }
       return session;
     }

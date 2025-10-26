@@ -88,17 +88,118 @@ export async function getHRDashboardData() {
         .where(eq(leaveRequests.status, 'Pending'));
     const pendingLeaveRequests = pendingLeaveRequestsResult[0]?.count || 0;
 
-    // Mocking some stats as there's no table for them yet
+    // Calculate on-time percentage from attendance data
+    const currentMonth = new Date();
+    const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+
+    const attendanceRecords = await db
+        .select({
+            status: attendance.status,
+            timeIn: attendance.timeIn,
+            shiftStart: schedules.shiftStart,
+        })
+        .from(attendance)
+        .leftJoin(schedules, and(eq(attendance.employeeId, schedules.employeeId), eq(attendance.date, schedules.date)))
+        .where(and(
+            sql`${attendance.date} >= ${startOfMonth.toISOString().slice(0, 10)}`,
+            sql`${attendance.date} <= ${endOfMonth.toISOString().slice(0, 10)}`
+        ));
+
+    let onTimeCount = 0;
+    let totalAttendanceRecords = 0;
+
+    for (const record of attendanceRecords) {
+        if (record.status === 'Present' || record.status === 'Late') {
+            totalAttendanceRecords++;
+
+            // Check if employee was on time (within 5 minutes of shift start)
+            if (record.timeIn && record.shiftStart) {
+                const timeIn = new Date(record.timeIn);
+                const [h, m] = record.shiftStart.split(':').map(Number);
+                const shiftStart = new Date(timeIn.getFullYear(), timeIn.getMonth(), timeIn.getDate(), h, m);
+
+                const minutesLate = Math.floor((timeIn.getTime() - shiftStart.getTime()) / (1000 * 60));
+                if (minutesLate <= 5) {
+                    onTimeCount++;
+                }
+            } else if (record.status === 'Present') {
+                // If no time data but marked as Present, count as on time
+                onTimeCount++;
+            }
+        }
+    }
+
+    const onTimePercentage = totalAttendanceRecords > 0
+        ? Math.round((onTimeCount / totalAttendanceRecords) * 100)
+        : 0;
+
     const stats = [
         { title: 'Total Employees', value: String(totalEmployees), change: '' },
-        { title: 'On Time Percentage', value: `0%`, change: '' }, // No attendance data yet
+        { title: 'On Time Percentage', value: `${onTimePercentage}%`, change: '' },
         { title: 'Pending Leave Requests', value: String(pendingLeaveRequests), change: '' },
     ];
 
-    // No activity log table yet
+    // Get recent employee activities from various tables
+    const recentActivities = [];
+
+    // Get recent leave requests
+    const recentLeaveRequests = await db
+        .select({
+            id: leaveRequests.id,
+            employeeId: accounts.id,
+            employeeNumber: accounts.employeeNumber,
+            first_name: accounts.firstName,
+            last_name: accounts.lastName,
+            action: sql<string>`'Submitted Leave Request'`,
+            createdAt: leaveRequests.createdAt,
+        })
+        .from(leaveRequests)
+        .leftJoin(accounts, eq(leaveRequests.employeeId, accounts.id))
+        .orderBy(desc(leaveRequests.createdAt))
+        .limit(5);
+
+    // Get recent attendance records
+    const recentAttendance = await db
+        .select({
+            id: attendance.id,
+            employeeId: accounts.id,
+            employeeNumber: accounts.employeeNumber,
+            first_name: accounts.firstName,
+            last_name: accounts.lastName,
+            action: sql<string>`'Clocked In/Out'`,
+            createdAt: attendance.timeIn,
+        })
+        .from(attendance)
+        .leftJoin(accounts, eq(attendance.employeeId, accounts.id))
+        .where(isNotNull(attendance.timeIn))
+        .orderBy(desc(attendance.timeIn))
+        .limit(5);
+
+    // Combine and sort all activities by date (excluding payslip generations)
+    const allActivities = [
+        ...recentLeaveRequests.map(req => ({
+            id: `leave-${req.id}`,
+            employeeId: req.employeeId,
+            employeeNumber: req.employeeNumber,
+            employeeName: `${req.first_name} ${req.last_name}`,
+            activity: req.action,
+            timestamp: req.createdAt ? format(new Date(req.createdAt), 'MMM dd, yyyy HH:mm') : 'Unknown'
+        })),
+        ...recentAttendance.map(att => ({
+            id: `attendance-${att.id}`,
+            employeeId: att.employeeId,
+            employeeNumber: att.employeeNumber,
+            employeeName: `${att.first_name} ${att.last_name}`,
+            activity: att.action,
+            timestamp: att.createdAt ? format(new Date(att.createdAt), 'MMM dd, yyyy HH:mm') : 'Unknown'
+        }))
+    ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 10); // Take top 10 most recent
+
     return {
         stats,
-        recentActivities: []
+        recentActivities: allActivities
     };
 }
 
@@ -293,12 +394,22 @@ export async function getEmployeesWithPayslipStatus() {
         .from(accounts)
         .where(eq(accounts.role, 'Employee'));
 
-    return result.map(a => {
+    return await Promise.all(result.map(async (a) => {
         const hasBenefits = a.sss_number && a.philhealth_number && a.pagibig_number && a.tin;
 
-        // For now, keep as 'Pending' since we need to check payslips table
-        // This will be updated when we implement the payslip status check
-        const payslipStatus = 'Pending';
+        // Check if employee has a payslip for the current pay period
+        const now = new Date();
+        const currentDay = now.getDate();
+        const selectedHalf = currentDay <= 15 ? '1st' : '2nd';
+        const payPeriod = `${now.toLocaleString('default', { month: 'short' })} ${now.getFullYear()} - ${selectedHalf} Half`;
+
+        const existingPayslip = await db
+            .select()
+            .from(payslips)
+            .where(and(eq(payslips.employeeId, a.id), eq(payslips.payPeriod, payPeriod)))
+            .limit(1);
+
+        const payslipStatus = existingPayslip.length > 0 ? 'Settled' : 'Pending';
 
         return {
             id: a.id,
@@ -309,7 +420,7 @@ export async function getEmployeesWithPayslipStatus() {
             payslipStatus,
             benefitsStatus: hasBenefits ? 'Complete' : 'Incomplete',
         };
-    });
+    }));
 }
 
 export async function getEmployeesForScheduling() {
@@ -409,6 +520,7 @@ export async function getEmployeeDashboardData(employeeid: string) {
             department: accounts.department,
             branch: accounts.branch,
             email: accounts.email,
+            dateHired: accounts.dateHired,
         })
         .from(accounts)
         .where(eq(accounts.id, employeeid));
@@ -440,6 +552,7 @@ export async function getEmployeeDashboardData(employeeid: string) {
             department: employee.department,
             branch: employee.branch,
             email: employee.email,
+            dateHired: employee.dateHired ? format(new Date(employee.dateHired), 'yyyy-MM-dd') : null,
         },
         announcements: announcementsResult.map(a => ({
             id: a.id,
@@ -453,12 +566,21 @@ export async function getEmployeeDashboardData(employeeid: string) {
 export async function getAttendanceData(employeeId: string) {
     const db = await getDb();
 
-    // Get current month
+    // Get current half-month period (15th to end of month or 1st to 15th)
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1; // 1-12
-    const startOfMonth = new Date(currentYear, currentMonth - 1, 1);
-    const endOfMonth = new Date(currentYear, currentMonth, 0); // last day of month
+    const currentDay = now.getDate();
+    let periodStart: Date;
+    let periodEnd: Date;
+
+    if (currentDay <= 15) {
+        // First half of the month: 1st to 15th
+        periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        periodEnd = new Date(now.getFullYear(), now.getMonth(), 15);
+    } else {
+        // Second half of the month: 16th to end of month
+        periodStart = new Date(now.getFullYear(), now.getMonth(), 16);
+        periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Last day of current month
+    }
 
     // Get available leaves and hire date from accounts
     const accountResult = await db
@@ -469,7 +591,10 @@ export async function getAttendanceData(employeeId: string) {
     const availableLeaves = accountResult[0]?.availableLeaves || 0;
     const hireDate = accountResult[0]?.dateHired ? new Date(accountResult[0].dateHired) : now;
 
-    // Get attendance records for current month
+    // Effective start date is the later of hire date and period start
+    const effectiveStartDate = hireDate > periodStart ? hireDate : periodStart;
+
+    // Get attendance records for current half-month period, but only from effective start date onwards
     const attendanceRecords = await db
         .select({
             date: attendance.date,
@@ -481,14 +606,39 @@ export async function getAttendanceData(employeeId: string) {
         })
         .from(attendance)
         .leftJoin(schedules, and(eq(attendance.employeeId, schedules.employeeId), eq(attendance.date, schedules.date)))
-        .where(and(eq(attendance.employeeId, employeeId), sql`${attendance.date} >= ${startOfMonth.toISOString().slice(0, 10)}`, sql`${attendance.date} <= ${endOfMonth.toISOString().slice(0, 10)}`))
+        .where(and(eq(attendance.employeeId, employeeId), sql`${attendance.date} >= ${effectiveStartDate.toISOString().slice(0, 10)}`, sql`${attendance.date} <= ${periodEnd.toISOString().slice(0, 10)}`))
         .orderBy(desc(attendance.date));
+
+    // Get separate attendance records for lates calculation (only within current half-month period from hire date)
+    const latesRecords = await db
+        .select({
+            date: attendance.date,
+            timeIn: attendance.timeIn,
+            timeOut: attendance.timeOut,
+            status: attendance.status,
+            shiftStart: schedules.shiftStart,
+        })
+        .from(attendance)
+        .leftJoin(schedules, and(eq(attendance.employeeId, schedules.employeeId), eq(attendance.date, schedules.date)))
+        .where(and(eq(attendance.employeeId, employeeId), sql`${attendance.date} >= ${effectiveStartDate.toISOString().slice(0, 10)}`, sql`${attendance.date} <= ${periodEnd.toISOString().slice(0, 10)}`))
+        .orderBy(desc(attendance.date));
+
+    // DEBUG: Log all lates records for debugging
+    console.log(`[DEBUG] Lates records for employee ${employeeId}:`, latesRecords.map(r => ({
+        date: r.date,
+        timeIn: r.timeIn,
+        shiftStart: r.shiftStart,
+        status: r.status
+    })));
+    console.log(`[DEBUG] Current period: ${effectiveStartDate.toISOString().slice(0,10)} to ${periodEnd.toISOString().slice(0,10)}`);
 
     let daysAttended = 0;
     let absences = 0;
     let totalHours = 0;
+    let totalLates = 0; // lates from hire date to bi-monthly cutoff
     const records: Array<{ date: string; timeIn: string | null; timeOut: string | null; status: string }> = [];
 
+    // Process records for display and general metrics
     for (const record of attendanceRecords) {
         const timeIn = record.timeIn ? new Date(record.timeIn) : null;
         const timeOut = record.timeOut ? new Date(record.timeOut) : null;
@@ -502,6 +652,15 @@ export async function getAttendanceData(employeeId: string) {
         }
 
         let status = record.status || 'Present';
+        // Recalculate status based on actual time-in vs shift start
+        if (timeIn && shiftStart) {
+            const minutesLate = Math.floor((timeIn.getTime() - shiftStart.getTime()) / (1000 * 60));
+            if (minutesLate > 5) {
+                status = 'Late';
+            } else {
+                status = 'Present';
+            }
+        }
         if (status === 'Present' || status === 'Late') {
             daysAttended++;
         } else if (status === 'Absent') {
@@ -516,14 +675,53 @@ export async function getAttendanceData(employeeId: string) {
             date: record.date as string,
             timeIn: fmtTime(timeIn),
             timeOut: fmtTime(timeOut),
-            status,
+            status: status, // Use the recalculated status
         });
     }
 
-    // Calculate total working days from hire date to now (weekdays only)
-    const totalWorkingDaysFromHire = calculateWorkingDays(hireDate, now);
+    // Calculate lates only within current half-month period (resets each period)
+    for (const record of latesRecords) {
+        const timeIn = record.timeIn ? new Date(record.timeIn) : null;
+        const shiftStartStr = record.shiftStart || '09:00:00';
+        const [h, m] = shiftStartStr.split(':').map(Number);
+        const date = new Date(record.date);
+        // Create shiftStart in UTC to match timeIn timezone
+        const shiftStart = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), h, m));
 
-    // Get all attendance records from hire date to now for totalDaysAttended
+        let minutesLate = 0;
+        if (timeIn && timeIn > shiftStart) {
+            minutesLate = Math.floor((timeIn.getTime() - shiftStart.getTime()) / (1000 * 60));
+
+            // DEBUG: Log suspicious lateness values
+            if (minutesLate > 480) { // More than 8 hours late
+                console.log(`[DEBUG] Excessive lateness detected for employee ${employeeId}:`, {
+                    date: record.date,
+                    timeIn: timeIn.toISOString(),
+                    shiftStart: shiftStart.toISOString(),
+                    minutesLate,
+                    shiftStartStr,
+                    status: record.status
+                });
+            }
+        }
+
+        // Only count lates for records that actually have clock-in times and are present/late
+        const status = record.status;
+        if ((status === 'Present' || status === 'Late') && timeIn) {
+            // If employee is more than 5 minutes late, count the late minutes
+            if (minutesLate > 5) {
+                totalLates += minutesLate;
+            }
+        }
+    }
+
+    // Count explicit absences from attendance records
+    absences = attendanceRecords.filter(r => r.status === 'Absent').length;
+
+    // Calculate total working days from hire date to period end (excluding weekends)
+    const totalWorkingDaysFromHire = calculateWorkingDays(hireDate, periodEnd);
+
+    // Get all attendance records from hire date to period end for totalDaysAttended
     const allAttendanceRecords = await db
         .select({
             date: attendance.date,
@@ -534,15 +732,10 @@ export async function getAttendanceData(employeeId: string) {
         })
         .from(attendance)
         .leftJoin(schedules, and(eq(attendance.employeeId, schedules.employeeId), eq(attendance.date, schedules.date)))
-        .where(and(eq(attendance.employeeId, employeeId), sql`${attendance.date} >= ${hireDate.toISOString().slice(0, 10)}`, sql`${attendance.date} <= ${now.toISOString().slice(0, 10)}`));
-
-    // Debug logging for all employees
-    console.log(`[DEBUG] Employee ${employeeId}: hireDate=${hireDate.toISOString().slice(0, 10)}, now=${now.toISOString().slice(0, 10)}`);
-    console.log(`[DEBUG] Found ${allAttendanceRecords.length} attendance records`);
+        .where(and(eq(attendance.employeeId, employeeId), sql`${attendance.date} >= ${hireDate.toISOString().slice(0, 10)}`, sql`${attendance.date} <= ${periodEnd.toISOString().slice(0, 10)}`));
 
     let validAttendanceDays = 0;
     let totalAbsences = 0;
-    let totalLates = 0; // lates from hire date to now
 
     for (const record of allAttendanceRecords) {
         const timeIn = record.timeIn ? new Date(record.timeIn) : null;
@@ -557,27 +750,16 @@ export async function getAttendanceData(employeeId: string) {
         }
 
         const status = record.status;
-        if (employeeId === '399d1d75-041b-46d7-ad68-297495bbf917') {
-            console.log(`[DEBUG] Record ${record.date}: timeIn=${timeIn}, status=${status}, minutesLate=${minutesLate}`);
-        }
-
-        // Count based on status (Present or Late = attended)
         if (status === 'Present' || status === 'Late') {
             validAttendanceDays++;
-            if (status === 'Late' || minutesLate > 5) {
-                totalLates += minutesLate;
-            }
         } else if (status === 'Absent') {
             totalAbsences++;
         }
     }
 
-    console.log(`[DEBUG] Employee ${employeeId} - validAttendanceDays=${validAttendanceDays}, totalWorkingDaysFromHire=${totalWorkingDaysFromHire}`);
-
-    // Absences = total working days from hire - valid attendance days
+    // Absences from hire = total working days from hire - valid attendance days
     totalAbsences = totalWorkingDaysFromHire - validAttendanceDays;
 
-    // Calculate total working days from hire date to now (excluding weekends)
     const totalDaysAttended = validAttendanceDays;
 
     return {
@@ -588,6 +770,7 @@ export async function getAttendanceData(employeeId: string) {
             absences,
             availableLeaves,
             totalHours: Math.round(totalHours * 100) / 100, // round to 2 decimals
+            totalWorkingDays: calculateWorkingDays(effectiveStartDate, periodEnd),
         },
         records,
     };
@@ -608,6 +791,28 @@ function calculateWorkingDays(startDate: Date, endDate: Date): number {
     }
 
     return workingDays;
+}
+
+// Helper function to calculate break duration in hours from break string
+function calculateBreakHours(breakStr: string): number {
+    if (!breakStr || breakStr === '-') return 0;
+
+    try {
+        const parts = breakStr.split(' - ');
+        if (parts.length !== 2) return 0;
+
+        const [startStr, endStr] = parts;
+        const [sh, sm] = startStr.split(':').map(Number);
+        const [eh, em] = endStr.split(':').map(Number);
+
+        const startMinutes = sh * 60 + (sm || 0);
+        const endMinutes = eh * 60 + (em || 0);
+
+        const breakMinutes = endMinutes - startMinutes;
+        return Math.round((breakMinutes / 60) * 100) / 100; // round to 2 decimals
+    } catch (e) {
+        return 0;
+    }
 }
 
 export async function getPastLeaveRequests(employeeId: string) {
@@ -746,7 +951,7 @@ export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]
     periods.push({
       id: idCounter++,
       period: `${format(firstHalfStart, 'MMM dd')} - ${format(firstHalfEnd, 'MMM dd, yyyy')}`,
-      payDate: format(firstHalfEnd, 'yyyy-MM-dd'),
+      payDate: format(new Date(monthStart.getFullYear(), monthStart.getMonth(), 20), 'yyyy-MM-dd'),
       dailyRate,
       earnings: [
         { name: "BASIC PAY", amount: 0 },
@@ -772,7 +977,7 @@ export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]
     periods.push({
       id: idCounter++,
       period: `${format(secondHalfStart, 'MMM dd')} - ${format(secondHalfEnd, 'MMM dd, yyyy')}`,
-      payDate: format(secondHalfEnd, 'yyyy-MM-dd'),
+      payDate: format(new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 5), 'yyyy-MM-dd'),
       dailyRate,
       earnings: [
         { name: "BASIC PAY", amount: 0 },
@@ -868,17 +1073,22 @@ export async function getSchedule(employeeId: string) {
             if (r.shiftStart && r.shiftEnd) {
                 const [sh, sm] = String(r.shiftStart).split(':').map(Number);
                 const [eh, em] = String(r.shiftEnd).split(':').map(Number);
-                const minutes = (eh * 60 + (em || 0)) - (sh * 60 + (sm || 0));
+                let minutes = (eh * 60 + (em || 0)) - (sh * 60 + (sm || 0));
+
+                // Handle overnight shifts (when end time is next day)
+                if (minutes <= 0) {
+                    minutes += 24 * 60; // Add 24 hours in minutes
+                }
+
                 hours = Math.round((minutes / 60) * 100) / 100;
             }
         } catch (e) {
             hours = 0;
         }
 
-        // Deduct break time if break exists
-        if (breakStr !== '-') {
-            hours -= 1;
-        }
+        // Deduct actual break time if break exists
+        const breakHours = calculateBreakHours(breakStr);
+        hours -= breakHours;
 
         return {
             day: dayName,
@@ -1017,6 +1227,20 @@ export async function getEmployeeName(employeeId: string): Promise<string> {
 
     const employee = result[0];
     return employee ? `${employee.first_name} ${employee.last_name}` : "Unknown Employee";
+}
+
+export async function getEmployeeNumber(employeeId: string): Promise<string> {
+    const db = await getDb();
+
+    const result = await db
+        .select({
+            employeeNumber: accounts.employeeNumber,
+        })
+        .from(accounts)
+        .where(eq(accounts.id, employeeId));
+
+    const employee = result[0];
+    return employee?.employeeNumber || "Unknown";
 }
 
 export async function getReportDetails(reportId: number) {

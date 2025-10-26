@@ -3,7 +3,7 @@
  * It allows an employee to view their detailed payslip for a selected period,
  * including earnings, deductions, and net pay.
  */
-import { getPayPeriods, getEmployeeName } from "@/lib/data";
+import { getPayPeriods, getEmployeeName, getEmployeeNumber } from "@/lib/data";
 import PayslipClientPage from "./payslip-client-page";
 import { getCurrentUserId } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -21,6 +21,7 @@ export default async function PayslipPage() {
 
     const payPeriods = await getPayPeriods(employeeId);
     const employeeName = await getEmployeeName(employeeId);
+    const employeeNumber = await getEmployeeNumber(employeeId);
 
-    return <PayslipClientPage payPeriods={payPeriods} employeeName={employeeName} />;
+    return <PayslipClientPage payPeriods={payPeriods} employeeName={employeeName} employeeId={employeeId} employeeNumber={employeeNumber} />;
 }

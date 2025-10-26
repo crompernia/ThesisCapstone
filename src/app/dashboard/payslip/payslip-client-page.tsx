@@ -32,7 +32,7 @@ import { FileDown, Building2 } from "lucide-react";
  * @param {{ payPeriods: object[], employeeName: string }} props - The props for the component.
  * @returns {JSX.Element} The payslip page client component.
  */
-export default function PayslipClientPage({ payPeriods, employeeName }) {
+export default function PayslipClientPage({ payPeriods, employeeName, employeeId, employeeNumber }) {
   React.useEffect(() => {
       document.title = "Employee Payslip";
       }, []);
@@ -45,6 +45,31 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
   }, [payPeriods]);
 
   const payslipData = payPeriods?.find(p => String(p.id) === selectedPeriod);
+
+  // Calculate pay date based on period logic
+  const calculatePayDate = (period: string) => {
+    const match = period.match(/^(\w{3}) (\d{2}) - (\w{3}) (\d{2}), (\d{4})$/);
+    if (!match) return payslipData?.payDate || '';
+
+    const [, startMonth, startDay, endMonth, endDay, year] = match;
+    const monthNames = {
+      Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+      Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11
+    };
+
+    // If start day is 16 or later, it's second half - pay date is 5th of next month
+    if (parseInt(startDay) >= 16) {
+      const nextMonth = new Date(parseInt(year), monthNames[startMonth as keyof typeof monthNames] + 1, 5);
+      return nextMonth.toISOString().split('T')[0];
+    } else {
+      // First half - pay date is 20th of same month
+      const payDate = new Date(parseInt(year), monthNames[startMonth as keyof typeof monthNames], 20);
+      return payDate.toISOString().split('T')[0];
+    }
+  };
+
+
+  const displayPayDate = payslipData ? calculatePayDate(payslipData.period) : '';
 
   const excludedEarnings = ['Overtime', 'Night Differential', 'RH OT', 'Special Holiday', 'Salary Adjustment', 'Allowances', 'SP OT', 'BASIC PAY'];
   const totalEarnings = payslipData?.earnings.reduce((sum, item) => sum + item.amount, 0) ?? 0;
@@ -172,17 +197,19 @@ export default function PayslipClientPage({ payPeriods, employeeName }) {
         <CardHeader className="bg-muted/30 p-6">
           <div className="flex justify-between items-center">
             <div>
+                <h2 className="text-2xl font-bold font-headline">{payslipData ? `Employee Name: ${employeeName}` : 'Select a period to view payslip'}</h2>
+                <p className="text-muted-foreground">Employee ID: {employeeNumber}</p>
                 <div className="flex items-center gap-2">
                     <Building2 />
-                    <h2 className="text-2xl font-bold font-headline">CHUMTING TRADING CORPORATION</h2>
+                    <p className="text-muted-foreground">CHUMTING TRADING CORPORATION</p>
                 </div>
-                <p className="text-muted-foreground">{payslipData ? `Employee Name: ${employeeName}` : 'Select a period to view payslip'}
-                </p>
             </div>
             {payslipData && (
               <div className="text-right">
                   <p className="text-sm text-muted-foreground">Pay Date</p>
-                  <p className="font-semibold">{payslipData.payDate}</p>
+                  <p className="font-semibold">{displayPayDate}</p>
+                  <p className="text-sm text-muted-foreground">Period</p>
+                  <p className="font-semibold">{payslipData.period}</p>
               </div>
             )}
           </div>

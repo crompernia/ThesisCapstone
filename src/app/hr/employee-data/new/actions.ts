@@ -22,6 +22,7 @@ const employeeSchema = z.object({
   hireDate: z.string().min(1),
   email: z.string().email(),
   phone: z.string().min(1),
+  photo: z.any().optional(),
   sssNumber: z.string().optional(),
   philhealthNumber: z.string().optional(),
   pagibigNumber: z.string().optional(),
@@ -41,6 +42,7 @@ export async function addEmployee(formData: FormData) {
     hireDate: formData.get('hireDate'),
     email: formData.get('email'),
     phone: formData.get('phone'),
+    photo: formData.get('photo') || undefined,
     sssNumber: formData.get('sssNumber') || undefined,
     philhealthNumber: formData.get('philhealthNumber') || undefined,
     pagibigNumber: formData.get('pagibigNumber') || undefined,
@@ -65,6 +67,8 @@ export async function addEmployee(formData: FormData) {
     branch,
     hireDate,
     email,
+    phone,
+    photo,
     sssNumber,
     philhealthNumber,
     pagibigNumber,
@@ -113,6 +117,7 @@ export async function addEmployee(formData: FormData) {
       philhealthNumber,
       pagibigNumber,
       tin,
+      photo,
       password: hashedPassword,
     });
 

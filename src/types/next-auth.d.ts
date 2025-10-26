@@ -13,6 +13,7 @@ declare module "next-auth" {
       position?: string;
       department?: string;
       managedBranches?: string[];
+      photo?: string;
     } & DefaultSession["user"];
   }
 
@@ -23,6 +24,7 @@ declare module "next-auth" {
     position?: string;
     department?: string;
     managedBranches?: string[];
+    photo?: string;
   }
 }
 
@@ -34,5 +36,6 @@ declare module "next-auth/jwt" {
     position?: string;
     department?: string;
     managedBranches?: string[];
+    photo?: string;
   }
 }

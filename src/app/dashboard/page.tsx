@@ -73,6 +73,12 @@ export default async function EmployeeDashboardPage() {
                   </div>
                   <div>
                     <p className="font-medium text-muted-foreground">
+                      Position
+                    </p>
+                    <p>{employee.position}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-muted-foreground">
                       Department
                     </p>
                     <p>{employee.department}</p>
@@ -80,6 +86,10 @@ export default async function EmployeeDashboardPage() {
                   <div>
                     <p className="font-medium text-muted-foreground">Email</p>
                     <p>{employee.email}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-muted-foreground">Date of Hire</p>
+                    <p>{employee.dateHired}</p>
                   </div>
                   <div>
                     <p className="font-medium text-muted-foreground">Branch</p>

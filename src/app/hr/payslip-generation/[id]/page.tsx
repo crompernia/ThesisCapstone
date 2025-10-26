@@ -57,6 +57,8 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
     const [minutesLate, setMinutesLate] = React.useState(0);
     const [attendanceData, setAttendanceData] = React.useState<any>({ summary: { lates: 0, absences: 0, daysAttended: 0, totalDaysAttended: 0, availableLeaves: 0, totalHours: 0 } });
     const [selectedHalf, setSelectedHalf] = React.useState<'1st' | '2nd'>('1st');
+    const [showOverwriteDialog, setShowOverwriteDialog] = React.useState(false);
+    const [pendingPayload, setPendingPayload] = React.useState<any>(null);
     const regularHolidayAmount = 0; // Read-only field for Regular holiday
     const regularHolidayOvertimeAmount = 0; // Read-only field for Regular Holiday Overtime
     const specialHolidayAmount = 0; // Read-only field for Special holiday
@@ -158,6 +160,39 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
         setDeductions(deductions.map(ded => ded.id === id ? { ...ded, amount } : ded));
     };
 
+    const performSave = async (payload: any) => {
+        try {
+            const response = await fetch('/api/payslips', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to save payslip');
+            }
+
+            toast({
+                title: "Success",
+                description: `Payslip for ${employee?.name || 'Employee'} saved successfully. Earnings: ${formatCurrency(payload.basicPay + payload.overtime + payload.allowances)}, Net pay: ${formatCurrency(payload.netPay)}`
+            });
+
+            router.push('/hr/payslip-generation');
+        } catch (error) {
+            console.error('Error saving payslip:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Failed to save payslip. Please try again.';
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: errorMessage,
+            });
+        }
+    };
+
     const handleCalculateAndSave = async () => {
         // Validate required fields
         if (!employee?.id) {
@@ -204,38 +239,23 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
             nightDifferential: 0,
         };
 
+        // Check if payslip already exists
         try {
-            const response = await fetch('/api/payslips', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
-            });
+            const checkResponse = await fetch(`/api/payslips?employeeId=${payload.employeeId}&payPeriod=${encodeURIComponent(payload.payPeriod)}`);
+            const checkResult = await checkResponse.json();
 
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.error || 'Failed to save payslip');
+            if (checkResult.exists) {
+                setPendingPayload(payload);
+                setShowOverwriteDialog(true);
+                return;
             }
-
-            toast({
-                title: "Success",
-                description: `Payslip for ${employee?.name || 'Employee'} saved successfully. Earnings: ${formatCurrency(totalEarnings)}, Net pay: ${formatCurrency(netPay)}`
-            });
-
-            router.push('/hr/payslip-generation');
         } catch (error) {
-            console.error('Error saving payslip:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Failed to save payslip. Please try again.';
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: errorMessage,
-            });
-        } finally {
-            // Reset loading state if needed
+            console.error('Error checking existing payslip:', error);
+            // Continue with save if check fails
         }
+
+        // No existing payslip, proceed with save
+        await performSave(payload);
     };
 
     const formatCurrency = (value: number) => {
@@ -546,6 +566,30 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction onClick={handleCalculateAndSave}>Calculate & Save</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+
+                        {/* Overwrite Confirmation Dialog */}
+                        <AlertDialog open={showOverwriteDialog} onOpenChange={setShowOverwriteDialog}>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Payslip Already Exists</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        A payslip for {employee?.name} for the {pendingPayload?.payPeriod} period already exists. Do you want to create a new payslip anyway?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel onClick={() => setPendingPayload(null)}>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={async () => {
+                                        if (pendingPayload) {
+                                            await performSave(pendingPayload);
+                                            setPendingPayload(null);
+                                            setShowOverwriteDialog(false);
+                                        }
+                                    }}>
+                                        Create New Payslip
+                                    </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>

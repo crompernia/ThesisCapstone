@@ -14,21 +14,21 @@ async function verifyTable() {
     const tableResult = await client.query(`
       SELECT table_name
       FROM information_schema.tables
-      WHERE table_schema = 'public' AND table_name = 'attendance_records';
+      WHERE table_schema = 'public' AND table_name = 'accounts';
     `);
 
     if (tableResult.rows.length === 0) {
-      console.log('❌ Table attendance_records does not exist');
+      console.log('❌ Table accounts does not exist');
       return;
     }
 
-    console.log('✅ Table attendance_records exists');
+    console.log('✅ Table accounts exists');
 
     // Get column information
     const columnResult = await client.query(`
       SELECT column_name, data_type, is_nullable, column_default
       FROM information_schema.columns
-      WHERE table_name = 'attendance_records'
+      WHERE table_name = 'accounts'
       ORDER BY ordinal_position;
     `);
 
@@ -41,7 +41,7 @@ async function verifyTable() {
     const constraintResult = await client.query(`
       SELECT conname, contype, conkey, confkey
       FROM pg_constraint
-      WHERE conrelid = 'attendance_records'::regclass;
+      WHERE conrelid = 'accounts'::regclass;
     `);
 
     console.log('\n🔗 Constraints:');

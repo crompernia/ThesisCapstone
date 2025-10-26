@@ -46,12 +46,16 @@ export default function AttendanceMonitoringPage() {
   type BranchType = { id: number; name: string; coordinates: string | null };
 
   const [attendanceData, setAttendanceData] = React.useState<AttendanceRow[]>([]);
+  const [filteredAttendanceData, setFilteredAttendanceData] = React.useState<AttendanceRow[]>([]);
   const [absenceData, setAbsenceData] = React.useState<any[]>([]);
+  const [filteredAbsenceData, setFilteredAbsenceData] = React.useState<any[]>([]);
   const [branches, setBranches] = React.useState<BranchType[]>([]);
   const [departments, setDepartments] = React.useState<string[]>([]);
   const [positions, setPositions] = React.useState<string[]>([]);
   const [selectedBranch, setSelectedBranch] = React.useState<string>('');
   const [selectedDepartment, setSelectedDepartment] = React.useState<string>('');
+  const [selectedPosition, setSelectedPosition] = React.useState<string>('');
+  const [searchQuery, setSearchQuery] = React.useState<string>('');
   const today = new Date().toISOString().substring(0, 10);
   const [selectedDate, setSelectedDate] = React.useState<string>(today);
   const dateInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -64,10 +68,12 @@ export default function AttendanceMonitoringPage() {
             getBranches(),
             getEmployeeAbsenceSummary()
         ]);
-   setAttendanceData(attendance as AttendanceRow[]);
-   setBranches(branchesData as BranchType[]);
-   setAbsenceData(absence);
-    };
+    setAttendanceData(attendance as AttendanceRow[]);
+    setFilteredAttendanceData(attendance as AttendanceRow[]);
+    setBranches(branchesData as BranchType[]);
+    setAbsenceData(absence);
+    setFilteredAbsenceData(absence);
+     };
     fetchInitialData();
   }, [selectedDate]);
   
@@ -97,6 +103,106 @@ export default function AttendanceMonitoringPage() {
     };
     fetchPositions();
   }, [selectedDepartment]);
+
+  const handleSearch = () => {
+    let filteredAttendance = attendanceData;
+    let filteredAbsence = absenceData;
+
+    // Filter by search query (name or employee number)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filteredAttendance = filteredAttendance.filter(emp =>
+        emp.name?.toLowerCase().includes(query) ||
+        emp.employeeNumber?.toLowerCase().includes(query)
+      );
+      filteredAbsence = filteredAbsence.filter(emp =>
+        emp.name?.toLowerCase().includes(query) ||
+        emp.employeeNumber?.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by branch
+    if (selectedBranch) {
+      filteredAttendance = filteredAttendance.filter(emp => emp.branch === selectedBranch);
+      filteredAbsence = filteredAbsence.filter(emp => emp.branch === selectedBranch);
+    }
+
+    // Filter by department
+    if (selectedDepartment) {
+      filteredAttendance = filteredAttendance.filter(emp => emp.position && positions.includes(emp.position));
+      filteredAbsence = filteredAbsence.filter(emp => emp.department === selectedDepartment);
+    }
+
+    // Filter by position
+    if (selectedPosition) {
+      filteredAttendance = filteredAttendance.filter(emp => emp.position === selectedPosition);
+      filteredAbsence = filteredAbsence.filter(emp => emp.position === selectedPosition);
+    }
+
+    // Sort by employee number
+    const sortByEmployeeNumber = (a: any, b: any) => {
+      const aNum = parseInt(a.employeeNumber || '0');
+      const bNum = parseInt(b.employeeNumber || '0');
+
+      // If both are valid numbers, sort numerically
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return aNum - bNum;
+      }
+
+      // Otherwise sort lexicographically
+      return (a.employeeNumber || '').localeCompare(b.employeeNumber || '');
+    };
+
+    filteredAttendance.sort(sortByEmployeeNumber);
+    filteredAbsence.sort(sortByEmployeeNumber);
+
+    setFilteredAttendanceData(filteredAttendance);
+    setFilteredAbsenceData(filteredAbsence);
+  };
+
+  // Auto-filter when filters change
+  React.useEffect(() => {
+    handleSearch();
+  }, [selectedBranch, selectedDepartment, selectedPosition, attendanceData, absenceData]);
+
+  // Also sort initial data by employee number
+  React.useEffect(() => {
+    if (attendanceData.length > 0) {
+      const sortedAttendance = [...attendanceData].sort((a, b) => {
+        const aNum = parseInt(a.employeeNumber || '0');
+        const bNum = parseInt(b.employeeNumber || '0');
+
+        // If both are valid numbers, sort numerically
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+          return aNum - bNum;
+        }
+
+        // Otherwise sort lexicographically
+        return (a.employeeNumber || '').localeCompare(b.employeeNumber || '');
+      });
+      setAttendanceData(sortedAttendance);
+      setFilteredAttendanceData(sortedAttendance);
+    }
+  }, [attendanceData.length > 0]); // Only run when attendance data is first loaded
+
+  React.useEffect(() => {
+    if (absenceData.length > 0) {
+      const sortedAbsence = [...absenceData].sort((a, b) => {
+        const aNum = parseInt(a.employeeNumber || '0');
+        const bNum = parseInt(b.employeeNumber || '0');
+
+        // If both are valid numbers, sort numerically
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+          return aNum - bNum;
+        }
+
+        // Otherwise sort lexicographically
+        return (a.employeeNumber || '').localeCompare(b.employeeNumber || '');
+      });
+      setAbsenceData(sortedAbsence);
+      setFilteredAbsenceData(sortedAbsence);
+    }
+  }, [absenceData.length > 0]); // Only run when absence data is first loaded
   
   return (
     <div className="space-y-6">
@@ -138,7 +244,7 @@ export default function AttendanceMonitoringPage() {
             </CardDescription>
           </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
             {/* Date input restored (inline in filter controls) */}
             <div>
               <input
@@ -151,6 +257,12 @@ export default function AttendanceMonitoringPage() {
                 aria-label="Select attendance date"
               />
             </div>
+            {/* Search input */}
+            <Input
+              placeholder="Search by name or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
             {/* Dropdown to filter by branch */}
             <Select value={selectedBranch} onValueChange={setSelectedBranch}>
               <SelectTrigger>
@@ -170,7 +282,7 @@ export default function AttendanceMonitoringPage() {
               </SelectContent>
             </Select>
             {/* Dropdown to filter by position */}
-            <Select disabled={!selectedDepartment || positions.length === 0}>
+            <Select value={selectedPosition} onValueChange={setSelectedPosition} disabled={!selectedDepartment || positions.length === 0}>
               <SelectTrigger>
                 <SelectValue placeholder="Select Position" />
               </SelectTrigger>
@@ -178,7 +290,7 @@ export default function AttendanceMonitoringPage() {
                 {positions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Button className="w-full">
+            <Button className="w-full" onClick={handleSearch}>
               <Search />
               Search
             </Button>
@@ -226,7 +338,7 @@ export default function AttendanceMonitoringPage() {
             </div>
         </CardHeader>
         <CardContent>
-          {attendanceData.length > 0 ? (
+          {filteredAttendanceData.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -240,7 +352,7 @@ export default function AttendanceMonitoringPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {attendanceData.map((emp) => (
+                {filteredAttendanceData.map((emp) => (
                   <TableRow key={emp.id}>
                     <TableCell className="font-mono text-xs">{emp.employeeNumber}</TableCell>
                     <TableCell className="font-medium">{emp.name}</TableCell>
@@ -259,7 +371,9 @@ export default function AttendanceMonitoringPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="text-muted-foreground text-center">No attendance data for the selected date.</p>
+            <p className="text-muted-foreground text-center">
+              {attendanceData.length === 0 ? "No attendance data for the selected date." : "No attendance data matches your filter criteria."}
+            </p>
           )}
         </CardContent>
       </Card>
@@ -275,7 +389,7 @@ export default function AttendanceMonitoringPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {absenceData.length > 0 ? (
+            {filteredAbsenceData.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -290,7 +404,7 @@ export default function AttendanceMonitoringPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {absenceData.map((emp: any) => (
+                  {filteredAbsenceData.map((emp: any) => (
                     <TableRow key={emp.id}>
                       <TableCell className="font-mono text-xs">{emp.employeeNumber}</TableCell>
                       <TableCell className="font-medium">{emp.name}</TableCell>
@@ -307,7 +421,9 @@ export default function AttendanceMonitoringPage() {
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-muted-foreground text-center">No absence data available.</p>
+              <p className="text-muted-foreground text-center">
+                {absenceData.length === 0 ? "No absence data available." : "No absence data matches your filter criteria."}
+              </p>
             )}
           </CardContent>
         </Card>

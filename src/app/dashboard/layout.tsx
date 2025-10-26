@@ -59,7 +59,8 @@ export default async function DashboardLayout({
 
   const employee = {
     name: session.user.name || "Employee",
-    email: session.user.email || "employee@example.com"
+    email: session.user.email || "employee@example.com",
+    photo: session.user.photo
   };
 
   const firstName = employee.name.split(' ')[0];
@@ -129,7 +130,7 @@ export default async function DashboardLayout({
           </div>
           <div className="flex items-center gap-4">
             <DateTimeDisplay />
-            <UserNav employeeName={employee.name} employeeEmail={employee.email} />
+            <UserNav employeeName={employee.name} employeeEmail={employee.email} employeePhoto={employee.photo} />
           </div>
         </header>
         <main className="p-4 sm:p-6 lg:p-8 bg-muted/40 min-h-[calc(100vh-65px)]">

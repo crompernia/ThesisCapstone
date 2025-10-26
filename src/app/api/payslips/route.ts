@@ -3,6 +3,39 @@ import { payslips, accounts } from "@/lib/schema";
 import { NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const employeeId = searchParams.get('employeeId');
+    const payPeriod = searchParams.get('payPeriod');
+
+    if (!employeeId || !payPeriod) {
+      return NextResponse.json(
+        { error: "employeeId and payPeriod are required" },
+        { status: 400 }
+      );
+    }
+
+    const db = await getDb();
+    const existingPayslip = await db
+      .select()
+      .from(payslips)
+      .where(and(eq(payslips.employeeId, employeeId), eq(payslips.payPeriod, payPeriod)))
+      .limit(1);
+
+    return NextResponse.json({
+      exists: existingPayslip.length > 0,
+      payslip: existingPayslip[0] || null
+    });
+  } catch (error) {
+    console.error("Error checking payslip:", error);
+    return NextResponse.json(
+      { error: "Failed to check payslip" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const db = await getDb();
