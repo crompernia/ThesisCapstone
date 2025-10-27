@@ -31,7 +31,7 @@ export async function updateEmployeeAction(id: string, data: any) {
   }
 
   try {
-    const result = await updateEmployee(id, validatedFields.data);
+    const result = await updateEmployee(id, validatedFields.data as any);
     if (result.success) {
         revalidatePath('/hr/employee-data');
         revalidatePath(`/hr/employee-data/${id}`);

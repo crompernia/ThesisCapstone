@@ -38,8 +38,8 @@ export default function AdminDashboardPage() {
     const stats = [
         { title: "Pending Approvals", value: "3", icon: <UserCheck />, change: "2 new today" },
     ];
-    const recentReports = [];
-    const hrActivities = [];
+    const recentReports: any[] = [];
+    const hrActivities: any[] = [];
 
   return (
     <div className="space-y-6">

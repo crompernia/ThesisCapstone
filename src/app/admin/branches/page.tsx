@@ -49,7 +49,7 @@ export default function BranchesPage() {
                     document.title = "Admin Branches";
                     }, []);
     const { toast } = useToast();
-    const [branches, setBranches] = React.useState([]);
+    const [branches, setBranches] = React.useState<{ id: number; name: string; coordinates: string | null }[]>([]);
     const [newBranchName, setNewBranchName] = React.useState('');
     const [newBranchCoordinates, setNewBranchCoordinates] = React.useState('');
 
@@ -89,7 +89,7 @@ export default function BranchesPage() {
         }
     };
 
-    const handleDeleteBranch = async (id) => {
+    const handleDeleteBranch = async (id: number) => {
         const result = await deleteBranchAction(id);
         if (result.success) {
             toast({

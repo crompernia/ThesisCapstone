@@ -1,0 +1,1 @@
+ALTER TABLE "accounts" ADD COLUMN "photo" varchar(500);

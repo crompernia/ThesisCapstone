@@ -44,7 +44,7 @@ export default function ReportMonitoringPage() {
                 }, []);
   
   // In a real application, this data would be fetched from a database with pagination.
-  const reportsData = [];
+  const reportsData: any[] = [];
   
   return (
     <div className="space-y-6">

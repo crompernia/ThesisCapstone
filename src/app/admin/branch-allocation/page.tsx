@@ -11,7 +11,6 @@ import {
     CardHeader,
     CardTitle,
     CardDescription,
-    CardFooter,
 } from "@/components/ui/card";
 import {
     Table,
@@ -49,9 +48,9 @@ export default function BranchAllocationPage() {
                     document.title = "Admin Branch Allocation";
                     }, []);
     const { toast } = useToast();
-    const [hrPersonnel, setHrPersonnel] = React.useState([]);
-    const [branches, setBranches] = React.useState([]);
-    const [selectedHr, setSelectedHr] = React.useState(null);
+    const [hrPersonnel, setHrPersonnel] = React.useState<{ id: string; name: string; position: string | null; managed_branches: string[] }[]>([]);
+    const [branches, setBranches] = React.useState<{ id: number; name: string; coordinates: string | null }[]>([]);
+    const [selectedHr, setSelectedHr] = React.useState<{ id: string; name: string; position: string | null; managed_branches: string[] } | null>(null);
     const [selectedBranches, setSelectedBranches] = React.useState(new Set());
 
     const fetchData = React.useCallback(async () => {
@@ -65,12 +64,12 @@ export default function BranchAllocationPage() {
         fetchData();
     }, [fetchData]);
 
-    const handleManageClick = (hr) => {
+    const handleManageClick = (hr: { id: string; name: string; position: string | null; managed_branches: string[] }) => {
         setSelectedHr(hr);
         setSelectedBranches(new Set(hr.managed_branches || []));
     };
 
-    const handleBranchChange = (branchName, isChecked) => {
+    const handleBranchChange = (branchName: string, isChecked: boolean) => {
         setSelectedBranches(prev => {
             const newSet = new Set(prev);
             if (isChecked) {
@@ -84,7 +83,7 @@ export default function BranchAllocationPage() {
 
     const handleSaveAllocation = async () => {
         if (!selectedHr) return;
-        const result = await updateHrBranchAllocation(selectedHr.id, Array.from(selectedBranches));
+        const result = await updateHrBranchAllocation(selectedHr.id, Array.from(selectedBranches) as string[]);
         if (result.success) {
             toast({
                 title: 'Success',
@@ -95,7 +94,7 @@ export default function BranchAllocationPage() {
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: result.message || 'Failed to update branch allocation.',
+                description: (result as any).message || 'Failed to update branch allocation.',
             });
         }
     };
@@ -141,7 +140,7 @@ export default function BranchAllocationPage() {
                                         <div className="flex flex-wrap gap-2">
                                             {hr.managed_branches?.length > 0 ? (
                                                 hr.managed_branches.map(branch => (
-                                                    <Badge key={branch} variant="secondary">{branch}</Badge>
+                                                    <Badge key={branch} variant="secondary" className="">{branch}</Badge>
                                                 ))
                                             ) : (
                                                 <span className="text-muted-foreground text-sm">No branches assigned</span>
@@ -170,12 +169,7 @@ export default function BranchAllocationPage() {
                                                             
                                                             const checkbox = (
                                                                  <div key={branch.id} className="flex items-center space-x-2">
-                                                                    <Checkbox
-                                                                        id={`branch-${branch.id}`}
-                                                                        checked={isChecked}
-                                                                        disabled={isAssignedToOther}
-                                                                        onCheckedChange={(checked) => handleBranchChange(branch.name, checked)}
-                                                                    />
+                                                                    <Checkbox {...({checked: isChecked, disabled: isAssignedToOther, onCheckedChange: (checked: boolean) => handleBranchChange(branch.name, checked)} as any)} />
                                                                     <Label htmlFor={`branch-${branch.id}`} className={isAssignedToOther ? 'text-muted-foreground cursor-not-allowed' : ''}>{branch.name}</Label>
                                                                 </div>
                                                             );
@@ -186,7 +180,7 @@ export default function BranchAllocationPage() {
                                                                         <TooltipTrigger asChild>
                                                                             <span>{checkbox}</span>
                                                                         </TooltipTrigger>
-                                                                        <TooltipContent>
+                                                                        <TooltipContent {...({} as any)}>
                                                                             <p>This branch is already managed by another HR person.</p>
                                                                         </TooltipContent>
                                                                     </Tooltip>

@@ -15,7 +15,7 @@ const leaveRequestSchema = z.object({
     reason: z.string().optional(),
 });
 
-export async function createLeaveRequest(prevState, formData) {
+export async function createLeaveRequest(_prevState: any, formData: any) {
     const validatedFields = leaveRequestSchema.safeParse({
         employeeId: formData.get('employeeId'),
         leaveType: formData.get('leaveType'),
@@ -31,7 +31,7 @@ export async function createLeaveRequest(prevState, formData) {
     }
     
     try {
-        await createLeaveRequestDb(validatedFields.data);
+        await createLeaveRequestDb(validatedFields.data as any);
         revalidatePath('/dashboard/leave');
         return { message: 'Leave request created successfully.' };
     } catch (e) {

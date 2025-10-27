@@ -111,13 +111,13 @@ export default function LeaveRequestPage() {
   const leaveType = form.watch("leaveType");
   const startDate = form.watch("startDate");
   const endDate = form.watch("endDate");
-  const maxDays = LEAVE_LIMITS[leaveType] || null;
+  const maxDays = LEAVE_LIMITS[leaveType as keyof typeof LEAVE_LIMITS] || null;
 
   const calculateDays = React.useCallback(() => {
     if (!startDate || !endDate) return 0;
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const diff = (end - start) / (1000 * 60 * 60 * 24) + 1;
+    const diff = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24) + 1;
     return diff > 0 ? diff : 0;
   }, [startDate, endDate]);
 
@@ -293,10 +293,10 @@ export default function LeaveRequestPage() {
                     name="attachments"
                     render={({ field }) => {
                       const files = Array.from(form.watch("attachments") || []);
-                      const handleRemoveFile = (fileToRemove) => {
+                      const handleRemoveFile = (fileToRemove: any) => {
                         const updatedFiles = files.filter((file) => file !== fileToRemove);
                         const dataTransfer = new DataTransfer();
-                        updatedFiles.forEach((file) => dataTransfer.items.add(file));
+                        updatedFiles.forEach((file) => dataTransfer.items.add(file as File));
                         field.onChange(dataTransfer.files);
                       };
 
@@ -316,10 +316,10 @@ export default function LeaveRequestPage() {
                             <ul className="mt-3 space-y-1 text-sm text-gray-600">
                               {files.map((file) => (
                                 <li
-                                  key={file.name}
+                                  key={(file as File).name}
                                   className="flex items-center justify-between bg-gray-50 border rounded px-2 py-1"
                                 >
-                                  <span className="truncate max-w-[80%]">📎 {file.name}</span>
+                                  <span className="truncate max-w-[80%]">📎 {(file as File).name}</span>
                                   <button
                                     type="button"
                                     onClick={() => handleRemoveFile(file)}
@@ -353,7 +353,7 @@ export default function LeaveRequestPage() {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => document.getElementById('leave-request-form')?.requestSubmit()}>
+                        <AlertDialogAction onClick={() => (document.getElementById('leave-request-form') as HTMLFormElement)?.requestSubmit()}>
                           Submit
                         </AlertDialogAction>
                       </AlertDialogFooter>

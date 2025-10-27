@@ -21,14 +21,15 @@ import { getReportDetails } from "@/lib/data";
  * @param {{ params: { id: string } }} props - The props containing the report ID from the URL.
  * @returns {JSX.Element} The report details page component.
  */
-export default async function ReportDetailsPage({ params }) {
-  const report = await getReportDetails(params.id);
+export default async function ReportDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const report = await getReportDetails(parseInt(resolvedParams.id)) as any;
 
   if (!report) {
     return (
       <div className="text-center">
         <h1 className="text-2xl font-bold">Report not found</h1>
-        <p className="text-muted-foreground">The report with ID {params.id} could not be found.</p>
+        <p className="text-muted-foreground">The report with ID {resolvedParams.id} could not be found.</p>
         <Button asChild variant="link" className="mt-4">
           <Link href="/admin/reports">
             <ArrowLeft className="mr-2" />
@@ -77,7 +78,7 @@ export default async function ReportDetailsPage({ params }) {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Badge variant="outline">{report.type}</Badge>
+                    <Badge variant="outline" className="">{report.type}</Badge>
                 </div>
                  <div className="flex items-center gap-2">
                     <Clock className="text-muted-foreground"/>

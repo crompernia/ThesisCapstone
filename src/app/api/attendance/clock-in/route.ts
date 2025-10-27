@@ -89,9 +89,16 @@ export async function POST(req: Request) {
     const shiftStartTime = schedule.shiftStart;
     const shiftEndTime = schedule.shiftEnd;
 
-    // Create Date objects for shift start and end
-    const shiftStartDate = new Date(`${isoDate}T${shiftStartTime}`);
-    const shiftEndDate = new Date(`${isoDate}T${shiftEndTime}`);
+    // Parse date components
+    const [year, month, day] = isoDate.split('-').map(Number);
+
+    // Parse and convert shift start time to UTC (assuming Philippines time, UTC+8)
+    const [startHour, startMin, startSec] = shiftStartTime.split(':').map(Number);
+    const shiftStartDate = new Date(Date.UTC(year, month - 1, day, startHour - 8, startMin, startSec));
+
+    // Parse and convert shift end time to UTC
+    const [endHour, endMin, endSec] = shiftEndTime.split(':').map(Number);
+    const shiftEndDate = new Date(Date.UTC(year, month - 1, day, endHour - 8, endMin, endSec));
 
     // Define clock-in window: 2 hours before shift start to shift end time
     const earlyClockInLimit = new Date(shiftStartDate.getTime() - (2 * 60 * 60 * 1000)); // 2 hours before
