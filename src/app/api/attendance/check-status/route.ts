@@ -4,7 +4,7 @@ import { attendance } from '@/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { getCurrentUserId } from '@/lib/auth';
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const userId = await getCurrentUserId();
     if (!userId) {

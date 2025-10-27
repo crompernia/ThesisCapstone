@@ -11,8 +11,6 @@ import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
-  CardDescription,
   CardFooter,
 } from "@/components/ui/card";
 import {
@@ -32,7 +30,7 @@ import { FileDown, Building2 } from "lucide-react";
  * @param {{ payPeriods: object[], employeeName: string }} props - The props for the component.
  * @returns {JSX.Element} The payslip page client component.
  */
-export default function PayslipClientPage({ payPeriods, employeeName, employeeId, employeeNumber }) {
+export default function PayslipClientPage({ payPeriods, employeeName, employeeNumber }: any) {
   React.useEffect(() => {
       document.title = "Employee Payslip";
       }, []);
@@ -44,14 +42,14 @@ export default function PayslipClientPage({ payPeriods, employeeName, employeeId
     }
   }, [payPeriods]);
 
-  const payslipData = payPeriods?.find(p => String(p.id) === selectedPeriod);
+  const payslipData = payPeriods?.find((p: any) => String(p.id) === selectedPeriod);
 
   // Calculate pay date based on period logic
   const calculatePayDate = (period: string) => {
     const match = period.match(/^(\w{3}) (\d{2}) - (\w{3}) (\d{2}), (\d{4})$/);
     if (!match) return payslipData?.payDate || '';
 
-    const [, startMonth, startDay, endMonth, endDay, year] = match;
+    const [, startMonth, startDay, , , year] = match;
     const monthNames = {
       Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
       Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11
@@ -136,7 +134,7 @@ export default function PayslipClientPage({ payPeriods, employeeName, employeeId
     });
 
     // Deductions Table
-    const lastTableY = doc.lastAutoTable.finalY;
+    const lastTableY = (doc as any).lastAutoTable.finalY;
     autoTable(doc, {
       startY: lastTableY + 10,
       head: [['Deductions', 'Amount']],
@@ -151,7 +149,7 @@ export default function PayslipClientPage({ payPeriods, employeeName, employeeId
     });
     
     // Net Pay
-    const finalY = doc.lastAutoTable.finalY;
+    const finalY = (doc as any).lastAutoTable.finalY;
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
     doc.text("Net Pay:", 132, finalY + 15);
@@ -233,7 +231,7 @@ export default function PayslipClientPage({ payPeriods, employeeName, employeeId
                   ))}
                 </ul>
 
-                <Separator className="my-4" />
+                <Separator {...({ className: "my-4" } as any)} />
                 <div className="flex justify-between items-center">
                   <span>Daily Rate</span>
                   <span className="font-mono">
@@ -307,7 +305,7 @@ export default function PayslipClientPage({ payPeriods, employeeName, employeeId
                             </li>
                         ))}
                         </ul>
-                        <Separator className="my-4" />
+                        <Separator {...({ className: "my-4" } as any)} />
                         <div className="flex justify-between items-center font-semibold">
                             <span>Total Deductions</span>
                             <span className="font-mono">({formatCurrency(totalDeductions)})</span>

@@ -227,7 +227,7 @@ export default function PositionsPage() {
         }
     };
 
-    const handleDeletePosition = async (id) => {
+    const handleDeletePosition = async (id: number) => {
         const result = await deletePositionAction(id);
         if (result.success) {
             toast({
@@ -244,7 +244,7 @@ export default function PositionsPage() {
         }
     };
     
-    const formatCurrency = (value) => {
+    const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('en-PH', {
             style: 'currency',
             currency: 'PHP',

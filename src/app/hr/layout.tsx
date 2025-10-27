@@ -53,77 +53,77 @@ export default async function HRDashboardLayout({
   };
 
   return (
-    <SidebarProvider>
+    <SidebarProvider {...({} as any)}>
       {/* Sidebar Navigation */}
-      <Sidebar>
-        <SidebarHeader>
+      <Sidebar {...({} as any)}>
+        <SidebarHeader {...({} as any)}>
           {/* The company logo is displayed at the top of the sidebar. */}
           <div className="flex items-center gap-2 p-2">
             <Logo className="w-auto h-9" />
             <h1 className="text-xl font-semibold font-headline">HR Portal</h1>
           </div>
         </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu className="space-y-0.5">
-            <SidebarMenuItem>
+        <SidebarContent {...({} as any)}>
+          <SidebarMenu className="space-y-0.5" {...({} as any)}>
+            <SidebarMenuItem {...({} as any)}>
               <Link href="/hr/dashboard" passHref>
-                <SidebarMenuButton tooltip="Dashboard" className="w-full justify-start">
+                <SidebarMenuButton tooltip="Dashboard" className="w-full justify-start" {...({} as any)}>
                   <LayoutDashboard />
                   Dashboard
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Scheduling" asChild className="w-full justify-start">
+            <SidebarMenuItem {...({} as any)}>
+              <SidebarMenuButton tooltip="Scheduling" asChild className="w-full justify-start" {...({} as any)}>
                <Link href="/hr/scheduling">
                  <CalendarPlus />
                    Scheduling
                </Link>
             </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
+            <SidebarMenuItem {...({} as any)}>
               <Link href="/hr/attendance-monitoring" passHref>
-                <SidebarMenuButton tooltip="Attendance Monitoring" className="w-full justify-start">
+                <SidebarMenuButton tooltip="Attendance Monitoring" className="w-full justify-start" {...({} as any)}>
                   <ClipboardCheck />
                   Attendance Monitoring
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
-            <SidebarMenuItem>
+            <SidebarMenuItem {...({} as any)}>
               <Link href="/hr/attendance" passHref>
-                <SidebarMenuButton tooltip="Clock In/Out" className="w-full justify-start">
+                <SidebarMenuButton tooltip="Clock In/Out" className="w-full justify-start" {...({} as any)}>
                   <Clock />
                   Clock In/Out
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
-            <SidebarMenuItem>
+            <SidebarMenuItem {...({} as any)}>
               <Link href="/hr/payslip-generation" passHref>
-                <SidebarMenuButton tooltip="Payslips" className="w-full justify-start">
+                <SidebarMenuButton tooltip="Payslips" className="w-full justify-start" {...({} as any)}>
                   <Wallet />
                   Payslip Generation
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
-            <SidebarMenuItem>
+            <SidebarMenuItem {...({} as any)}>
               <Link href="/hr/employee-data" passHref>
-                <SidebarMenuButton tooltip="Employee Data" className="w-full justify-start">
+                <SidebarMenuButton tooltip="Employee Data" className="w-full justify-start" {...({} as any)}>
                   <Users />
                   Employee Data
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
-            <SidebarMenuItem>
+            <SidebarMenuItem {...({} as any)}>
               <Link href="/hr/announcements" passHref>
-                <SidebarMenuButton tooltip="Announcements" className="w-full justify-start">
+                <SidebarMenuButton tooltip="Announcements" className="w-full justify-start" {...({} as any)}>
                   <Megaphone />
                   Announcements
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
-             <SidebarMenuItem>
+             <SidebarMenuItem {...({} as any)}>
               <Link href="/hr/leave-approvals" passHref>
-                <SidebarMenuButton tooltip="Leave Approvals" className="w-full justify-start">
+                <SidebarMenuButton tooltip="Leave Approvals" className="w-full justify-start" {...({} as any)}>
                   <ClipboardList />
                   Leave Approvals
                 </SidebarMenuButton>
@@ -133,7 +133,7 @@ export default async function HRDashboardLayout({
         </SidebarContent>
       </Sidebar>
       {/* Main Content Area */}
-      <SidebarInset>
+      <SidebarInset {...({} as any)}>
         <header className="flex items-center justify-between p-4 border-b">
           <SidebarTrigger />
           <UserNav employeeName={hrUser.name} employeeEmail={hrUser.email} />

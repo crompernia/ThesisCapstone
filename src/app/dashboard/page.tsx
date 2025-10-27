@@ -124,7 +124,7 @@ export default async function EmployeeDashboardPage() {
                     <p className="text-sm text-muted-foreground">{ann.date}</p>
                     <p className="text-sm mt-1">{ann.content}</p>
                     {index < announcements.length - 1 && (
-                      <Separator className="mt-4" />
+                      <Separator {...({ className: "mt-4" } as any)} />
                     )}
                   </li>
                 ))}

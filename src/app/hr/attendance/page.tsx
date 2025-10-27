@@ -246,7 +246,7 @@ export default function HRAttendancePage() {
       'Late': 'destructive',
       'Absent': 'secondary'
     };
-    return <Badge variant={variants[status] || 'secondary'}>{status}</Badge>;
+    return <Badge variant={variants[status] || 'secondary'} className="">{status}</Badge>;
   };
 
   return (
@@ -280,7 +280,7 @@ export default function HRAttendancePage() {
               <Badge variant={
                 todayStatus === 'clocked-out' ? 'default' :
                 todayStatus === 'clocked-in' ? 'secondary' : 'outline'
-              }>
+              } className="">
                 {todayStatus === 'clocked-out' ? 'Completed' :
                  todayStatus === 'clocked-in' ? 'Working' : 'Not Started'}
               </Badge>
@@ -408,7 +408,7 @@ export default function HRAttendancePage() {
                     <TableCell className="text-right">
                       <Badge variant={
                         record.status === 'Present' ? 'default' : record.status === 'Late' ? 'secondary' : 'destructive'
-                      } className={record.status === 'Present' ? 'bg-green-500' : ''}>
+                      } className={record.status === 'Present' ? 'bg-green-500' : ''} {...({} as any)}>
                         {record.status}
                       </Badge>
                     </TableCell>

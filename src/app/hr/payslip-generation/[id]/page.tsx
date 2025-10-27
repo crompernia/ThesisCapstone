@@ -43,7 +43,7 @@ import { useRouter } from 'next/navigation';
  * @param {{ params: { id: string } }} props - The props containing the employee ID from the URL.
  * @returns {JSX.Element} The payslip calculation page component.
  */
-export default function GenerateEmployeePayslipPage({ params }: { params: { id: string } }) {
+export default function GenerateEmployeePayslipPage({ params }: { params: Promise<{ id: string }> }) {
     const { toast } = useToast();
     const router = useRouter();
     type Position = { id: number; title: string; rate: number | string }
@@ -77,12 +77,13 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
         const fetchData = async () => {
             setIsLoading(true);
             try {
+                const resolvedParams = await params;
                 const [empData, posData, attData] = await Promise.all([
-                    getEmployeeById(params.id),
+                    getEmployeeById(resolvedParams.id),
                     getPositions(),
-                    getAttendanceData(params.id)
+                    getAttendanceData(resolvedParams.id)
                 ]);
-                setEmployee(empData || { id: params.id, name: 'Unknown Employee', position: 'Unknown', employeeNumber: 'N/A' });
+                setEmployee(empData || { id: resolvedParams.id, name: 'Unknown Employee', position: 'Unknown', employeeNumber: 'N/A' });
                 setPositions(posData.length > 0 ? posData : [{ id: 1, title: 'Unknown', rate: '0' }]);
                 setAttendanceData(attData || { summary: { lates: 0, absences: 0, daysAttended: 0, totalDaysAttended: 0, availableLeaves: 0, totalHours: 0 } });
                 // Set minutesLate from attendance data or default to 0
@@ -97,7 +98,7 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
             setIsLoading(false);
         };
         fetchData();
-    }, [params.id, toast]);
+    }, [params, toast]);
 
     const employeePosition = positions.find(p => p.title === employee?.position);
     const hourlyRate = Number(employeePosition?.rate ?? 0);
@@ -218,8 +219,9 @@ export default function GenerateEmployeePayslipPage({ params }: { params: { id: 
             ? new Date(today.getFullYear(), today.getMonth(), 15)
             : new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
+        const resolvedParams = await params;
         const payload = {
-            employeeId: employee?.id || params.id,
+            employeeId: employee?.id || resolvedParams.id,
             payPeriod,
             payDate: payDate.toISOString().split('T')[0], // YYYY-MM-DD format
             basicPay,

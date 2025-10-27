@@ -59,7 +59,7 @@ export default async function HRDashboardPage() {
                     <Card key={stat.title}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                            {iconMap[stat.icon]}
+                            {iconMap[(stat as any).icon as keyof typeof iconMap]}
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stat.value}</div>

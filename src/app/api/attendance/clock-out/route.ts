@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     if (latitude && longitude) {
       const acc = await db.select({ branch: accounts.branch, role: accounts.role }).from(accounts).where(eq(accounts.id, employeeId));
       const branchName = acc[0]?.branch;
-      const userRole = acc[0]?.role;
+      // const userRole = acc[0]?.role;
 
       // Allow remote employees to clock out from anywhere
       if (branchName && branchName.toLowerCase() === 'remote') {

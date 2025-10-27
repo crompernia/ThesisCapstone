@@ -298,22 +298,23 @@ export default function EmployeeDataPage() {
                             <MoreHorizontal />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
+                        <DropdownMenuContent align="end" {...({} as any)}>
+                          <DropdownMenuItem asChild {...({} as any)}>
                             <Link href={`/hr/employee-data/${emp.id}`}>
                               View Profile
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
+                          <DropdownMenuItem asChild {...({} as any)}>
                             <Link href={`/hr/employee-data/${emp.id}/edit`}>
                               Edit
                             </Link>
                           </DropdownMenuItem>
                           <AlertDialog>
-                            <AlertDialogTrigger asChild>
+                            <AlertDialogTrigger asChild {...({} as any)}>
                               <DropdownMenuItem
                                 onSelect={(e) => e.preventDefault()}
                                 className="text-red-600"
+                                {...({} as any)}
                               >
                                 Delete Employee Data
                               </DropdownMenuItem>

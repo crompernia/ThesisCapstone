@@ -579,6 +579,7 @@ export default function SchedulingPage() {
                                             <Checkbox
                                               checked={(overtimeAllowedMap[emp.id] && overtimeAllowedMap[emp.id][i]) || false}
                                               onCheckedChange={(checked: boolean) => updateOvertimeAllowed(emp.id, i, checked)}
+                                              {...({} as any)}
                                             />
                                             <Label className="text-xs">OT</Label>
                                           </div>
@@ -739,6 +740,7 @@ export default function SchedulingPage() {
                             newOvertimeAllowed[index] = checked;
                             setIndividualOvertimeAllowed(newOvertimeAllowed);
                           }}
+                          {...({} as any)}
                         />
                       </TableCell>
                     </TableRow>

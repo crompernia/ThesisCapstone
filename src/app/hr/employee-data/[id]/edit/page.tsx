@@ -68,17 +68,26 @@ type FormValues = {
 
 type Branch = { id: number; name: string; coordinates?: string | null }
 
-export default function EditEmployeePage({ params }: { params: { id: string } }) {
+export default function EditEmployeePage({ params }: { params: Promise<{ id: string }> }) {
     const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
     const [isLoading, setIsLoading] = React.useState<boolean>(true);
     const [branches, setBranches] = React.useState<Branch[]>([]);
     const [departments, setDepartments] = React.useState<string[]>([]);
     const [positions, setPositions] = React.useState<string[]>([]);
+    const [resolvedId, setResolvedId] = React.useState<string>('');
   const router = useRouter();
   const { toast } = useToast();
 
+  React.useEffect(() => {
+    const resolveParams = async () => {
+      const resolved = await params;
+      setResolvedId(resolved.id);
+    };
+    resolveParams();
+  }, [params]);
+
     const form = useForm<FormValues>({
-    resolver: zodResolver(employeeSchema),
+    resolver: zodResolver(employeeSchema) as any,
     defaultValues: {
         firstName: '',
         lastName: '',
@@ -100,8 +109,9 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
     const fetchInitialData = async () => {
         setIsLoading(true);
         try {
+            const resolvedParams = await params;
             const [employee, branchesData] = await Promise.all([
-                getEmployeeById(params.id),
+                getEmployeeById(resolvedId),
                 getBranches()
             ]);
             
@@ -150,7 +160,7 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
         setIsLoading(false);
     };
     fetchInitialData();
-  }, [params.id, form, toast]);
+  }, [params, form, toast]);
 
   React.useEffect(() => {
         const fetchDepartments = async () => {
@@ -194,14 +204,14 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
   };
 
     const handleSubmit = async (values: FormValues) => {
-        const result = await updateEmployeeAction(params.id, values as any);
+        const result = await updateEmployeeAction(resolvedId, values as any);
 
     if (result.success) {
         toast({
             title: 'Success',
             description: 'Employee profile has been updated.',
         });
-        router.push(`/hr/employee-data/${params.id}`);
+        router.push(`/hr/employee-data/${resolvedId}`);
     } else {
         toast({
             variant: 'destructive',
@@ -251,7 +261,7 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
     <div className="space-y-6">
       <div>
         <Button asChild variant="outline" size="sm">
-          <Link href={`/hr/employee-data/${params.id}`}>
+          <Link href={`/hr/employee-data/${resolvedId}`}>
             <ArrowLeft className="mr-2" />
             Back to Profile
           </Link>

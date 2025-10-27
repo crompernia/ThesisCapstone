@@ -5,7 +5,7 @@
 
 import { getDb } from './db';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
-import { eq, and, desc, sql, inArray, ne, isNotNull, asc } from 'drizzle-orm';
+import { eq, and, desc, sql, inArray, ne, isNotNull, asc, or } from 'drizzle-orm';
 import * as schema from './schema';
 const { accounts, announcements, leaveRequests, branches, positions, schedules, attendance, departments, positionDepartments, attendanceRecords, payslips } = schema;
 
@@ -461,7 +461,7 @@ export async function getSchedulesForWeek(weekStart: string) {
             notes: schedules.notes
         })
         .from(schedules)
-        .where(inArray(schedules.date, weekDates))
+        .where(sql`${schedules.date}::text = ANY(ARRAY[${sql.join(weekDates, sql`, `)}])`)
         .orderBy(schedules.employeeId, schedules.date);
 
     // Group by employeeId
@@ -1027,7 +1027,11 @@ export async function getSchedule(employeeId: string) {
         .select({ date: schedules.date, shiftStart: schedules.shiftStart, shiftEnd: schedules.shiftEnd, notes: schedules.notes })
         .from(schedules)
         .where(and(eq(schedules.employeeId, employeeId), inArray(schedules.date, weekDates)))
-        .orderBy(asc(schedules.date));
+        .orderBy(asc(schedules.date))
+        .catch((error) => {
+            console.error('Database query error:', error);
+            throw error;
+        });
 
     // Map rows to the client shape expected by ScheduleClientPage
     const items = rows.map(r => {
