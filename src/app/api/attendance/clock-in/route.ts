@@ -92,26 +92,29 @@ export async function POST(req: Request) {
     // Parse date components
     const [year, month, day] = isoDate.split('-').map(Number);
 
-    // Parse and convert shift start time to UTC (assuming Philippines time, UTC+8)
-    const [startHour, startMin, startSec] = shiftStartTime.split(':').map(Number);
-    const shiftStartDate = new Date(Date.UTC(year, month - 1, day, startHour - 8, startMin, startSec));
+    // Convert current time to local time (UTC+8 for Philippines)
+    const nowLocal = new Date(now.getTime() + (8 * 60 * 60 * 1000));
 
-    // Parse and convert shift end time to UTC
+    // Parse shift start time as local time
+    const [startHour, startMin, startSec] = shiftStartTime.split(':').map(Number);
+    const shiftStartDate = new Date(year, month - 1, day, startHour, startMin, startSec);
+
+    // Parse shift end time as local time
     const [endHour, endMin, endSec] = shiftEndTime.split(':').map(Number);
-    const shiftEndDate = new Date(Date.UTC(year, month - 1, day, endHour - 8, endMin, endSec));
+    const shiftEndDate = new Date(year, month - 1, day, endHour, endMin, endSec);
 
     // Define clock-in window: 2 hours before shift start to shift end time
     const earlyClockInLimit = new Date(shiftStartDate.getTime() - (2 * 60 * 60 * 1000)); // 2 hours before
     const lateClockInLimit = shiftEndDate; // Until shift end
 
-    if (now < earlyClockInLimit) {
+    if (nowLocal < earlyClockInLimit) {
       return NextResponse.json({
         success: false,
         message: `Cannot clock in more than 2 hours before your shift start time (${shiftStartTime}).`
       }, { status: 403 });
     }
 
-    if (now > lateClockInLimit) {
+    if (nowLocal > lateClockInLimit) {
       return NextResponse.json({
         success: false,
         message: 'Cannot clock in after your shift end time.'
