@@ -37,7 +37,14 @@ function useSidebar() {
   return context
 }
 
-const SidebarProvider = React.forwardRef(
+const SidebarProvider = React.forwardRef<
+  React.ElementRef<"div">,
+  React.ComponentPropsWithoutRef<"div"> & {
+    defaultOpen?: boolean
+    open?: boolean
+    onOpenChange?: (open: boolean) => void
+  }
+>(
   (
     {
       defaultOpen = true,
@@ -139,7 +146,14 @@ const SidebarProvider = React.forwardRef(
 )
 SidebarProvider.displayName = "SidebarProvider"
 
-const Sidebar = React.forwardRef(
+const Sidebar = React.forwardRef<
+  React.ElementRef<"div">,
+  React.ComponentPropsWithoutRef<"div"> & {
+    side?: "left" | "right"
+    variant?: "sidebar" | "floating" | "inset"
+    collapsible?: "offcanvas" | "icon" | "none"
+  }
+>(
   (
     {
       side = "left",
