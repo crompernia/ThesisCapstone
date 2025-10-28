@@ -275,7 +275,10 @@ const SidebarTrigger = React.forwardRef<
 })
 SidebarTrigger.displayName = "SidebarTrigger"
 
-const SidebarRail = React.forwardRef(({ className, ...props }, ref) => {
+const SidebarRail = React.forwardRef<
+  React.ElementRef<"button">,
+  React.ComponentPropsWithoutRef<"button">
+>(({ className, ...props }, ref) => {
   const { toggleSidebar } = useSidebar()
 
   return (
