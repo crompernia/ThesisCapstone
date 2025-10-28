@@ -304,7 +304,10 @@ const SidebarRail = React.forwardRef<
 })
 SidebarRail.displayName = "SidebarRail"
 
-const SidebarInset = React.forwardRef(({ className, ...props }, ref) => {
+const SidebarInset = React.forwardRef<
+  React.ElementRef<"main">,
+  React.ComponentPropsWithoutRef<"main">
+>(({ className, ...props }, ref) => {
   return (
     <main
       ref={ref}
