@@ -31,7 +31,12 @@ const alertVariants = cva(
 /**
  * The main Alert component.
  */
-const Alert = React.forwardRef(({ className, variant, ...props }, ref) => (
+const Alert = React.forwardRef<
+  React.ElementRef<"div">,
+  React.ComponentPropsWithoutRef<"div"> & {
+    variant?: "default" | "destructive"
+  }
+>(({ className, variant, ...props }, ref) => (
   <div
     ref={ref}
     role="alert"
@@ -44,7 +49,10 @@ Alert.displayName = "Alert"
 /**
  * The title of the alert.
  */
-const AlertTitle = React.forwardRef(({ className, ...props }, ref) => (
+const AlertTitle = React.forwardRef<
+  React.ElementRef<"h5">,
+  React.ComponentPropsWithoutRef<"h5">
+>(({ className, ...props }, ref) => (
   <h5
     ref={ref}
     className={cn("mb-1 font-medium leading-none tracking-tight", className)}
@@ -56,7 +64,10 @@ AlertTitle.displayName = "AlertTitle"
 /**
  * The description or main content of the alert.
  */
-const AlertDescription = React.forwardRef(({ className, ...props }, ref) => (
+const AlertDescription = React.forwardRef<
+  React.ElementRef<"div">,
+  React.ComponentPropsWithoutRef<"div">
+>(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={cn("text-sm [&_p]:leading-relaxed", className)}
