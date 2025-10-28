@@ -34,7 +34,13 @@ function useChart() {
 /**
  * The main container for a chart. It sets up the context and responsive container.
  */
-const ChartContainer = React.forwardRef(
+const ChartContainer = React.forwardRef<
+  React.ElementRef<"div">,
+  React.ComponentPropsWithoutRef<"div"> & {
+    id?: string
+    config?: any
+  }
+>(
   ({ id, className, children, config, ...props }, ref) => {
     const uniqueId = React.useId()
     const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`
@@ -102,7 +108,23 @@ const ChartTooltip = RechartsPrimitive.Tooltip
 /**
  * A custom tooltip content component that is styled according to the application's theme.
  */
-const ChartTooltipContent = React.forwardRef(
+const ChartTooltipContent = React.forwardRef<
+  React.ElementRef<"div">,
+  React.ComponentPropsWithoutRef<"div"> & {
+    active?: boolean
+    payload?: any[]
+    indicator?: string
+    hideLabel?: boolean
+    hideIndicator?: boolean
+    label?: any
+    labelFormatter?: any
+    labelClassName?: string
+    formatter?: any
+    color?: string
+    nameKey?: string
+    labelKey?: string
+  }
+>(
   (
     {
       active,
@@ -211,7 +233,7 @@ const ChartTooltipContent = React.forwardRef(
                             {
                               "--color-bg": indicatorColor,
                               "--color-border": indicatorColor,
-                            }
+                            } as React.CSSProperties
                           }
                         />
                       )
@@ -251,7 +273,15 @@ const ChartLegend = RechartsPrimitive.Legend
 /**
  * A custom legend content component that is styled according to the application's theme.
  */
-const ChartLegendContent = React.forwardRef(
+const ChartLegendContent = React.forwardRef<
+  React.ElementRef<"div">,
+  React.ComponentPropsWithoutRef<"div"> & {
+    hideIcon?: boolean
+    payload?: any[]
+    verticalAlign?: string
+    nameKey?: string
+  }
+>(
   (
     { className, hideIcon = false, payload, verticalAlign = "bottom", nameKey },
     ref
