@@ -21,7 +21,10 @@ const Accordion = AccordionPrimitive.Root
 /**
  * An individual item within an accordion, containing a trigger and content.
  */
-const AccordionItem = React.forwardRef(({ className, ...props }, ref) => (
+const AccordionItem = React.forwardRef<
+  React.ElementRef<typeof AccordionPrimitive.Item>,
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>
+>(({ className, ...props }, ref) => (
   <AccordionPrimitive.Item
     ref={ref}
     className={cn("border-b", className)}
@@ -33,7 +36,10 @@ AccordionItem.displayName = "AccordionItem"
 /**
  * The button that toggles the display of an accordion item's content.
  */
-const AccordionTrigger = React.forwardRef(({ className, children, ...props }, ref) => (
+const AccordionTrigger = React.forwardRef<
+  React.ElementRef<typeof AccordionPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>
+>(({ className, children, ...props }, ref) => (
   <AccordionPrimitive.Header className="flex">
     <AccordionPrimitive.Trigger
       ref={ref}
@@ -53,7 +59,10 @@ AccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName
 /**
  * The container for the content of an accordion item.
  */
-const AccordionContent = React.forwardRef(({ className, children, ...props }, ref) => (
+const AccordionContent = React.forwardRef<
+  React.ElementRef<typeof AccordionPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>
+>(({ className, children, ...props }, ref) => (
   <AccordionPrimitive.Content
     ref={ref}
     className="overflow-hidden text-sm transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
