@@ -103,14 +103,14 @@ export async function POST(req: Request) {
     const [endHour, endMin, endSec] = shiftEndTime.split(':').map(Number);
     const shiftEndDate = new Date(year, month - 1, day, endHour, endMin, endSec);
 
-    // Define clock-in window: 2 hours before shift start to shift end time
-    const earlyClockInLimit = new Date(shiftStartDate.getTime() - (2 * 60 * 60 * 1000)); // 2 hours before
+    // Define clock-in window: from shift start to shift end time
+    const earlyClockInLimit = shiftStartDate; // Cannot clock in before shift start
     const lateClockInLimit = shiftEndDate; // Until shift end
 
     if (nowLocal < earlyClockInLimit) {
       return NextResponse.json({
         success: false,
-        message: `Cannot clock in more than 2 hours before your shift start time (${shiftStartTime}).`
+        message: `Cannot clock in before your shift start time (${shiftStartTime}).`
       }, { status: 403 });
     }
 

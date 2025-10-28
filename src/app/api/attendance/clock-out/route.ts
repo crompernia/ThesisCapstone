@@ -67,6 +67,34 @@ export async function POST(req: Request) {
       }
     }
 
+    // Check if employee has a schedule for today
+    const scheduleCheck = await db.select().from(schedules).where(and(eq(schedules.employeeId, employeeId), eq(schedules.date, isoDate)));
+    if (scheduleCheck.length === 0) {
+      return NextResponse.json({ success: false, message: 'No schedule assigned for today. Cannot clock out.' }, { status: 403 });
+    }
+
+    // Validate clock-out time against scheduled shift end time
+    const schedule = scheduleCheck[0];
+    const shiftEndTime = schedule.shiftEnd;
+
+    // Parse date components
+    const [year, month, day] = isoDate.split('-').map(Number);
+
+    // Convert current time to local time (UTC+8 for Philippines)
+    const nowLocal = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+
+    // Parse shift end time as local time
+    const [endHour, endMin, endSec] = shiftEndTime.split(':').map(Number);
+    const shiftEndDate = new Date(year, month - 1, day, endHour, endMin, endSec);
+
+    // Can only clock out at or after shift end time
+    if (nowLocal < shiftEndDate) {
+      return NextResponse.json({
+        success: false,
+        message: `Cannot clock out before your shift end time (${shiftEndTime}).`
+      }, { status: 403 });
+    }
+
     const existing = await db.select().from(attendance).where(and(eq(attendance.employeeId, employeeId), eq(attendance.date, isoDate)));
     if (existing.length === 0) {
       return NextResponse.json({ success: false, message: 'No clock-in found for today' }, { status: 400 });

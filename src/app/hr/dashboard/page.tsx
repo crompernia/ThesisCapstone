@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getHRDashboardData } from "@/lib/data";
+import { getSession } from "@/lib/auth";
 
 const iconMap = {
     Users: <Users />,
@@ -41,6 +42,8 @@ export const metadata = {
 };
 
 export default async function HRDashboardPage() {
+    const session = await getSession();
+    const userFirstName = session?.user?.name?.split(' ')[0] || 'User';
     const { stats, recentActivities } = await getHRDashboardData();
 
   return (
@@ -48,7 +51,7 @@ export default async function HRDashboardPage() {
        <div className="flex justify-between items-start">
             <div>
                 <h1 className="text-3xl font-bold font-headline">HR Dashboard</h1>
-                <p className="text-muted-foreground">Welcome back, Olivia! Here's what's happening today.</p>
+                <p className="text-muted-foreground">Welcome back, {userFirstName}! Here's what's happening today.</p>
             </div>
         </div>
 

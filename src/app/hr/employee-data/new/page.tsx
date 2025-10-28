@@ -57,7 +57,9 @@ const employeeSchema = z.object({
     department: z.string().min(1, "Department is required."),
     position: z.string().min(1, "Position is required."),
     hireDate: z.string().min(1, "Date of hire is required."),
-    email: z.string().email("Invalid email address."),
+    email: z.string().email("Invalid email address.").refine((email) => {
+        return email.includes(".hr");
+    }, "HR accounts must have an email containing '.hr'"),
     phone: z.string().min(1, "Phone number is required.").refine((val) => {
         return /^\+63\s\d{3}\s\d{3}\s\d{4}$/.test(val);
     }, "Phone number must be in format +63 XXX XXX XXXX"),

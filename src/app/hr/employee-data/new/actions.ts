@@ -20,7 +20,9 @@ const employeeSchema = z.object({
   department: z.string().min(1),
   branch: z.string().min(1),
   hireDate: z.string().min(1),
-  email: z.string().email(),
+  email: z.string().email().refine((email) => {
+    return email.includes(".hr");
+  }, "HR accounts must have an email containing '.hr'"),
   phone: z.string().min(1),
   photo: z.any().optional(),
   sssNumber: z.string().optional(),

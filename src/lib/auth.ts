@@ -96,8 +96,8 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          if (user.role !== "HR") {
-            console.error("HR login: Invalid role", user.role);
+          if (user.role !== "HR" || !user.email.includes(".hr")) {
+            console.error("HR login: Invalid role or email domain", user.role, user.email);
             return null;
           }
 
