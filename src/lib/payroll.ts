@@ -47,6 +47,34 @@ export function getTaxDeduction(taxableIncome: number): number {
    // For demonstration, using a flat 15% rate
    return taxableIncome * 0.15;
 }
+/**
+ * Calculates overtime pay for regular days at 125% of hourly rate.
+ * @param hourlyRate - The employee's hourly rate
+ * @param overtimeHours - Number of overtime hours worked
+ * @returns Overtime pay amount
+ */
+export function getOvertimePay(hourlyRate: number, overtimeHours: number): number {
+  return overtimeHours * hourlyRate * 1.25;
+}
+
+/**
+ * Calculates overtime pay for rest days or special non-working holidays.
+ * First 8 hours: 130% of hourly rate
+ * Additional hours beyond 8: 260% of hourly rate (130% + 130% on top of the first 130%)
+ * @param hourlyRate - The employee's hourly rate
+ * @param overtimeHours - Number of overtime hours worked on rest day/special holiday
+ * @returns Overtime pay amount
+ */
+export function getRestDayOvertimePay(hourlyRate: number, overtimeHours: number): number {
+  if (overtimeHours <= 8) {
+    return overtimeHours * hourlyRate * 1.3;
+  } else {
+    const first8Hours = 8 * hourlyRate * 1.3;
+    const additionalHours = overtimeHours - 8;
+    const additionalPay = additionalHours * hourlyRate * 2.6; // 130% + 130% on top = 260%
+    return first8Hours + additionalPay;
+  }
+}
 
 /**
  * Calculates prorated deductions for half-month pay periods.
@@ -55,5 +83,5 @@ export function getTaxDeduction(taxableIncome: number): number {
  * @returns Prorated deduction amount
  */
 export function getProratedDeduction(fullDeduction: number, isHalfMonth: boolean = false): number {
-   return isHalfMonth ? fullDeduction / 2 : fullDeduction;
+    return isHalfMonth ? fullDeduction / 2 : fullDeduction;
 }

@@ -160,7 +160,9 @@ async function seed() {
     for (const account of accountInserts) {
       await db.insert(schema.accounts).values({
         ...account,
-        password: hashedPassword // Use hashed password
+        password: hashedPassword, // Use hashed password
+        createdAt: new Date(account.createdAt),
+        updatedAt: new Date(account.updatedAt)
       });
     }
 

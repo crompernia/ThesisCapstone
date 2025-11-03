@@ -40,6 +40,10 @@ const employeeSchema = z.object({
     firstName: z.string().min(1, "First name is required."),
     lastName: z.string().min(1, "Last name is required."),
     middleName: z.string().optional(),
+    employeeNumber: z.string().optional().refine((val) => {
+        if (!val) return true; // Optional field
+        return /^\d{3}-\d{5}$/.test(val);
+    }, "Employee number must be in format 000-00000"),
     gender: z.string().min(1, "Gender is required."),
     dob: z.string().min(1, "Date of birth is required."),
     branch: z.string().min(1, "Branch is required."),
@@ -47,6 +51,13 @@ const employeeSchema = z.object({
     position: z.string().min(1, "Position is required."),
     hireDate: z.string().min(1, "Date of hire is required."),
     email: z.string().email("Invalid email address."),
+    photo: z.instanceof(File).optional().refine((file) => {
+        if (!file) return true; // Optional
+        return file.size <= 5 * 1024 * 1024; // Max 5MB
+    }, "File size must be less than 5MB").refine((file) => {
+        if (!file) return true; // Optional
+        return file.type.startsWith('image/');
+    }, "File must be an image"),
 });
 
 /**
@@ -54,16 +65,18 @@ const employeeSchema = z.object({
  * @returns {JSX.Element} The edit employee page component.
  */
 type FormValues = {
-    firstName: string;
-    lastName: string;
-    middleName?: string;
-    gender: string;
-    dob: string;
-    branch: string;
-    department: string;
-    position: string;
-    hireDate: string;
-    email: string;
+     firstName: string;
+     lastName: string;
+     middleName?: string;
+     employeeNumber?: string;
+     gender: string;
+     dob: string;
+     branch: string;
+     department: string;
+     position: string;
+     hireDate: string;
+     email: string;
+     photo?: File;
 }
 
 type Branch = { id: number; name: string; coordinates?: string | null }
@@ -87,40 +100,44 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
   }, [params]);
 
     const form = useForm<FormValues>({
-    resolver: zodResolver(employeeSchema) as any,
-    defaultValues: {
-        firstName: '',
-        lastName: '',
-        middleName: '',
-        gender: '',
-        dob: '',
-        branch: '',
-        department: '',
-        position: '',
-        hireDate: '',
-        email: '',
-    }
-  });
+      resolver: zodResolver(employeeSchema) as any,
+      defaultValues: {
+          firstName: '',
+          lastName: '',
+          middleName: '',
+          employeeNumber: '',
+          gender: '',
+          dob: '',
+          branch: '',
+          department: '',
+          position: '',
+          hireDate: '',
+          email: '',
+          photo: undefined,
+      }
+    });
 
   const watchedBranch = useWatch({ control: form.control, name: 'branch' });
   const watchedDepartment = useWatch({ control: form.control, name: 'department' });
 
   React.useEffect(() => {
     const fetchInitialData = async () => {
+        if (!resolvedId) return; // Wait for resolvedId to be set
+
         setIsLoading(true);
         try {
-            const resolvedParams = await params;
             const [employee, branchesData] = await Promise.all([
                 getEmployeeById(resolvedId),
                 getBranches()
             ]);
-            
+
             if (employee) {
                 // Set initial form values
                 form.reset({
                     firstName: (employee as any).firstName ?? (employee as any).first_name ?? '',
                     lastName: (employee as any).lastName ?? (employee as any).last_name ?? '',
                     middleName: (employee as any).middleName ?? (employee as any).middle_name ?? '',
+                    employeeNumber: (employee as any).employeeNumber ?? (employee as any).employee_number ?? '',
                     gender: (employee as any).gender ?? '',
                     dob: (employee as any).date_of_birth ?? (employee as any).dateOfBirth ?? '',
                     branch: (employee as any).branch ?? '',
@@ -160,7 +177,7 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
         setIsLoading(false);
     };
     fetchInitialData();
-  }, [params, form, toast]);
+  }, [resolvedId, form, toast]);
 
   React.useEffect(() => {
         const fetchDepartments = async () => {
@@ -200,11 +217,33 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
                 setPhotoPreview(typeof reader.result === 'string' ? reader.result : null);
             };
       reader.readAsDataURL(file);
+      form.setValue('photo', file);
     }
   };
 
     const handleSubmit = async (values: FormValues) => {
-        const result = await updateEmployeeAction(resolvedId, values as any);
+        if (!resolvedId) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Invalid employee ID.',
+            });
+            return;
+        }
+
+        // Create FormData for file upload
+        const formData = new FormData();
+        Object.entries(values).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+                if (value instanceof File) {
+                    formData.append(key, value);
+                } else {
+                    formData.append(key, String(value));
+                }
+            }
+        });
+
+        const result = await updateEmployeeAction(resolvedId, formData);
 
     if (result.success) {
         toast({
@@ -330,6 +369,44 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
                     <FormItem>
                         <FormLabel>Middle Name</FormLabel>
                         <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="employeeNumber"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Employee Number</FormLabel>
+                        <FormControl>
+                            <Input
+                                {...field}
+                                placeholder="000-00000"
+                                maxLength={9}
+                                onChange={(e) => {
+                                    let value = e.target.value.replace(/[^0-9-]/g, ''); // Only allow numbers and hyphens
+
+                                    // Auto-format as user types
+                                    if (value.length <= 3) {
+                                        value = value.replace(/[^0-9]/g, ''); // First 3 digits only
+                                    } else if (value.length === 4) {
+                                        // Add hyphen after 3 digits
+                                        value = value.slice(0, 3) + '-' + value.slice(3);
+                                    } else if (value.length > 4) {
+                                        // Ensure format 000-00000
+                                        const digitsOnly = value.replace(/-/g, '');
+                                        if (digitsOnly.length <= 8) {
+                                            value = digitsOnly.slice(0, 3) + '-' + digitsOnly.slice(3, 8);
+                                        } else {
+                                            value = digitsOnly.slice(0, 3) + '-' + digitsOnly.slice(3, 8);
+                                        }
+                                    }
+
+                                    field.onChange(value);
+                                }}
+                            />
+                        </FormControl>
                         <FormMessage />
                     </FormItem>
                     )}

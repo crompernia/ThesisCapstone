@@ -68,27 +68,16 @@ export function LoginForm() {
    * @returns The determined role: "employee", "hr", or "admin"
    */
   const determineRole = (username: string): "employee" | "hr" | "admin" | null => {
-    // Check if it's an employee ID (numeric only)
-    if (/^\d+$/.test(username)) {
-      return "employee";
-    }
     // Check if it contains ".hr"
     if (username.includes(".hr")) {
       return "hr";
     }
-    // Check for specific super admin email
-    if (username.toLowerCase() === "super@example.com") {
+    // Check for admin keywords
+    if (username.toLowerCase().includes("super") || username.toLowerCase().includes("admin")) {
       return "admin";
     }
-    // Check if it contains both "super" and "admin" (highest priority)
-    if (username.toLowerCase().includes("super") && username.toLowerCase().includes("admin")) {
-      return "admin";
-    }
-    // Check if it contains "admin"
-    if (username.toLowerCase().includes("admin")) {
-      return "admin";
-    }
-    return null;
+    // Default to employee (uses employee_number for login)
+    return "employee";
   };
 
   /**
@@ -104,7 +93,7 @@ export function LoginForm() {
         toast({
           variant: "destructive",
           title: "Invalid Username",
-          description: "Please enter a valid Employee ID, HR email (.hr), or Admin email (containing 'admin').",
+          description: "Please enter a valid Employee Number, HR email (.hr), or Admin email (containing 'admin').",
         });
         setIsLoading(false);
         return;
@@ -182,7 +171,7 @@ export function LoginForm() {
                   <FormLabel>Username</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Credentials (ID, email)"
+                      placeholder="Employee Number, HR email, or Admin email"
                       {...field}
                       disabled={isLoading}
                     />

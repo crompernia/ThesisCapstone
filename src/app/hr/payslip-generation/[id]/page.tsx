@@ -32,7 +32,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { getEmployeeById, getPositions, getAttendanceData } from '@/lib/data';
-import { getSSSDeduction, getPhilhealthDeduction, getPagibigDeduction, getProratedDeduction } from '@/lib/payroll';
+import { getSSSDeduction, getPhilhealthDeduction, getPagibigDeduction, getProratedDeduction, getOvertimePay, getRestDayOvertimePay } from '@/lib/payroll';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -102,7 +102,6 @@ export default function GenerateEmployeePayslipPage({ params }: { params: Promis
 
     const employeePosition = positions.find(p => p.title === employee?.position);
     const hourlyRate = Number(employeePosition?.rate ?? 0);
-    const overtimeRate = hourlyRate * 1.5;
 
     // Adjust calculations for half-month pay period
     const halfMonthHours = selectedHalf === '1st' ? 80 : 80; // Assuming 160 hours per month, split into two halves
@@ -111,7 +110,7 @@ export default function GenerateEmployeePayslipPage({ params }: { params: Promis
 
     const dailyRate = hourlyRate * numberOfHoursPerDay;
     const basicPay = dailyRate * (attendanceData?.summary?.daysAttended || 0);
-    const overtimePay = halfMonthOvertimeHours * overtimeRate;
+    const overtimePay = getOvertimePay(hourlyRate, halfMonthOvertimeHours);
 
     // Calculate Monthly Salary Credit (MSC) for SSS based on standard 160 hours per month
     const monthlySalaryCredit = hourlyRate * 160;

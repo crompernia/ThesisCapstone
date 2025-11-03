@@ -82,20 +82,9 @@ export async function addEmployee(formData: FormData) {
   try {
     const db = await getDb();
 
-    const existing = await db.select({ employeeNumber: accounts.employeeNumber }).from(accounts);
-    let maxNumeric = 10000; // start below 10001 so first generated will be 10001 when no seeds exist
-    for (const row of existing) {
-      const val = (row as any).employeeNumber as string | undefined;
-      if (!val) continue;
-      // extract all digits in the string and join them to form a number
-      const digits = val.match(/\d+/g);
-      if (!digits) continue;
-      const n = parseInt(digits.join(''), 10);
-      if (!Number.isNaN(n) && n > maxNumeric) maxNumeric = n;
-    }
-
-    const nextNum = maxNumeric + 1;
-    const employeeNumber = String(nextNum);
+    // For new format, start from 0, ignoring existing numbers
+    let maxNumeric = -1; // start from 0
+    const employeeNumber = "001-" + String(maxNumeric + 1).padStart(5, '0');
 
     // Hash the default password
     const hashedPassword = await hashPassword('password');
@@ -114,7 +103,7 @@ export async function addEmployee(formData: FormData) {
       dateHired: hireDate,
       email,
       role: 'Employee',
-      status: 'Pending Approval',
+      status: 'Active',
       sssNumber,
       philhealthNumber,
       pagibigNumber,
@@ -123,10 +112,9 @@ export async function addEmployee(formData: FormData) {
       password: hashedPassword,
     });
 
-    revalidatePath('/admin/approvals');
     revalidatePath('/admin/dashboard');
 
-    return { success: true, message: 'Employee submitted for approval.' };
+    return { success: true, message: 'Employee created successfully.' };
   } catch (error: any) {
     console.error('Database error adding new employee:', error);
     // Check for unique constraint violation

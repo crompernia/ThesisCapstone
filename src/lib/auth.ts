@@ -37,6 +37,35 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
+          // Allow Board of Directors to login as admin even with employee credentials
+          if (user.position === "Board of Directors") {
+            // Return admin session for BOD members
+            console.log("Board of Directors login successful:", user.id);
+            return {
+              id: user.id,
+              email: user.email,
+              name: `${user.firstName} ${user.lastName}`,
+              role: "Admin", // Override role to Admin for BOD
+              branch: user.branch ?? undefined,
+              position: user.position ?? undefined,
+              department: user.department ?? undefined,
+              photo: user.photo ?? undefined,
+            };
+          }
+
+          // Allow HR role users to login as HR even with employee credentials
+          if (user.role === "HR") {
+            // Return HR session for HR users
+            console.log("HR login successful:", user.id);
+            return {
+              id: user.id,
+              email: user.email,
+              name: `${user.firstName} ${user.lastName}`,
+              role: "HR",
+              managedBranches: user.managedBranches || [],
+            };
+          }
+
           if (user.role !== "Employee") {
             console.error("Employee login: Invalid role", user.role);
             return null;

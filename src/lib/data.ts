@@ -1352,6 +1352,7 @@ export async function updateEmployee(id: string, data: {
     firstName: string;
     lastName: string;
     middleName?: string;
+    employeeNumber?: string;
     gender: string;
     dob: string;
     position: string;
@@ -1359,9 +1360,10 @@ export async function updateEmployee(id: string, data: {
     branch: string;
     hireDate: string;
     email: string;
+    photo?: string | null;
 }) {
     const db = await getDb();
-    const { firstName, lastName, middleName, gender, dob, position, department, branch, hireDate, email } = data;
+    const { firstName, lastName, middleName, employeeNumber, gender, dob, position, department, branch, hireDate, email, photo } = data;
 
     const result = await db
         .update(accounts)
@@ -1369,6 +1371,7 @@ export async function updateEmployee(id: string, data: {
             firstName,
             lastName,
             middleName,
+            employeeNumber,
             gender,
             dateOfBirth: dob,
             position,
@@ -1376,6 +1379,7 @@ export async function updateEmployee(id: string, data: {
             branch,
             dateHired: hireDate,
             email,
+            photo,
         })
         .where(eq(accounts.id, id));
 
