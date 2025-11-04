@@ -57,9 +57,7 @@ const employeeSchema = z.object({
     department: z.string().min(1, "Department is required."),
     position: z.string().min(1, "Position is required."),
     hireDate: z.string().min(1, "Date of hire is required."),
-    email: z.string().email("Invalid email address.").refine((email) => {
-        return email.includes(".hr");
-    }, "HR accounts must have an email containing '.hr'"),
+    email: z.string().email("Invalid email address."),
     phone: z.string().min(1, "Phone number is required.").refine((val) => {
         return /^\+63\s\d{3}\s\d{3}\s\d{4}$/.test(val);
     }, "Phone number must be in format +63 XXX XXX XXXX"),
@@ -199,14 +197,14 @@ export default function AddEmployeePage() {
     if (result.success) {
         toast({
             title: 'Success',
-            description: 'New employee has been submitted for approval.',
+            description: 'New employee account have been created',
         });
         router.push('/hr/employee-data');
     } else {
         toast({
             variant: 'destructive',
             title: 'Error',
-            description: result.message || 'Failed to submit employee for approval.',
+            description: result.message || 'Failed to create employee account.',
         });
     }
   };
@@ -605,18 +603,18 @@ export default function AddEmployeePage() {
             <CardFooter className="flex justify-end">
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button type="button">Submit for approval</Button>
+                        <Button type="button">Create Account</Button>
                         </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure you want to submit for approval?</AlertDialogTitle>
+                            <AlertDialogTitle>Are you sure you want to create account?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This will send the new employee profile to an administrator for approval.
+                                This will create the new employee account.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={form.handleSubmit(handleSubmit)}>Submit for approval</AlertDialogAction>
+                            <AlertDialogAction onClick={form.handleSubmit(handleSubmit)}>Create Account</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
