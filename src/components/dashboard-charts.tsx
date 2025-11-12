@@ -5,7 +5,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell } from "recharts";
 
 interface AttendanceStats {
   daysAttended: number;
@@ -129,17 +129,34 @@ export function LeaveAndOvertimeChart({ leaveBalance, overtimeHours }: { leaveBa
     },
   ];
 
+  // Calculate max value for proper Y-axis scaling
+  const maxValue = Math.max(leaveBalance, overtimeHours, 10); // Minimum 10 for better visualization
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Leave & Overtime</CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[200px]">
-          <BarChart data={data}>
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Bar dataKey="value" fill="#8884d8" />
+        <ChartContainer config={chartConfig} className="h-[250px]">
+          <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <XAxis
+              dataKey="name"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12 }}
+            />
+            <YAxis
+              domain={[0, maxValue]}
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12 }}
+            />
+            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.fill} />
+              ))}
+            </Bar>
             <ChartTooltip content={<ChartTooltipContent />} />
           </BarChart>
         </ChartContainer>
