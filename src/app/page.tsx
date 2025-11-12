@@ -1,5 +1,6 @@
 import dynamic from "next/dynamic";
 import { Logo } from "../components/logo";
+import { Suspense } from "react";
 
 export const metadata = {
   title: 'Chumplace',
@@ -20,7 +21,9 @@ export default function LoginPage() {
           Welcome back. Please login to your account.
         </p>
 
-        <LoginForm />
+        <Suspense fallback={<div>Loading...</div>}>
+          <LoginForm />
+        </Suspense>
 
         <p className="text-xs text-muted-foreground text-left mt-8">
           © {currentYear} Chumplace Inc. All rights reserved.
