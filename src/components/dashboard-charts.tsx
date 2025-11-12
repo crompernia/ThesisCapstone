@@ -78,24 +78,26 @@ export function AttendanceChart({ attendance }: { attendance: AttendanceStats })
         <CardTitle>Attendance Overview</CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[200px]">
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={40}
-              outerRadius={80}
-              paddingAngle={5}
-              dataKey="value"
-            >
-              {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
-              ))}
-            </Pie>
-            <ChartTooltip content={<ChartTooltipContent />} />
-          </PieChart>
-        </ChartContainer>
+        <div className="flex justify-center items-center h-[180px]">
+          <ChartContainer config={chartConfig} className="h-[160px]">
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius={40}
+                outerRadius={80}
+                paddingAngle={5}
+                dataKey="value"
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Pie>
+              <ChartTooltip content={<ChartTooltipContent />} />
+            </PieChart>
+          </ChartContainer>
+        </div>
         <div className="grid grid-cols-3 gap-4 mt-4 text-center">
           <div>
             <p className="text-2xl font-bold text-green-600">{attendance.daysAttended}</p>
@@ -138,28 +140,30 @@ export function LeaveAndOvertimeChart({ leaveBalance, overtimeHours }: { leaveBa
         <CardTitle>Leave & Overtime</CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[250px]">
-          <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <XAxis
-              dataKey="name"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 12 }}
-            />
-            <YAxis
-              domain={[0, maxValue]}
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 12 }}
-            />
-            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-              {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
-              ))}
-            </Bar>
-            <ChartTooltip content={<ChartTooltipContent />} />
-          </BarChart>
-        </ChartContainer>
+        <div className="flex justify-center items-center h-[220px]">
+          <ChartContainer config={chartConfig} className="h-[200px]">
+            <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 12 }}
+              />
+              <YAxis
+                domain={[0, maxValue]}
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 12 }}
+              />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Bar>
+              <ChartTooltip content={<ChartTooltipContent />} />
+            </BarChart>
+          </ChartContainer>
+        </div>
         <div className="grid grid-cols-2 gap-4 mt-4 text-center">
           <div>
             <p className="text-2xl font-bold text-blue-600">{leaveBalance}</p>
