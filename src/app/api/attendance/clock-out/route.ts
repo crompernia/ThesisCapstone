@@ -4,6 +4,7 @@ import { accounts, attendance, schedules } from '@/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { getCurrentUserId } from '@/lib/auth';
 import { branches } from '@/lib/schema';
+import { determineOvertimeType } from '@/lib/payroll';
 
 export async function POST(req: Request) {
   try {
@@ -142,7 +143,29 @@ export async function POST(req: Request) {
       const netMinutes = Math.max(0, totalMinutes - breakMinutes);
       hoursWorked = Math.round((netMinutes / 60) * 100) / 100;
 
-      await db.update(attendance).set({ hoursWorked: hoursWorked as any }).where(eq(attendance.id, row.id));
+      // Calculate night hours (between 10 PM and 6 AM)
+      let nightHours = 0;
+      if (timeIn && now) {
+        nightHours = calculateNightHours(timeIn, now);
+      }
+
+      // Determine overtime type based on date and schedule
+      const workDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      // For now, assume not a rest day - this would need schedule integration
+      const isRestDay = false;
+      const overtimeType = determineOvertimeType(workDate, isRestDay);
+
+      // Calculate overtime hours (hours worked beyond 8 hours)
+      const regularHours = 8; // Standard work day
+      const overtimeHours = Math.max(0, hoursWorked - regularHours);
+
+      await db.update(attendance).set({
+        hoursWorked: hoursWorked as any,
+        nightHours: nightHours as any,
+        overtimeHours: overtimeHours as any,
+        overtimeType: overtimeType as any,
+        overtimeApproved: false as any // Overtime needs HR approval before being paid
+      }).where(eq(attendance.id, row.id));
     }
 
     // Determine late: check schedule for today
@@ -175,4 +198,37 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R * c;
+}
+
+/**
+ * Calculates the number of hours worked during night shift (10 PM to 6 AM)
+ * @param timeIn - Clock in time
+ * @param timeOut - Clock out time
+ * @returns Number of night hours worked
+ */
+function calculateNightHours(timeIn: Date, timeOut: Date): number {
+  // Convert to Philippine time (UTC+8)
+  const philippineOffset = 8 * 60 * 60 * 1000; // 8 hours in milliseconds
+  const start = new Date(timeIn.getTime() + philippineOffset);
+  const end = new Date(timeOut.getTime() + philippineOffset);
+
+  let nightMinutes = 0;
+  let current = new Date(start);
+
+  // Iterate through each minute of the work period
+  while (current < end) {
+    const hour = current.getHours();
+    const minute = current.getMinutes();
+
+    // Check if current time is within night shift hours (22:00 to 06:00)
+    if (hour >= 22 || hour < 6) {
+      nightMinutes++;
+    }
+
+    // Move to next minute
+    current.setMinutes(minute + 1);
+  }
+
+  // Convert minutes to hours (rounded to 2 decimal places)
+  return Math.round((nightMinutes / 60) * 100) / 100;
 }

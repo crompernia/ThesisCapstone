@@ -1,6 +1,6 @@
 /**
- * @fileoverview This file defines the Branch Allocation page for the Admin portal.
- * It allows administrators to assign specific branches to HR personnel.
+ * @fileoverview This file defines the Branch Allocation page for the HR portal.
+ * It allows HR personnel to assign specific branches to other HR personnel.
  */
 'use client';
 
@@ -45,7 +45,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
  */
 export default function BranchAllocationPage() {
     React.useEffect(() => {
-                    document.title = "Admin Branch Allocation";
+                    document.title = "HR Branch Allocation";
                     }, []);
     const { toast } = useToast();
     const [hrPersonnel, setHrPersonnel] = React.useState<{ id: string; name: string; position: string | null; managed_branches: string[] }[]>([]);

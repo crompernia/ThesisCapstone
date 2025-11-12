@@ -1,6 +1,6 @@
 /**
- * @fileoverview This file defines the Branches page for the Admin portal.
- * It allows administrators to view, add, and delete company branches.
+ * @fileoverview This file defines the Branches page for the HR portal.
+ * It allows HR personnel to view, add, and delete company branches.
  */
 'use client';
 
@@ -41,12 +41,12 @@ import {
 } from "@/components/ui/alert-dialog";
 
 /**
- * Renders the admin branches management page.
+ * Renders the HR branches management page.
  * @returns {JSX.Element} The branches page component.
  */
 export default function BranchesPage() {
     React.useEffect(() => {
-                    document.title = "Admin Branches";
+                    document.title = "HR Branches";
                     }, []);
     const { toast } = useToast();
     const [branches, setBranches] = React.useState<{ id: number; name: string; coordinates: string | null }[]>([]);

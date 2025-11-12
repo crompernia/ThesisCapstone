@@ -13,7 +13,7 @@ export async function createPositionAction(title: string, rate: string) {
     }
     try {
         await createPosition(title, rate);
-        revalidatePath('/admin/positions');
+        revalidatePath('/hr/positions');
         return { success: true };
     } catch (e: any) {
         return { success: false, message: e.message || 'Failed to create position.' };
@@ -26,7 +26,7 @@ export async function deletePositionAction(id: number) {
     }
     try {
         await deletePosition(id);
-        revalidatePath('/admin/positions');
+        revalidatePath('/hr/positions');
         return { success: true };
     } catch (e: any) {
         return { success: false, message: e.message || 'Failed to delete position.' };
@@ -39,7 +39,7 @@ export async function createDepartmentAction(name: string, branchId: number) {
     }
     try {
         await createDepartment(name, branchId);
-        revalidatePath('/admin/positions');
+        revalidatePath('/hr/positions');
         return { success: true };
     } catch (e: any) {
         return { success: false, message: e.message || 'Failed to create department.' };
@@ -52,7 +52,7 @@ export async function allocatePositionAction(positionId: number, departmentId: n
     }
     try {
         await allocatePositionToDepartment(positionId, departmentId);
-        revalidatePath('/admin/positions');
+        revalidatePath('/hr/positions');
         return { success: true };
     } catch (e: any) {
         return { success: false, message: e.message || 'Failed to allocate position.' };
@@ -65,7 +65,7 @@ export async function removeAllocationAction(allocationId: number) {
     }
     try {
         await removePositionFromDepartment(allocationId);
-        revalidatePath('/admin/positions');
+        revalidatePath('/hr/positions');
         return { success: true };
     } catch (e: any) {
         return { success: false, message: e.message || 'Failed to remove allocation.' };

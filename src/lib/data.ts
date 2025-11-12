@@ -375,6 +375,100 @@ export async function updateLeaveRequestStatus(requestId: number, status: string
         .where(eq(leaveRequests.id, requestId));
 }
 
+export async function getOvertimeRequests() {
+    const db = await getDb();
+
+    const result = await db
+        .select({
+            id: schema.overtimeRequests.id,
+            date: schema.overtimeRequests.date,
+            hours_requested: schema.overtimeRequests.hoursRequested,
+            reason: schema.overtimeRequests.reason,
+            status: schema.overtimeRequests.status,
+            employeeId: accounts.id,
+            first_name: accounts.firstName,
+            last_name: accounts.lastName,
+        })
+        .from(schema.overtimeRequests)
+        .leftJoin(accounts, eq(schema.overtimeRequests.employeeId, accounts.id))
+        .orderBy(desc(schema.overtimeRequests.createdAt));
+
+    return result.map(ot => ({
+        id: ot.id,
+        employeeId: ot.employeeId,
+        employeeName: `${ot.first_name} ${ot.last_name}`,
+        date: format(new Date(ot.date), 'yyyy-MM-dd'),
+        hours_requested: ot.hours_requested,
+        reason: ot.reason,
+        status: ot.status
+    }));
+}
+
+/**
+ * Approves overtime request and updates attendance record accordingly.
+ * @param requestId - The overtime request ID to approve
+ * @returns Promise<void>
+ */
+export async function approveOvertimeRequest(requestId: number): Promise<void> {
+    const db = await getDb();
+
+    // Get the overtime request details
+    const request = await db
+        .select({
+            employeeId: schema.overtimeRequests.employeeId,
+            date: schema.overtimeRequests.date,
+            hoursRequested: schema.overtimeRequests.hoursRequested,
+        })
+        .from(schema.overtimeRequests)
+        .where(eq(schema.overtimeRequests.id, requestId))
+        .limit(1);
+
+    if (request.length === 0) {
+        throw new Error('Overtime request not found');
+    }
+
+    const { employeeId, date, hoursRequested } = request[0];
+
+    // Update the attendance record to mark overtime as approved
+    await db
+        .update(attendance)
+        .set({
+            overtimeApproved: true as any,
+            overtimeHours: hoursRequested as any, // Update with approved hours
+        })
+        .where(and(
+            eq(attendance.employeeId, employeeId),
+            eq(attendance.date, date)
+        ));
+
+    // Update the overtime request status
+    await db
+        .update(schema.overtimeRequests)
+        .set({ status: 'Approved' })
+        .where(eq(schema.overtimeRequests.id, requestId));
+}
+
+/**
+ * Rejects overtime request.
+ * @param requestId - The overtime request ID to reject
+ * @returns Promise<void>
+ */
+export async function rejectOvertimeRequest(requestId: number): Promise<void> {
+    const db = await getDb();
+
+    await db
+        .update(schema.overtimeRequests)
+        .set({ status: 'Rejected' })
+        .where(eq(schema.overtimeRequests.id, requestId));
+}
+
+export async function updateOvertimeRequestStatus(requestId: number, status: string): Promise<void> {
+    const db = await getDb();
+    await db.update(schema.overtimeRequests)
+        .set({ status })
+        .where(eq(schema.overtimeRequests.id, requestId));
+}
+
 export async function getEmployeesWithPayslipStatus() {
     const db = await getDb();
 
@@ -636,7 +730,7 @@ export async function getAttendanceData(employeeId: string) {
     let absences = 0;
     let totalHours = 0;
     let totalLates = 0; // lates from hire date to bi-monthly cutoff
-    const records: Array<{ date: string; timeIn: string | null; timeOut: string | null; status: string }> = [];
+    const records: Array<{ date: string; timeIn: string | null; timeOut: string | null; status: string; lateMinutes: number }> = [];
 
     // Process records for display and general metrics
     for (const record of attendanceRecords) {
@@ -676,6 +770,7 @@ export async function getAttendanceData(employeeId: string) {
             timeIn: fmtTime(timeIn),
             timeOut: fmtTime(timeOut),
             status: status, // Use the recalculated status
+            lateMinutes: minutesLate > 0 ? minutesLate : 0,
         });
     }
 
@@ -684,9 +779,7 @@ export async function getAttendanceData(employeeId: string) {
         const timeIn = record.timeIn ? new Date(record.timeIn) : null;
         const shiftStartStr = record.shiftStart || '09:00:00';
         const [h, m] = shiftStartStr.split(':').map(Number);
-        const date = new Date(record.date);
-        // Create shiftStart in UTC to match timeIn timezone
-        const shiftStart = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), h, m));
+        const shiftStart = new Date(timeIn ? timeIn.getFullYear() : now.getFullYear(), timeIn ? timeIn.getMonth() : now.getMonth(), timeIn ? timeIn.getDate() : now.getDate(), h, m);
 
         let minutesLate = 0;
         if (timeIn && timeIn > shiftStart) {
@@ -860,6 +953,49 @@ export async function createLeaveRequest(data: {
     return { success: true };
 }
 
+export async function getPastOvertimeRequests(employeeId: string) {
+    const db = await getDb();
+
+    const result = await db
+        .select({
+            id: schema.overtimeRequests.id,
+            date: schema.overtimeRequests.date,
+            hours_requested: schema.overtimeRequests.hoursRequested,
+            reason: schema.overtimeRequests.reason,
+            status: schema.overtimeRequests.status,
+        })
+        .from(schema.overtimeRequests)
+        .where(eq(schema.overtimeRequests.employeeId, employeeId))
+        .orderBy(desc(schema.overtimeRequests.createdAt));
+
+    return result.map(ot => ({
+        id: ot.id,
+        date: format(new Date(ot.date), 'yyyy-MM-dd'),
+        hours_requested: ot.hours_requested,
+        reason: ot.reason,
+        status: ot.status,
+    }));
+}
+
+export async function createOvertimeRequest(data: {
+    employeeId: string;
+    date: string;
+    hoursRequested: string;
+    reason: string;
+}) {
+    const db = await getDb();
+    const { employeeId, date, hoursRequested, reason } = data;
+
+    await db.insert(schema.overtimeRequests).values({
+        employeeId,
+        date,
+        hoursRequested: hoursRequested,
+        reason,
+    });
+
+    return { success: true };
+}
+
 export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]> {
   const db = await getDb();
 
@@ -880,6 +1016,18 @@ export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]
 
     dailyRate = Number(positionResult[0]?.rate) || 0;
   }
+
+  // Get approved overtime requests for this employee
+  const approvedOvertimeRequests = await db
+    .select({
+      date: schema.overtimeRequests.date,
+      hoursRequested: schema.overtimeRequests.hoursRequested,
+    })
+    .from(schema.overtimeRequests)
+    .where(and(
+      eq(schema.overtimeRequests.employeeId, employeeId),
+      eq(schema.overtimeRequests.status, 'Approved')
+    ));
 
   // Fetch payslips for the employee
   const payslipResults = await db
@@ -914,7 +1062,7 @@ export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]
         { name: "No. of Days", amount: daysAttended },
       ],
       deductions: [
-        { name: "Late/Undertime", amount: 0 }, // Not in payslips table, set to 0
+        { name: "Late/Undertime", amount: Number(payslip.lateDeduction) },
         { name: "SSS", amount: Number(payslip.sssDeduction) },
         { name: "Philhealth", amount: Number(payslip.philhealthDeduction) },
         { name: "Pag-Ibig", amount: Number(payslip.pagibigDeduction) },
@@ -948,6 +1096,16 @@ export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]
 
     const firstHalfDays = await getDaysAttended(employeeId, firstHalfStart, firstHalfEnd);
 
+    // Calculate overtime for first half
+    const firstHalfOvertimeHours = approvedOvertimeRequests
+      .filter(req => {
+        const reqDate = new Date(req.date);
+        return reqDate >= firstHalfStart && reqDate <= firstHalfEnd;
+      })
+      .reduce((total, req) => total + Number(req.hoursRequested), 0);
+
+    const firstHalfOvertimePay = firstHalfOvertimeHours * (dailyRate / 8) * 1.25; // 125% of hourly rate
+
     periods.push({
       id: idCounter++,
       period: `${format(firstHalfStart, 'MMM dd')} - ${format(firstHalfEnd, 'MMM dd, yyyy')}`,
@@ -955,7 +1113,7 @@ export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]
       dailyRate,
       earnings: [
         { name: "BASIC PAY", amount: 0 },
-        { name: "Overtime", amount: 0 },
+        { name: "Overtime", amount: firstHalfOvertimePay },
         { name: "Night Differential", amount: 0 },
         { name: "RH OT", amount: 0 },
         { name: "Special Holiday", amount: 0 },
@@ -974,6 +1132,16 @@ export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]
 
     const secondHalfDays = await getDaysAttended(employeeId, secondHalfStart, secondHalfEnd);
 
+    // Calculate overtime for second half
+    const secondHalfOvertimeHours = approvedOvertimeRequests
+      .filter(req => {
+        const reqDate = new Date(req.date);
+        return reqDate >= secondHalfStart && reqDate <= secondHalfEnd;
+      })
+      .reduce((total, req) => total + Number(req.hoursRequested), 0);
+
+    const secondHalfOvertimePay = secondHalfOvertimeHours * (dailyRate / 8) * 1.25; // 125% of hourly rate
+
     periods.push({
       id: idCounter++,
       period: `${format(secondHalfStart, 'MMM dd')} - ${format(secondHalfEnd, 'MMM dd, yyyy')}`,
@@ -981,7 +1149,7 @@ export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]
       dailyRate,
       earnings: [
         { name: "BASIC PAY", amount: 0 },
-        { name: "Overtime", amount: 0 },
+        { name: "Overtime", amount: secondHalfOvertimePay },
         { name: "Night Differential", amount: 0 },
         { name: "RH OT", amount: 0 },
         { name: "Special Holiday", amount: 0 },
@@ -1914,4 +2082,96 @@ export async function getEmployeeAbsenceSummary() {
     );
 
     return absenceSummaries;
+}
+
+/**
+ * Gets approved leave requests for an employee within a specific pay period.
+ * Used for payslip calculations to determine paid vs unpaid leave deductions.
+ * @param employeeId - Employee ID
+ * @param periodStart - Start date of pay period
+ * @param periodEnd - End date of pay period
+ * @returns Object with paid and unpaid leave days
+ */
+export async function getLeaveDataForPayPeriod(employeeId: string, periodStart: Date, periodEnd: Date): Promise<{
+    paidLeaveDays: number;
+    unpaidLeaveDays: number;
+    leaveDetails: Array<{
+        leaveType: string;
+        days: number;
+        isPaid: boolean;
+        payPercentage: number;
+    }>
+}> {
+    const db = await getDb();
+
+    // Get approved leave requests that overlap with the pay period
+    const approvedLeaveRequests = await db
+        .select({
+            leaveType: leaveRequests.leaveType,
+            startDate: leaveRequests.startDate,
+            endDate: leaveRequests.endDate,
+        })
+        .from(leaveRequests)
+        .where(and(
+            eq(leaveRequests.employeeId, employeeId),
+            eq(leaveRequests.status, 'Approved'),
+            sql`${leaveRequests.startDate} <= ${periodEnd.toISOString().slice(0, 10)}`,
+            sql`${leaveRequests.endDate} >= ${periodStart.toISOString().slice(0, 10)}`
+        ));
+
+    let paidLeaveDays = 0;
+    let unpaidLeaveDays = 0;
+    const leaveDetails: Array<{
+        leaveType: string;
+        days: number;
+        isPaid: boolean;
+        payPercentage: number;
+    }> = [];
+
+    for (const leaveReq of approvedLeaveRequests) {
+        const leaveStart = new Date(leaveReq.startDate);
+        const leaveEnd = new Date(leaveReq.endDate);
+
+        // Calculate overlapping days within the pay period
+        const overlapStart = leaveStart > periodStart ? leaveStart : periodStart;
+        const overlapEnd = leaveEnd < periodEnd ? leaveEnd : periodEnd;
+
+        // Count working days (weekdays) in the overlap period
+        let leaveDaysInPeriod = 0;
+        const currentDate = new Date(overlapStart);
+
+        while (currentDate <= overlapEnd) {
+            const dayOfWeek = currentDate.getDay();
+            // Monday to Friday (1-5)
+            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                leaveDaysInPeriod++;
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        if (leaveDaysInPeriod > 0) {
+            // Import the leave pay rules function
+            const { getLeavePayRules } = await import('@/lib/payroll');
+            const payRules = getLeavePayRules(leaveReq.leaveType);
+
+            leaveDetails.push({
+                leaveType: leaveReq.leaveType,
+                days: leaveDaysInPeriod,
+                isPaid: payRules.isPaid,
+                payPercentage: payRules.payPercentage,
+            });
+
+            if (payRules.isPaid) {
+                paidLeaveDays += leaveDaysInPeriod;
+            } else {
+                unpaidLeaveDays += leaveDaysInPeriod;
+            }
+        }
+    }
+
+    return {
+        paidLeaveDays,
+        unpaidLeaveDays,
+        leaveDetails,
+    };
 }

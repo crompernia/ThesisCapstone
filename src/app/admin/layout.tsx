@@ -20,7 +20,8 @@ import {
   UserCheck,
   GitBranch,
   Building,
-  Briefcase
+  Briefcase,
+  PlayCircle
 } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
@@ -74,9 +75,9 @@ export default async function AdminDashboardLayout({
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
               <Link href="/admin/approvals" passHref>
-                <SidebarMenuButton {...({ tooltip: "Pending Approvals" } as any)}>
+                <SidebarMenuButton {...({ tooltip: "New Employees" } as any)}>
                   <UserCheck />
-                  Pending Approvals
+                  New Employees
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
@@ -88,27 +89,11 @@ export default async function AdminDashboardLayout({
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
-             <SidebarMenuItem {...({} as any)}>
-              <Link href="/admin/branch-allocation" passHref>
-                <SidebarMenuButton {...({ tooltip: "Branch Allocation" } as any)}>
-                  <GitBranch />
-                  Branch Allocation
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
-              <Link href="/admin/branches" passHref>
-                <SidebarMenuButton {...({ tooltip: "Branches" } as any)}>
-                  <Building />
-                  Branches
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-            <SidebarMenuItem {...({} as any)}>
-              <Link href="/admin/positions" passHref>
-                <SidebarMenuButton {...({ tooltip: "Positions & Rates" } as any)}>
-                  <Briefcase />
-                  Positions & Rates
+              <Link href="/admin/demo" passHref>
+                <SidebarMenuButton {...({ tooltip: "Demo Mode / Generate Sample Data" } as any)}>
+                  <PlayCircle />
+                  Demo Mode
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>

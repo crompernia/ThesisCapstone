@@ -5,43 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1761075937156,
-      "tag": "0000_mighty_blue_marvel",
+      "when": 1762453468163,
+      "tag": "0000_cuddly_slapstick",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1761080769253,
-      "tag": "0001_charming_nekra",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1761082224552,
-      "tag": "0002_smooth_hex",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1761083390819,
-      "tag": "0003_cold_princess_powerful",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1761298299877,
-      "tag": "0004_handy_whistler",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1761533293716,
-      "tag": "0005_unknown_bloodstorm",
+      "when": 1762473042925,
+      "tag": "0001_mysterious_stone_men",
       "breakpoints": true
     }
   ]

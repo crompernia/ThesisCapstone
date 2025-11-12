@@ -9,7 +9,7 @@ import { revalidatePath } from 'next/cache';
 export async function updateHrBranchAllocation(hrId: string, branches: string[]) {
     try {
         await updateHrBranchAllocationDb(hrId, branches);
-        revalidatePath('/admin/branch-allocation');
+        revalidatePath('/hr/branch-allocation');
         return { success: true, message: 'Branch allocation updated successfully.' };
     } catch (e) {
         return { success: false, message: 'Failed to update branch allocation.' };

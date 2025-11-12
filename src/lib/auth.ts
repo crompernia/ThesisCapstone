@@ -6,11 +6,16 @@ import { hash, compare } from "bcrypt";
 import { getServerSession } from "next-auth/next";
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { getDb } from "@/lib/db";
 import { accounts } from "@/lib/schema";
+import { nextAuthUsers, nextAuthAccounts, nextAuthSessions, verificationTokens } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 
 export const authOptions: NextAuthOptions = {
+  session: {
+    strategy: "jwt",
+  },
   providers: [
     CredentialsProvider({
       id: "employee-credentials",
@@ -46,10 +51,6 @@ export const authOptions: NextAuthOptions = {
               email: user.email,
               name: `${user.firstName} ${user.lastName}`,
               role: "Admin", // Override role to Admin for BOD
-              branch: user.branch ?? undefined,
-              position: user.position ?? undefined,
-              department: user.department ?? undefined,
-              photo: user.photo ?? undefined,
             };
           }
 
@@ -62,7 +63,6 @@ export const authOptions: NextAuthOptions = {
               email: user.email,
               name: `${user.firstName} ${user.lastName}`,
               role: "HR",
-              managedBranches: user.managedBranches || [],
             };
           }
 
@@ -89,10 +89,6 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             name: `${user.firstName} ${user.lastName}`,
             role: user.role,
-            branch: user.branch ?? undefined,
-            position: user.position ?? undefined,
-            department: user.department ?? undefined,
-            photo: user.photo ?? undefined,
           };
         } catch (error) {
           console.error("Employee login error:", error);
@@ -148,7 +144,6 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             name: `${user.firstName} ${user.lastName}`,
             role: user.role,
-            managedBranches: user.managedBranches || [],
           };
         } catch (error) {
           console.error("HR login error:", error);
@@ -236,11 +231,6 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
-        token.branch = user.branch;
-        token.position = user.position;
-        token.department = user.department;
-        token.managedBranches = user.managedBranches;
-        token.photo = user.photo;
       }
       return token;
     },
@@ -248,11 +238,6 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
-        session.user.branch = token.branch as string;
-        session.user.position = token.position as string;
-        session.user.department = token.department as string;
-        session.user.managedBranches = token.managedBranches as string[];
-        session.user.photo = token.photo as string;
       }
       return session;
     }
@@ -260,10 +245,6 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/",
     error: "/",
-  },
-  session: {
-    strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 24 hours
   },
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",

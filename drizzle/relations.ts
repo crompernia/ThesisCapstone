@@ -1,25 +1,26 @@
 import { relations } from "drizzle-orm/relations";
-import { accounts, attendance, payslips, schedules, announcements, branches, departments, leaveRequests, reports, positions, positionDepartments } from "./schema";
+import { accounts, attendanceRecords, attendance, schedules, announcements, branches, departments, leaveRequests, reports, payslips, positions, positionDepartments } from "./schema";
 
-export const attendanceRelations = relations(attendance, ({one}) => ({
+export const attendanceRecordsRelations = relations(attendanceRecords, ({one}) => ({
 	account: one(accounts, {
-		fields: [attendance.employeeId],
+		fields: [attendanceRecords.employeeId],
 		references: [accounts.id]
 	}),
 }));
 
 export const accountsRelations = relations(accounts, ({many}) => ({
+	attendanceRecords: many(attendanceRecords),
 	attendances: many(attendance),
-	payslips: many(payslips),
 	schedules: many(schedules),
 	announcements: many(announcements),
 	leaveRequests: many(leaveRequests),
 	reports: many(reports),
+	payslips: many(payslips),
 }));
 
-export const payslipsRelations = relations(payslips, ({one}) => ({
+export const attendanceRelations = relations(attendance, ({one}) => ({
 	account: one(accounts, {
-		fields: [payslips.employeeId],
+		fields: [attendance.employeeId],
 		references: [accounts.id]
 	}),
 }));
@@ -60,6 +61,13 @@ export const leaveRequestsRelations = relations(leaveRequests, ({one}) => ({
 export const reportsRelations = relations(reports, ({one}) => ({
 	account: one(accounts, {
 		fields: [reports.generatedBy],
+		references: [accounts.id]
+	}),
+}));
+
+export const payslipsRelations = relations(payslips, ({one}) => ({
+	account: one(accounts, {
+		fields: [payslips.employeeId],
 		references: [accounts.id]
 	}),
 }));

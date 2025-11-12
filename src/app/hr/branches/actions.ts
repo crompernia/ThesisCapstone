@@ -12,8 +12,8 @@ export async function createBranchAction(branchName: string, coordinates: string
     }
     try {
         await createBranch(branchName, coordinates);
-        revalidatePath('/admin/branches');
-        revalidatePath('/admin/branch-allocation');
+        revalidatePath('/hr/branches');
+        revalidatePath('/hr/branch-allocation');
         return { success: true };
     } catch (e: any) {
         return { success: false, message: e.message || 'Failed to create branch.' };
@@ -26,8 +26,8 @@ export async function deleteBranchAction(id: number) {
     }
     try {
         await deleteBranch(id);
-        revalidatePath('/admin/branches');
-        revalidatePath('/admin/branch-allocation');
+        revalidatePath('/hr/branches');
+        revalidatePath('/hr/branch-allocation');
         return { success: true };
     } catch (e: any) {
         return { success: false, message: e.message || 'Failed to delete branch.' };

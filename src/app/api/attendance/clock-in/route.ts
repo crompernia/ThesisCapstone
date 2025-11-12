@@ -6,23 +6,31 @@ import { getCurrentUserId } from '@/lib/auth';
 import { branches } from '@/lib/schema';
 
 export async function POST(req: Request) {
+  console.log('[clock-in] Route called');
   try {
+    console.log('[clock-in] Parsing request body');
     const body = await req.json();
     // DEBUG: log incoming body for troubleshooting (remove in production)
     console.debug('[clock-in] body:', body);
   const { employeeNumber, latitude, longitude } = body;
+  console.log('[clock-in] Getting database connection');
 
-    const db = await getDb();
+  const db = await getDb();
+  console.log('[clock-in] Database connected');
 
+    console.log('[clock-in] Resolving employeeId');
     // Resolve employeeId: prefer provided employeeNumber (used on login page), otherwise use authenticated user
     let employeeId: string | null = null;
     if (employeeNumber) {
+      console.log('[clock-in] Using employeeNumber:', employeeNumber);
       const res = await db.select({ id: accounts.id, dateHired: accounts.dateHired }).from(accounts).where(eq(accounts.employeeNumber, employeeNumber));
       const emp = res[0];
       if (!emp) return NextResponse.json({ success: false, message: 'Employee not found' }, { status: 404 });
       employeeId = emp.id;
     } else {
+      console.log('[clock-in] Getting current user ID');
       const userId = await getCurrentUserId();
+      console.log('[clock-in] Current user ID:', userId);
       if (!userId) return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 });
       employeeId = userId;
     }
@@ -135,15 +143,16 @@ export async function POST(req: Request) {
     const existing = await db.select().from(attendance).where(and(eq(attendance.employeeId, employeeId), eq(attendance.date, isoDate)));
 
     if (existing.length > 0) {
-      // If timeIn is null, set it; also set status based on clock-in time
-      const row = existing[0] as any;
-      if (!row.timeIn) {
-        // store ISO strings for timestamp columns
-        await db.update(attendance).set({ timeIn: now.toISOString(), status: clockInStatus }).where(eq(attendance.id, row.id));
-      }
-    } else {
-      await db.insert(attendance).values({ employeeId: employeeId as any, date: isoDate as any, timeIn: now.toISOString(), status: clockInStatus, createdAt: now.toISOString() } as any);
-    }
+       // If timeIn is null, set it; also set status based on clock-in time
+       const row = existing[0] as any;
+       if (!row.timeIn) {
+         // store ISO strings for timestamp columns
+         await db.update(attendance).set({ timeIn: now.toISOString(), status: clockInStatus }).where(eq(attendance.id, row.id));
+       }
+     } else {
+       await db.insert(attendance).values({ employeeId: employeeId as any, date: isoDate as any, timeIn: now.toISOString(), status: clockInStatus, createdAt: now.toISOString() } as any);
+     }
+    console.log('[clock-in] Returning success response');
 
     return NextResponse.json({ success: true, status: clockInStatus });
   } catch (err: any) {

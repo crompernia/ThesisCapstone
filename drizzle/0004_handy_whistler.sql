@@ -1,1 +1,0 @@
-ALTER TABLE "attendance_records" ADD COLUMN "total_days_attended" integer DEFAULT 0;

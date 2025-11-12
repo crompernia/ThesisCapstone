@@ -1,6 +1,6 @@
 /**
- * @fileoverview This file defines the Positions & Rates page for the Admin portal.
- * It allows administrators to view, add, and delete job positions and their hourly rates.
+ * @fileoverview This file defines the Positions & Rates page for the HR portal.
+ * It allows HR personnel to view, add, and delete job positions and their hourly rates.
  */
 'use client';
 
@@ -48,12 +48,12 @@ import {
 } from "@/components/ui/alert-dialog";
 
 /**
- * Renders the admin positions and rates management page.
+ * Renders the HR positions and rates management page.
  * @returns {JSX.Element} The positions page component.
  */
 export default function PositionsPage() {
     React.useEffect(() => {
-                    document.title = "Admin Positions & Rates";
+                    document.title = "HR Positions & Rates";
                     }, []);
     const { toast } = useToast();
     const [positions, setPositions] = React.useState<any[]>([]);

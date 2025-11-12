@@ -1,5 +1,5 @@
 {
-  "id": "efc747bf-a1b3-40cf-bf5c-e231d05d02c2",
+  "id": "b06f14c7-fdbc-4379-a90d-d2335e12bb86",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -130,6 +130,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "photo": {
+          "name": "photo",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "managed_branches": {
           "name": "managed_branches",
           "type": "varchar(255)[]",
@@ -152,6 +158,22 @@
         }
       },
       "indexes": {
+        "idx_accounts_branch": {
+          "name": "idx_accounts_branch",
+          "columns": [
+            {
+              "expression": "branch",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "idx_accounts_email": {
           "name": "idx_accounts_email",
           "columns": [
@@ -159,7 +181,8 @@
               "expression": "email",
               "isExpression": false,
               "asc": true,
-              "nulls": "last"
+              "nulls": "last",
+              "opclass": "text_ops"
             }
           ],
           "isUnique": false,
@@ -174,7 +197,8 @@
               "expression": "employee_number",
               "isExpression": false,
               "asc": true,
-              "nulls": "last"
+              "nulls": "last",
+              "opclass": "text_ops"
             }
           ],
           "isUnique": false,
@@ -189,7 +213,8 @@
               "expression": "role",
               "isExpression": false,
               "asc": true,
-              "nulls": "last"
+              "nulls": "last",
+              "opclass": "text_ops"
             }
           ],
           "isUnique": false,
@@ -204,22 +229,8 @@
               "expression": "status",
               "isExpression": false,
               "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_accounts_branch": {
-          "name": "idx_accounts_branch",
-          "columns": [
-            {
-              "expression": "branch",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
+              "nulls": "last",
+              "opclass": "text_ops"
             }
           ],
           "isUnique": false,
@@ -293,21 +304,6 @@
         }
       },
       "indexes": {
-        "idx_announcements_status": {
-          "name": "idx_announcements_status",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "idx_announcements_created_at": {
           "name": "idx_announcements_created_at",
           "columns": [
@@ -315,7 +311,24 @@
               "expression": "created_at",
               "isExpression": false,
               "asc": true,
-              "nulls": "last"
+              "nulls": "last",
+              "opclass": "timestamptz_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_announcements_status": {
+          "name": "idx_announcements_status",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops"
             }
           ],
           "isUnique": false,
@@ -407,27 +420,6 @@
         }
       },
       "indexes": {
-        "idx_attendance_employee_date": {
-          "name": "idx_attendance_employee_date",
-          "columns": [
-            {
-              "expression": "employee_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "date",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "idx_attendance_date": {
           "name": "idx_attendance_date",
           "columns": [
@@ -435,7 +427,31 @@
               "expression": "date",
               "isExpression": false,
               "asc": true,
-              "nulls": "last"
+              "nulls": "last",
+              "opclass": "date_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_attendance_employee_date": {
+          "name": "idx_attendance_employee_date",
+          "columns": [
+            {
+              "expression": "employee_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            },
+            {
+              "expression": "date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "date_ops"
             }
           ],
           "isUnique": false,
@@ -474,8 +490,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.attendance_summaries": {
-      "name": "attendance_summaries",
+    "public.attendance_records": {
+      "name": "attendance_records",
       "schema": "",
       "columns": {
         "id": {
@@ -490,9 +506,45 @@
           "primaryKey": false,
           "notNull": true
         },
-        "month_year": {
-          "name": "month_year",
-          "type": "varchar(7)",
+        "employee_number": {
+          "name": "employee_number",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "position": {
+          "name": "position",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "department": {
+          "name": "department",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "branch": {
+          "name": "branch",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "period": {
+          "name": "period",
+          "type": "varchar(50)",
           "primaryKey": false,
           "notNull": true
         },
@@ -503,8 +555,15 @@
           "notNull": false,
           "default": 0
         },
-        "lates_minutes": {
-          "name": "lates_minutes",
+        "total_days_attended": {
+          "name": "total_days_attended",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "lates": {
+          "name": "lates",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -547,14 +606,15 @@
         }
       },
       "indexes": {
-        "idx_attendance_summaries_employee": {
-          "name": "idx_attendance_summaries_employee",
+        "idx_attendance_records_created_at": {
+          "name": "idx_attendance_records_created_at",
           "columns": [
             {
-              "expression": "employee_id",
+              "expression": "created_at",
               "isExpression": false,
               "asc": true,
-              "nulls": "last"
+              "nulls": "last",
+              "opclass": "timestamptz_ops"
             }
           ],
           "isUnique": false,
@@ -562,14 +622,31 @@
           "method": "btree",
           "with": {}
         },
-        "idx_attendance_summaries_month": {
-          "name": "idx_attendance_summaries_month",
+        "idx_attendance_records_employee": {
+          "name": "idx_attendance_records_employee",
           "columns": [
             {
-              "expression": "month_year",
+              "expression": "employee_id",
               "isExpression": false,
               "asc": true,
-              "nulls": "last"
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_attendance_records_period": {
+          "name": "idx_attendance_records_period",
+          "columns": [
+            {
+              "expression": "period",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops"
             }
           ],
           "isUnique": false,
@@ -579,9 +656,9 @@
         }
       },
       "foreignKeys": {
-        "attendance_summaries_employee_id_accounts_id_fk": {
-          "name": "attendance_summaries_employee_id_accounts_id_fk",
-          "tableFrom": "attendance_summaries",
+        "attendance_records_employee_id_accounts_id_fk": {
+          "name": "attendance_records_employee_id_accounts_id_fk",
+          "tableFrom": "attendance_records",
           "tableTo": "accounts",
           "columnsFrom": [
             "employee_id"
@@ -595,12 +672,12 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "attendance_summaries_employee_id_month_year_unique": {
-          "name": "attendance_summaries_employee_id_month_year_unique",
+        "attendance_records_employee_id_period_unique": {
+          "name": "attendance_records_employee_id_period_unique",
           "nullsNotDistinct": false,
           "columns": [
             "employee_id",
-            "month_year"
+            "period"
           ]
         }
       },
@@ -764,6 +841,22 @@
         }
       },
       "indexes": {
+        "idx_leave_requests_created_at": {
+          "name": "idx_leave_requests_created_at",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "timestamptz_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "idx_leave_requests_employee": {
           "name": "idx_leave_requests_employee",
           "columns": [
@@ -771,7 +864,8 @@
               "expression": "employee_id",
               "isExpression": false,
               "asc": true,
-              "nulls": "last"
+              "nulls": "last",
+              "opclass": "uuid_ops"
             }
           ],
           "isUnique": false,
@@ -786,22 +880,8 @@
               "expression": "status",
               "isExpression": false,
               "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_leave_requests_created_at": {
-          "name": "idx_leave_requests_created_at",
-          "columns": [
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
+              "nulls": "last",
+              "opclass": "text_ops"
             }
           ],
           "isUnique": false,
@@ -979,22 +1059,8 @@
               "expression": "employee_id",
               "isExpression": false,
               "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_payslips_pay_period": {
-          "name": "idx_payslips_pay_period",
-          "columns": [
-            {
-              "expression": "pay_period",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
+              "nulls": "last",
+              "opclass": "uuid_ops"
             }
           ],
           "isUnique": false,
@@ -1009,7 +1075,24 @@
               "expression": "pay_date",
               "isExpression": false,
               "asc": true,
-              "nulls": "last"
+              "nulls": "last",
+              "opclass": "date_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_payslips_pay_period": {
+          "name": "idx_payslips_pay_period",
+          "columns": [
+            {
+              "expression": "pay_period",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops"
             }
           ],
           "isUnique": false,
@@ -1205,21 +1288,6 @@
         }
       },
       "indexes": {
-        "idx_reports_type": {
-          "name": "idx_reports_type",
-          "columns": [
-            {
-              "expression": "report_type",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "idx_reports_generated_at": {
           "name": "idx_reports_generated_at",
           "columns": [
@@ -1227,7 +1295,24 @@
               "expression": "generated_at",
               "isExpression": false,
               "asc": true,
-              "nulls": "last"
+              "nulls": "last",
+              "opclass": "timestamptz_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_reports_type": {
+          "name": "idx_reports_type",
+          "columns": [
+            {
+              "expression": "report_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops"
             }
           ],
           "isUnique": false,
@@ -1306,27 +1391,6 @@
         }
       },
       "indexes": {
-        "idx_schedules_employee_date": {
-          "name": "idx_schedules_employee_date",
-          "columns": [
-            {
-              "expression": "employee_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "date",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "idx_schedules_date": {
           "name": "idx_schedules_date",
           "columns": [
@@ -1334,7 +1398,31 @@
               "expression": "date",
               "isExpression": false,
               "asc": true,
-              "nulls": "last"
+              "nulls": "last",
+              "opclass": "date_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_schedules_employee_date": {
+          "name": "idx_schedules_employee_date",
+          "columns": [
+            {
+              "expression": "employee_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            },
+            {
+              "expression": "date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "date_ops"
             }
           ],
           "isUnique": false,

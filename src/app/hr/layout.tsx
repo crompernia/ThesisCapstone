@@ -24,6 +24,10 @@ import {
   Megaphone,
   ClipboardList,
   Clock,
+  Timer,
+  MapPin,
+  Building,
+  Briefcase,
 } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
@@ -114,6 +118,30 @@ export default async function HRDashboardLayout({
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
+              <Link href="/hr/branches" passHref>
+                <SidebarMenuButton tooltip="Branches" className="w-full justify-start" {...({} as any)}>
+                  <Building />
+                  Branches
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem {...({} as any)}>
+              <Link href="/hr/positions" passHref>
+                <SidebarMenuButton tooltip="Positions & Rates" className="w-full justify-start" {...({} as any)}>
+                  <Briefcase />
+                  Positions & Rates
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem {...({} as any)}>
+              <Link href="/hr/branch-allocation" passHref>
+                <SidebarMenuButton tooltip="Branch Allocation" className="w-full justify-start" {...({} as any)}>
+                  <MapPin />
+                  Branch Allocation
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem {...({} as any)}>
               <Link href="/hr/announcements" passHref>
                 <SidebarMenuButton tooltip="Announcements" className="w-full justify-start" {...({} as any)}>
                   <Megaphone />
@@ -126,6 +154,14 @@ export default async function HRDashboardLayout({
                 <SidebarMenuButton tooltip="Leave Approvals" className="w-full justify-start" {...({} as any)}>
                   <ClipboardList />
                   Leave Approvals
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem {...({} as any)}>
+              <Link href="/hr/overtime-approvals" passHref>
+                <SidebarMenuButton tooltip="Overtime Approvals" className="w-full justify-start" {...({} as any)}>
+                  <Timer />
+                  Overtime Approvals
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>

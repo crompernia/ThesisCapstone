@@ -31,7 +31,7 @@ import autoTable from "jspdf-autotable";
  * @param {{ attendanceSummary: object, attendanceRecords: object[], employeeName: string }} props - The props for the component.
  * @returns {JSX.Element} The attendance page client component.
  */
-type AttendanceRecord = { date: string; timeIn?: string | null; timeOut?: string | null; status?: string };
+type AttendanceRecord = { date: string; timeIn?: string | null; timeOut?: string | null; status?: string; lateMinutes?: number };
 type AttendanceSummary = { daysAttended: number; totalDaysAttended: number; lates: number; absences: number; availableLeaves: number; totalHours: number; totalWorkingDays: number };
 
 type ScheduleItem = { day: string; date: string; timeIn: string; timeOut: string; break: string; hours: number };
@@ -54,11 +54,12 @@ export default function AttendanceClientPage({ attendanceSummary, attendanceReco
     // Use autoTable to generate the table from the attendance records
     autoTable(doc, {
       startY: 45,
-      head: [['Date', 'Time In', 'Time Out', 'Status']],
+      head: [['Date', 'Time In', 'Time Out', 'Late (min)', 'Status']],
       body: attendanceRecords.map(record => [
         String(record.date || ''),
         String(record.timeIn || ''),
         String(record.timeOut || ''),
+        String(record.lateMinutes || 0),
         String(record.status || ''),
       ]),
       theme: 'striped',
@@ -231,15 +232,15 @@ export default function AttendanceClientPage({ attendanceSummary, attendanceReco
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Lates</CardTitle>
-            <AlertTriangle />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{attendanceSummary.lates}</div>
-            <p className="text-xs text-muted-foreground">minute/s this month</p>
-          </CardContent>
-        </Card>
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">Lates</CardTitle>
+             <AlertTriangle />
+           </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{attendanceSummary.lates}</div>
+              <p className="text-xs text-muted-foreground">minute/s this cut-off period</p>
+            </CardContent>
+         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Absences</CardTitle>
@@ -286,6 +287,7 @@ export default function AttendanceClientPage({ attendanceSummary, attendanceReco
                   <TableHead>Date</TableHead>
                   <TableHead>Time In</TableHead>
                   <TableHead>Time Out</TableHead>
+                  <TableHead>Late (min)</TableHead>
                   <TableHead className="text-right">Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -295,6 +297,7 @@ export default function AttendanceClientPage({ attendanceSummary, attendanceReco
                     <TableCell className="font-medium">{record.date}</TableCell>
                     <TableCell>{record.timeIn}</TableCell>
                     <TableCell>{record.timeOut}</TableCell>
+                    <TableCell>{record.lateMinutes || 0}</TableCell>
                     <TableCell className="text-right">
                       <Badge variant={
                         record.status === 'Present' ? 'default' : record.status === 'Late' ? 'secondary' : 'destructive'

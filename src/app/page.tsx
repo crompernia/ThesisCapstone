@@ -1,11 +1,11 @@
-"use client";
-
 import dynamic from "next/dynamic";
 import { Logo } from "../components/logo";
 
-const LoginForm = dynamic(() => import("../components/login-form").then(m => m.LoginForm), {
-  ssr: false,
-});
+export const metadata = {
+  title: 'Chumplace',
+};
+
+const LoginForm = dynamic(() => import("../components/login-form").then(m => m.LoginForm));
 
 export default function LoginPage() {
   return (

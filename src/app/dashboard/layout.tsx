@@ -21,6 +21,7 @@ import {
   ClipboardCheck,
   Wallet,
   Send,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
@@ -60,7 +61,7 @@ export default async function DashboardLayout({
   const employee = {
     name: session.user.name || "Employee",
     email: session.user.email || "employee@example.com",
-    photo: session.user.photo
+    photo: undefined // Photo removed from session, fetch from DB if needed
   };
 
   const firstName = employee.name.split(' ')[0];
@@ -115,6 +116,14 @@ export default async function DashboardLayout({
                 <SidebarMenuButtonAny tooltip="Leave Request">
                   <Send />
                   Leave Request
+                </SidebarMenuButtonAny>
+              </Link>
+            </SidebarMenuItemAny>
+            <SidebarMenuItemAny>
+              <Link href="/dashboard/overtime" passHref>
+                <SidebarMenuButtonAny tooltip="Overtime Request">
+                  <Clock />
+                  Overtime Request
                 </SidebarMenuButtonAny>
               </Link>
             </SidebarMenuItemAny>

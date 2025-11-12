@@ -20,6 +20,7 @@
     "attendance:mark-absent": "npx tsx scripts/mark-absent-records.js"
   },
   "dependencies": {
+    "@auth/drizzle-adapter": "^1.11.1",
     "@genkit-ai/googleai": "^1.8.0",
     "@genkit-ai/next": "^1.8.0",
     "@hello-pangea/dnd": "^18.0.1",
@@ -50,7 +51,7 @@
     "date-fns": "^3.6.0",
     "dotenv": "^16.6.1",
     "drizzle-kit": "^0.31.5",
-    "drizzle-orm": "^0.44.6",
+    "drizzle-orm": "^0.44.7",
     "genkit": "^1.8.0",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",

@@ -19,6 +19,7 @@ CREATE TABLE "accounts" (
 	"philhealth_number" varchar(255),
 	"pagibig_number" varchar(255),
 	"tin" varchar(255),
+	"photo" varchar(500),
 	"managed_branches" varchar(255)[],
 	"created_at" timestamp with time zone DEFAULT now(),
 	"updated_at" timestamp with time zone DEFAULT now(),
@@ -48,18 +49,25 @@ CREATE TABLE "attendance" (
 	CONSTRAINT "attendance_employee_id_date_unique" UNIQUE("employee_id","date")
 );
 --> statement-breakpoint
-CREATE TABLE "attendance_summaries" (
+CREATE TABLE "attendance_records" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"employee_id" uuid NOT NULL,
-	"month_year" varchar(7) NOT NULL,
+	"employee_number" varchar(50),
+	"first_name" varchar(255),
+	"last_name" varchar(255),
+	"position" varchar(255),
+	"department" varchar(255),
+	"branch" varchar(255),
+	"period" varchar(50) NOT NULL,
 	"days_attended" integer DEFAULT 0,
-	"lates_minutes" integer DEFAULT 0,
+	"total_days_attended" integer DEFAULT 0,
+	"lates" integer DEFAULT 0,
 	"absences" integer DEFAULT 0,
 	"available_leaves" integer DEFAULT 0,
 	"total_work_hours" numeric(8, 2) DEFAULT '0',
 	"created_at" timestamp with time zone DEFAULT now(),
 	"updated_at" timestamp with time zone DEFAULT now(),
-	CONSTRAINT "attendance_summaries_employee_id_month_year_unique" UNIQUE("employee_id","month_year")
+	CONSTRAINT "attendance_records_employee_id_period_unique" UNIQUE("employee_id","period")
 );
 --> statement-breakpoint
 CREATE TABLE "branches" (
@@ -149,7 +157,7 @@ CREATE TABLE "schedules" (
 --> statement-breakpoint
 ALTER TABLE "announcements" ADD CONSTRAINT "announcements_posted_by_accounts_id_fk" FOREIGN KEY ("posted_by") REFERENCES "public"."accounts"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "attendance" ADD CONSTRAINT "attendance_employee_id_accounts_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "attendance_summaries" ADD CONSTRAINT "attendance_summaries_employee_id_accounts_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "attendance_records" ADD CONSTRAINT "attendance_records_employee_id_accounts_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "departments" ADD CONSTRAINT "departments_branch_id_branches_id_fk" FOREIGN KEY ("branch_id") REFERENCES "public"."branches"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "leave_requests" ADD CONSTRAINT "leave_requests_employee_id_accounts_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payslips" ADD CONSTRAINT "payslips_employee_id_accounts_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -157,24 +165,25 @@ ALTER TABLE "position_departments" ADD CONSTRAINT "position_departments_position
 ALTER TABLE "position_departments" ADD CONSTRAINT "position_departments_department_id_departments_id_fk" FOREIGN KEY ("department_id") REFERENCES "public"."departments"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "reports" ADD CONSTRAINT "reports_generated_by_accounts_id_fk" FOREIGN KEY ("generated_by") REFERENCES "public"."accounts"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "schedules" ADD CONSTRAINT "schedules_employee_id_accounts_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "idx_accounts_email" ON "accounts" USING btree ("email");--> statement-breakpoint
-CREATE INDEX "idx_accounts_employee_number" ON "accounts" USING btree ("employee_number");--> statement-breakpoint
-CREATE INDEX "idx_accounts_role" ON "accounts" USING btree ("role");--> statement-breakpoint
-CREATE INDEX "idx_accounts_status" ON "accounts" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "idx_accounts_branch" ON "accounts" USING btree ("branch");--> statement-breakpoint
-CREATE INDEX "idx_announcements_status" ON "announcements" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "idx_announcements_created_at" ON "announcements" USING btree ("created_at");--> statement-breakpoint
-CREATE INDEX "idx_attendance_employee_date" ON "attendance" USING btree ("employee_id","date");--> statement-breakpoint
-CREATE INDEX "idx_attendance_date" ON "attendance" USING btree ("date");--> statement-breakpoint
-CREATE INDEX "idx_attendance_summaries_employee" ON "attendance_summaries" USING btree ("employee_id");--> statement-breakpoint
-CREATE INDEX "idx_attendance_summaries_month" ON "attendance_summaries" USING btree ("month_year");--> statement-breakpoint
-CREATE INDEX "idx_leave_requests_employee" ON "leave_requests" USING btree ("employee_id");--> statement-breakpoint
-CREATE INDEX "idx_leave_requests_status" ON "leave_requests" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "idx_leave_requests_created_at" ON "leave_requests" USING btree ("created_at");--> statement-breakpoint
-CREATE INDEX "idx_payslips_employee" ON "payslips" USING btree ("employee_id");--> statement-breakpoint
-CREATE INDEX "idx_payslips_pay_period" ON "payslips" USING btree ("pay_period");--> statement-breakpoint
-CREATE INDEX "idx_payslips_pay_date" ON "payslips" USING btree ("pay_date");--> statement-breakpoint
-CREATE INDEX "idx_reports_type" ON "reports" USING btree ("report_type");--> statement-breakpoint
-CREATE INDEX "idx_reports_generated_at" ON "reports" USING btree ("generated_at");--> statement-breakpoint
-CREATE INDEX "idx_schedules_employee_date" ON "schedules" USING btree ("employee_id","date");--> statement-breakpoint
-CREATE INDEX "idx_schedules_date" ON "schedules" USING btree ("date");
+CREATE INDEX "idx_accounts_branch" ON "accounts" USING btree ("branch" text_ops);--> statement-breakpoint
+CREATE INDEX "idx_accounts_email" ON "accounts" USING btree ("email" text_ops);--> statement-breakpoint
+CREATE INDEX "idx_accounts_employee_number" ON "accounts" USING btree ("employee_number" text_ops);--> statement-breakpoint
+CREATE INDEX "idx_accounts_role" ON "accounts" USING btree ("role" text_ops);--> statement-breakpoint
+CREATE INDEX "idx_accounts_status" ON "accounts" USING btree ("status" text_ops);--> statement-breakpoint
+CREATE INDEX "idx_announcements_created_at" ON "announcements" USING btree ("created_at" timestamptz_ops);--> statement-breakpoint
+CREATE INDEX "idx_announcements_status" ON "announcements" USING btree ("status" text_ops);--> statement-breakpoint
+CREATE INDEX "idx_attendance_date" ON "attendance" USING btree ("date" date_ops);--> statement-breakpoint
+CREATE INDEX "idx_attendance_employee_date" ON "attendance" USING btree ("employee_id" uuid_ops,"date" date_ops);--> statement-breakpoint
+CREATE INDEX "idx_attendance_records_created_at" ON "attendance_records" USING btree ("created_at" timestamptz_ops);--> statement-breakpoint
+CREATE INDEX "idx_attendance_records_employee" ON "attendance_records" USING btree ("employee_id" uuid_ops);--> statement-breakpoint
+CREATE INDEX "idx_attendance_records_period" ON "attendance_records" USING btree ("period" text_ops);--> statement-breakpoint
+CREATE INDEX "idx_leave_requests_created_at" ON "leave_requests" USING btree ("created_at" timestamptz_ops);--> statement-breakpoint
+CREATE INDEX "idx_leave_requests_employee" ON "leave_requests" USING btree ("employee_id" uuid_ops);--> statement-breakpoint
+CREATE INDEX "idx_leave_requests_status" ON "leave_requests" USING btree ("status" text_ops);--> statement-breakpoint
+CREATE INDEX "idx_payslips_employee" ON "payslips" USING btree ("employee_id" uuid_ops);--> statement-breakpoint
+CREATE INDEX "idx_payslips_pay_date" ON "payslips" USING btree ("pay_date" date_ops);--> statement-breakpoint
+CREATE INDEX "idx_payslips_pay_period" ON "payslips" USING btree ("pay_period" text_ops);--> statement-breakpoint
+CREATE INDEX "idx_reports_generated_at" ON "reports" USING btree ("generated_at" timestamptz_ops);--> statement-breakpoint
+CREATE INDEX "idx_reports_type" ON "reports" USING btree ("report_type" text_ops);--> statement-breakpoint
+CREATE INDEX "idx_schedules_date" ON "schedules" USING btree ("date" date_ops);--> statement-breakpoint
+CREATE INDEX "idx_schedules_employee_date" ON "schedules" USING btree ("employee_id" uuid_ops,"date" date_ops);

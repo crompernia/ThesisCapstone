@@ -1,4 +1,4 @@
-import { pgTable, index, foreignKey, unique, serial, uuid, date, timestamp, varchar, numeric, text, integer, time, jsonb } from "drizzle-orm/pg-core"
+import { pgTable, index, foreignKey, unique, serial, uuid, date, timestamp, varchar, numeric, text, integer, time, jsonb, boolean } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { type InferSelectModel, type InferInsertModel } from 'drizzle-orm';
 
@@ -123,6 +123,36 @@ export const leaveRequests = pgTable("leave_requests", {
 ]);
 
 // ============================================
+// OVERTIME MANAGEMENT: overtime_requests
+// ============================================
+export const overtimeRequests = pgTable("overtime_requests", {
+	id: serial().primaryKey().notNull(),
+	employeeId: uuid("employee_id").notNull(),
+	date: date().notNull(),
+	hoursRequested: numeric("hours_requested", { precision: 4, scale: 2 }).notNull(),
+	reason: text(),
+	status: varchar({ length: 50 }).default('Pending'),
+	approvedBy: uuid("approved_by"),
+	approvedAt: timestamp("approved_at", { withTimezone: true }),
+	createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+}, (table) => [
+	index("idx_overtime_requests_created_at").using("btree", table.createdAt.asc().nullsLast().op("timestamptz_ops")),
+	index("idx_overtime_requests_employee").using("btree", table.employeeId.asc().nullsLast().op("uuid_ops")),
+	index("idx_overtime_requests_status").using("btree", table.status.asc().nullsLast().op("text_ops")),
+	index("idx_overtime_requests_date").using("btree", table.date.asc().nullsLast().op("date_ops")),
+	foreignKey({
+			columns: [table.employeeId],
+			foreignColumns: [accounts.id],
+			name: "overtime_requests_employee_id_accounts_id_fk"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.approvedBy],
+			foreignColumns: [accounts.id],
+			name: "overtime_requests_approved_by_accounts_id_fk"
+		}).onDelete("set null"),
+]);
+
+// ============================================
 // ATTENDANCE TRACKING
 // ============================================
 export const attendance = pgTable("attendance", {
@@ -133,6 +163,10 @@ export const attendance = pgTable("attendance", {
 	timeOut: timestamp("time_out", { withTimezone: true, mode: 'string' }),
 	status: varchar({ length: 50 }).default('Present'),
 	hoursWorked: numeric("hours_worked", { precision: 5, scale:  2 }),
+	nightHours: numeric("night_hours", { precision: 5, scale:  2 }).default('0'), // Hours worked between 10 PM and 6 AM
+	overtimeHours: numeric("overtime_hours", { precision: 5, scale:  2 }).default('0'), // Total overtime hours
+	overtimeType: varchar("overtime_type", { length: 20 }).default('regular'), // 'regular', 'holiday_regular', 'holiday_special', 'rest_day'
+	overtimeApproved: boolean("overtime_approved").default(false), // Whether overtime was approved by HR
 	notes: text(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 }, (table) => [
@@ -190,6 +224,7 @@ export const payslips = pgTable("payslips", {
 	sssLoan: numeric("sss_loan", { precision: 10, scale:  2 }).default('0'),
 	hdmfLoan: numeric("hdmf_loan", { precision: 10, scale:  2 }).default('0'),
 	companyLoan: numeric("company_loan", { precision: 10, scale:  2 }).default('0'),
+	lateDeduction: numeric("late_deduction", { precision: 10, scale:  2 }).default('0'),
 	otherDeductions: numeric("other_deductions", { precision: 10, scale:  2 }).default('0'),
 	netPay: numeric("net_pay", { precision: 10, scale:  2 }).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
@@ -311,6 +346,10 @@ export type NewAnnouncement = InferInsertModel<typeof announcements>;
 export type LeaveRequest = InferSelectModel<typeof leaveRequests>;
 export type NewLeaveRequest = InferInsertModel<typeof leaveRequests>;
 
+// Overtime request types
+export type OvertimeRequest = InferSelectModel<typeof overtimeRequests>;
+export type NewOvertimeRequest = InferInsertModel<typeof overtimeRequests>;
+
 // Attendance types
 export type Attendance = InferSelectModel<typeof attendance>;
 export type NewAttendance = InferInsertModel<typeof attendance>;
@@ -341,6 +380,7 @@ export const schema = {
   positionDepartments,
   announcements,
   leaveRequests,
+  overtimeRequests,
   attendance,
   schedules,
   payslips,
