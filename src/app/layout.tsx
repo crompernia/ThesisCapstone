@@ -2,7 +2,7 @@ import { Roboto } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster";
-import '@/lib/db'; // Force DB initialization
+// import '@/lib/db'; // Force DB initialization - moved to client components only
 import { SidebarTrigger} from '@/components/ui/sidebar';
 import { SessionProvider } from '@/components/session-provider';
 

@@ -1,5 +1,6 @@
 import dynamic from "next/dynamic";
 import { Logo } from "../components/logo";
+import { getDb } from "../lib/db"; // Initialize DB on server side
 
 export const metadata = {
   title: 'Chumplace',
