@@ -378,30 +378,36 @@ export async function updateLeaveRequestStatus(requestId: number, status: string
 export async function getOvertimeRequests() {
     const db = await getDb();
 
-    const result = await db
-        .select({
-            id: schema.overtimeRequests.id,
-            date: schema.overtimeRequests.date,
-            hours_requested: schema.overtimeRequests.hoursRequested,
-            reason: schema.overtimeRequests.reason,
-            status: schema.overtimeRequests.status,
-            employeeId: accounts.id,
-            first_name: accounts.firstName,
-            last_name: accounts.lastName,
-        })
-        .from(schema.overtimeRequests)
-        .leftJoin(accounts, eq(schema.overtimeRequests.employeeId, accounts.id))
-        .orderBy(desc(schema.overtimeRequests.createdAt));
+    try {
+        const result = await db
+            .select({
+                id: schema.overtimeRequests.id,
+                date: schema.overtimeRequests.date,
+                hours_requested: schema.overtimeRequests.hoursRequested,
+                reason: schema.overtimeRequests.reason,
+                status: schema.overtimeRequests.status,
+                employeeId: accounts.id,
+                first_name: accounts.firstName,
+                last_name: accounts.lastName,
+            })
+            .from(schema.overtimeRequests)
+            .leftJoin(accounts, eq(schema.overtimeRequests.employeeId, accounts.id))
+            .orderBy(desc(schema.overtimeRequests.createdAt));
 
-    return result.map(ot => ({
-        id: ot.id,
-        employeeId: ot.employeeId,
-        employeeName: `${ot.first_name} ${ot.last_name}`,
-        date: format(new Date(ot.date), 'yyyy-MM-dd'),
-        hours_requested: ot.hours_requested,
-        reason: ot.reason,
-        status: ot.status
-    }));
+        return result.map(ot => ({
+            id: ot.id,
+            employeeId: ot.employeeId,
+            employeeName: `${ot.first_name} ${ot.last_name}`,
+            date: format(new Date(ot.date), 'yyyy-MM-dd'),
+            hours_requested: ot.hours_requested,
+            reason: ot.reason,
+            status: ot.status
+        }));
+    } catch (error) {
+        // overtime_requests table may not exist yet
+        console.warn('overtime_requests table not found, returning empty array');
+        return [];
+    }
 }
 
 /**
@@ -412,40 +418,46 @@ export async function getOvertimeRequests() {
 export async function approveOvertimeRequest(requestId: number): Promise<void> {
     const db = await getDb();
 
-    // Get the overtime request details
-    const request = await db
-        .select({
-            employeeId: schema.overtimeRequests.employeeId,
-            date: schema.overtimeRequests.date,
-            hoursRequested: schema.overtimeRequests.hoursRequested,
-        })
-        .from(schema.overtimeRequests)
-        .where(eq(schema.overtimeRequests.id, requestId))
-        .limit(1);
+    try {
+        // Get the overtime request details
+        const request = await db
+            .select({
+                employeeId: schema.overtimeRequests.employeeId,
+                date: schema.overtimeRequests.date,
+                hoursRequested: schema.overtimeRequests.hoursRequested,
+            })
+            .from(schema.overtimeRequests)
+            .where(eq(schema.overtimeRequests.id, requestId))
+            .limit(1);
 
-    if (request.length === 0) {
-        throw new Error('Overtime request not found');
+        if (request.length === 0) {
+            throw new Error('Overtime request not found');
+        }
+
+        const { employeeId, date, hoursRequested } = request[0];
+
+        // Update the attendance record to mark overtime as approved
+        await db
+            .update(attendance)
+            .set({
+                overtimeApproved: true as any,
+                overtimeHours: hoursRequested as any, // Update with approved hours
+            })
+            .where(and(
+                eq(attendance.employeeId, employeeId),
+                eq(attendance.date, date)
+            ));
+
+        // Update the overtime request status
+        await db
+            .update(schema.overtimeRequests)
+            .set({ status: 'Approved' })
+            .where(eq(schema.overtimeRequests.id, requestId));
+    } catch (error) {
+        // overtime_requests table may not exist yet
+        console.warn('overtime_requests table not found, cannot approve request');
+        throw new Error('Overtime functionality not available yet');
     }
-
-    const { employeeId, date, hoursRequested } = request[0];
-
-    // Update the attendance record to mark overtime as approved
-    await db
-        .update(attendance)
-        .set({
-            overtimeApproved: true as any,
-            overtimeHours: hoursRequested as any, // Update with approved hours
-        })
-        .where(and(
-            eq(attendance.employeeId, employeeId),
-            eq(attendance.date, date)
-        ));
-
-    // Update the overtime request status
-    await db
-        .update(schema.overtimeRequests)
-        .set({ status: 'Approved' })
-        .where(eq(schema.overtimeRequests.id, requestId));
 }
 
 /**
@@ -456,17 +468,29 @@ export async function approveOvertimeRequest(requestId: number): Promise<void> {
 export async function rejectOvertimeRequest(requestId: number): Promise<void> {
     const db = await getDb();
 
-    await db
-        .update(schema.overtimeRequests)
-        .set({ status: 'Rejected' })
-        .where(eq(schema.overtimeRequests.id, requestId));
+    try {
+        await db
+            .update(schema.overtimeRequests)
+            .set({ status: 'Rejected' })
+            .where(eq(schema.overtimeRequests.id, requestId));
+    } catch (error) {
+        // overtime_requests table may not exist yet
+        console.warn('overtime_requests table not found, cannot reject request');
+        throw new Error('Overtime functionality not available yet');
+    }
 }
 
 export async function updateOvertimeRequestStatus(requestId: number, status: string): Promise<void> {
     const db = await getDb();
-    await db.update(schema.overtimeRequests)
-        .set({ status })
-        .where(eq(schema.overtimeRequests.id, requestId));
+    try {
+        await db.update(schema.overtimeRequests)
+            .set({ status })
+            .where(eq(schema.overtimeRequests.id, requestId));
+    } catch (error) {
+        // overtime_requests table may not exist yet
+        console.warn('overtime_requests table not found, cannot update request status');
+        throw new Error('Overtime functionality not available yet');
+    }
 }
 
 export async function getEmployeesWithPayslipStatus() {
@@ -567,12 +591,11 @@ export async function getSchedulesForWeek(weekStart: string) {
         schedulesByEmployee[row.employeeId].push(row);
     }
 
-    // Convert to shifts, breaks, overtime arrays
-    const result: Record<string, { shifts: string[], breaks: string[], overtimeAllowed: boolean[] }> = {};
+    // Convert to shifts, breaks arrays
+    const result: Record<string, { shifts: string[], breaks: string[] }> = {};
     for (const [employeeId, schs] of Object.entries(schedulesByEmployee)) {
         const shifts: string[] = [];
         const breaks: string[] = [];
-        const overtimeAllowed: boolean[] = [];
         for (let i = 0; i < 5; i++) {
             const date = weekDates[i];
             const sch = schs.find(s => s.date === date);
@@ -580,7 +603,6 @@ export async function getSchedulesForWeek(weekStart: string) {
                     const start = sch.shiftStart ? sch.shiftStart.slice(0, 5) : '';
                     const end = sch.shiftEnd ? sch.shiftEnd.slice(0, 5) : '';
                     shifts.push(start && end ? `${start} - ${end}` : '');
-                    overtimeAllowed.push(false); // default false since not in schema
                     let breakStr = '';
                     try {
                         if (sch.notes) {
@@ -592,10 +614,9 @@ export async function getSchedulesForWeek(weekStart: string) {
                 } else {
                     shifts.push('');
                     breaks.push('');
-                    overtimeAllowed.push(false);
                 }
         }
-        result[employeeId] = { shifts, breaks, overtimeAllowed };
+        result[employeeId] = { shifts, breaks };
     }
 
     return result;
@@ -622,7 +643,7 @@ export async function getEmployeeDashboardData(employeeid: string) {
     const employee = employeeResult[0];
 
     if (!employee) {
-        return { employee: { name: 'Employee Not Found' }, announcements: [] };
+        return { employee: { name: 'Employee Not Found' }, announcements: [], statistics: {} };
     }
 
     const announcementsResult = await db
@@ -636,6 +657,22 @@ export async function getEmployeeDashboardData(employeeid: string) {
         .where(eq(announcements.status, 'Published'))
         .orderBy(desc(announcements.createdAt))
         .limit(5);
+
+    // Get attendance statistics
+    const attendanceData = await getAttendanceData(employeeid);
+
+    // Get overtime requests
+    const overtimeRequests = await getPastOvertimeRequests(employeeid);
+    const totalOvertimeHours = overtimeRequests
+        .filter(req => req.status === 'Approved')
+        .reduce((total, req) => total + Number(req.hours_requested), 0);
+
+    // Get recent payslip data
+    const payPeriods = await getPayPeriods(employeeid);
+    const latestPayslip = payPeriods.length > 0 ? payPeriods[0] : null;
+
+    // Get leave balance
+    const leaveBalance = attendanceData.summary.availableLeaves;
 
     return {
         employee: {
@@ -653,7 +690,24 @@ export async function getEmployeeDashboardData(employeeid: string) {
             title: a.title,
             content: a.content,
             date: format(new Date(a.created_at!), 'MMMM d, yyyy')
-        }))
+        })),
+        statistics: {
+            attendance: {
+                daysAttended: attendanceData.summary.daysAttended,
+                totalDaysAttended: attendanceData.summary.totalDaysAttended,
+                lates: attendanceData.summary.lates,
+                absences: attendanceData.summary.absences,
+                totalHours: attendanceData.summary.totalHours,
+                totalWorkingDays: attendanceData.summary.totalWorkingDays,
+            },
+            leaveBalance,
+            overtimeHours: totalOvertimeHours,
+            latestPayslip: latestPayslip ? {
+                period: latestPayslip.period,
+                netPay: latestPayslip.net_pay,
+                payDate: latestPayslip.payDate,
+            } : null,
+        }
     };
 }
 
@@ -956,25 +1010,31 @@ export async function createLeaveRequest(data: {
 export async function getPastOvertimeRequests(employeeId: string) {
     const db = await getDb();
 
-    const result = await db
-        .select({
-            id: schema.overtimeRequests.id,
-            date: schema.overtimeRequests.date,
-            hours_requested: schema.overtimeRequests.hoursRequested,
-            reason: schema.overtimeRequests.reason,
-            status: schema.overtimeRequests.status,
-        })
-        .from(schema.overtimeRequests)
-        .where(eq(schema.overtimeRequests.employeeId, employeeId))
-        .orderBy(desc(schema.overtimeRequests.createdAt));
+    try {
+        const result = await db
+            .select({
+                id: schema.overtimeRequests.id,
+                date: schema.overtimeRequests.date,
+                hours_requested: schema.overtimeRequests.hoursRequested,
+                reason: schema.overtimeRequests.reason,
+                status: schema.overtimeRequests.status,
+            })
+            .from(schema.overtimeRequests)
+            .where(eq(schema.overtimeRequests.employeeId, employeeId))
+            .orderBy(desc(schema.overtimeRequests.createdAt));
 
-    return result.map(ot => ({
-        id: ot.id,
-        date: format(new Date(ot.date), 'yyyy-MM-dd'),
-        hours_requested: ot.hours_requested,
-        reason: ot.reason,
-        status: ot.status,
-    }));
+        return result.map(ot => ({
+            id: ot.id,
+            date: format(new Date(ot.date), 'yyyy-MM-dd'),
+            hours_requested: ot.hours_requested,
+            reason: ot.reason,
+            status: ot.status,
+        }));
+    } catch (error) {
+        // overtime_requests table may not exist yet
+        console.warn('overtime_requests table not found, returning empty array');
+        return [];
+    }
 }
 
 export async function createOvertimeRequest(data: {
@@ -986,14 +1046,20 @@ export async function createOvertimeRequest(data: {
     const db = await getDb();
     const { employeeId, date, hoursRequested, reason } = data;
 
-    await db.insert(schema.overtimeRequests).values({
-        employeeId,
-        date,
-        hoursRequested: hoursRequested,
-        reason,
-    });
+    try {
+        await db.insert(schema.overtimeRequests).values({
+            employeeId,
+            date,
+            hoursRequested: hoursRequested,
+            reason,
+        });
 
-    return { success: true };
+        return { success: true };
+    } catch (error) {
+        // overtime_requests table may not exist yet
+        console.warn('overtime_requests table not found, cannot create request');
+        throw new Error('Overtime functionality not available yet');
+    }
 }
 
 export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]> {
@@ -1018,16 +1084,22 @@ export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]
   }
 
   // Get approved overtime requests for this employee
-  const approvedOvertimeRequests = await db
-    .select({
-      date: schema.overtimeRequests.date,
-      hoursRequested: schema.overtimeRequests.hoursRequested,
-    })
-    .from(schema.overtimeRequests)
-    .where(and(
-      eq(schema.overtimeRequests.employeeId, employeeId),
-      eq(schema.overtimeRequests.status, 'Approved')
-    ));
+  let approvedOvertimeRequests: Array<{ date: string; hoursRequested: string }> = [];
+  try {
+    approvedOvertimeRequests = await db
+      .select({
+        date: schema.overtimeRequests.date,
+        hoursRequested: schema.overtimeRequests.hoursRequested,
+      })
+      .from(schema.overtimeRequests)
+      .where(and(
+        eq(schema.overtimeRequests.employeeId, employeeId),
+        eq(schema.overtimeRequests.status, 'Approved')
+      ));
+  } catch (error) {
+    // overtime_requests table may not exist yet, continue with empty array
+    console.warn('overtime_requests table not found, skipping overtime calculations');
+  }
 
   // Fetch payslips for the employee
   const payslipResults = await db
@@ -1280,7 +1352,7 @@ export async function getSchedule(employeeId: string) {
  * scheduleItems: Array of { employeeId: string, shifts: string[] } where shifts is 5 items (Mon-Fri)
  * weekStart: ISO date string for the Monday of the week (yyyy-MM-dd)
  */
-export async function publishSchedule(scheduleItems: { employeeId: string; shifts: string[]; breaks?: string[]; overtimeAllowed?: boolean[] }[], weekStart: string) {
+export async function publishSchedule(scheduleItems: { employeeId: string; shifts: string[]; breaks?: string[] }[], weekStart: string) {
     const db = await getDb();
     console.log('publishSchedule called with', { count: scheduleItems.length, weekStart });
     // Helper to normalize time strings like "9:00 - 17:00" into ["09:00:00","17:00:00"].
@@ -1331,8 +1403,6 @@ export async function publishSchedule(scheduleItems: { employeeId: string; shift
             const [shiftStart, shiftEnd] = times;
             // get break time string from scheduleItems if provided
             const breakStr = (item.breaks && item.breaks[dayOffset]) ? String(item.breaks[dayOffset]).trim() : null;
-            // get overtime allowed flag from scheduleItems if provided
-            const overtimeAllowed = (item.overtimeAllowed && item.overtimeAllowed[dayOffset]) ? item.overtimeAllowed[dayOffset] : false;
 
             // Check existing record
             const existing = await db.select().from(schedules).where(and(eq(schedules.employeeId, employeeId), eq(schedules.date, isoDate)));
@@ -2170,8 +2240,28 @@ export async function getLeaveDataForPayPeriod(employeeId: string, periodStart: 
     }
 
     return {
-        paidLeaveDays,
-        unpaidLeaveDays,
-        leaveDetails,
+      paidLeaveDays,
+      unpaidLeaveDays,
+      leaveDetails,
     };
+}
+
+export async function getApprovedLoansForEmployee(employeeId: string) {
+  try {
+    const db = await getDb();
+    const approvedLoans = await db
+      .select()
+      .from(schema.loans)
+      .where(
+        and(
+          eq(schema.loans.employeeId, employeeId),
+          eq(schema.loans.status, 'Approved')
+        )
+      );
+
+    return approvedLoans;
+  } catch (error) {
+    console.error('Error fetching approved loans:', error);
+    return [];
+  }
 }

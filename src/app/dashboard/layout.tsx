@@ -22,6 +22,7 @@ import {
   Wallet,
   Send,
   Clock,
+  CreditCard,
 } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
@@ -124,6 +125,14 @@ export default async function DashboardLayout({
                 <SidebarMenuButtonAny tooltip="Overtime Request">
                   <Clock />
                   Overtime Request
+                </SidebarMenuButtonAny>
+              </Link>
+            </SidebarMenuItemAny>
+            <SidebarMenuItemAny>
+              <Link href="/dashboard/loan" passHref>
+                <SidebarMenuButtonAny tooltip="Loan Request">
+                  <CreditCard />
+                  Loan Request
                 </SidebarMenuButtonAny>
               </Link>
             </SidebarMenuItemAny>

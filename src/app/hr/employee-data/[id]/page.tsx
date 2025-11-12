@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Edit } from "lucide-react";
 import Link from "next/link";
-import { getEmployeeById } from "@/lib/data";
+import { getEmployeeById, getOvertimeRequests, getPastLeaveRequests } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 
 /**
@@ -24,6 +24,9 @@ import { Badge } from "@/components/ui/badge";
 export default async function EmployeeProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const employee = await getEmployeeById(id);
+  const allOvertimeRequests = await getOvertimeRequests();
+  const overtimeRequests = allOvertimeRequests.filter(req => req.employeeId === id);
+  const leaveRequests = await getPastLeaveRequests(id);
 
   if (!employee) {
     return (
@@ -125,6 +128,87 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
                 value={`${(employee as any).availableLeaves ?? (employee as any).available_leaves ?? 0} days`}
               />
             </div>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold border-b pb-2 mb-4">
+              Leave Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <InfoItem
+                label="Total Leave Requests"
+                value={`${leaveRequests.length} requests`}
+              />
+              <InfoItem
+                label="Approved Leave"
+                value={`${leaveRequests.filter(req => req.status === 'Approved').length} requests`}
+              />
+              <InfoItem
+                label="Pending Leave"
+                value={`${leaveRequests.filter(req => req.status === 'Pending').length} requests`}
+              />
+            </div>
+            {leaveRequests.length > 0 && (
+              <div className="mt-4">
+                <h4 className="font-medium mb-2">Leave Request History</h4>
+                <div className="space-y-2">
+                  {leaveRequests.map((req) => (
+                    <div key={req.id} className="flex justify-between items-center p-2 bg-muted/50 rounded">
+                      <div>
+                        <span className="font-medium">{req.leave_type}</span>
+                        <span className="text-sm text-muted-foreground ml-2">
+                          {req.startDate} to {req.endDate}
+                        </span>
+                      </div>
+                      <Badge variant={req.status === 'Approved' ? 'default' : req.status === 'Rejected' ? 'destructive' : 'secondary'} className="">
+                        {req.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold border-b pb-2 mb-4">
+              Overtime Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <InfoItem
+                label="Total Overtime Requests"
+                value={`${overtimeRequests.length} requests`}
+              />
+              <InfoItem
+                label="Approved Overtime"
+                value={`${overtimeRequests.filter(req => req.status === 'Approved').length} requests`}
+              />
+              <InfoItem
+                label="Total Overtime Hours"
+                value={`${overtimeRequests
+                  .filter(req => req.status === 'Approved')
+                  .reduce((sum, req) => sum + parseFloat(req.hours_requested), 0)
+                } hours`}
+              />
+            </div>
+            {overtimeRequests.length > 0 && (
+              <div className="mt-4">
+                <h4 className="font-medium mb-2">Overtime Request History</h4>
+                <div className="space-y-2">
+                  {overtimeRequests.map((req) => (
+                    <div key={req.id} className="flex justify-between items-center p-2 bg-muted/50 rounded">
+                      <div>
+                        <span className="font-medium">{req.date}</span>
+                        <span className="text-sm text-muted-foreground ml-2">
+                          {req.hours_requested} hours - {req.reason}
+                        </span>
+                      </div>
+                      <Badge variant={req.status === 'Approved' ? 'default' : req.status === 'Rejected' ? 'destructive' : 'secondary'} className="">
+                        {req.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

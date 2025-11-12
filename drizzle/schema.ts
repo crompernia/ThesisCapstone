@@ -292,3 +292,30 @@ export const positionDepartments = pgTable("position_departments", {
 		}).onDelete("cascade"),
 	unique("position_departments_position_id_department_id_unique").on(table.positionId, table.departmentId),
 ]);
+
+export const loans = pgTable("loans", {
+	id: serial().primaryKey().notNull(),
+	employeeId: uuid("employee_id").notNull(),
+	amount: numeric({ precision: 10, scale: 2 }).notNull(),
+	months: integer().notNull(),
+	interestRate: numeric("interest_rate", { precision: 5, scale: 4 }).notNull(),
+	totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
+	status: varchar({ length: 50 }).default('Pending'),
+	requestedAt: timestamp("requested_at", { withTimezone: true, mode: 'string' }).defaultNow(),
+	approvedAt: timestamp("approved_at", { withTimezone: true, mode: 'string' }),
+	approvedBy: uuid("approved_by"),
+	notes: text(),
+}, (table) => [
+	index("idx_loans_employee").using("btree", table.employeeId.asc().nullsLast().op("uuid_ops")),
+	index("idx_loans_status").using("btree", table.status.asc().nullsLast().op("text_ops")),
+	foreignKey({
+		columns: [table.employeeId],
+		foreignColumns: [accounts.id],
+		name: "loans_employee_id_accounts_id_fk"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.approvedBy],
+		foreignColumns: [accounts.id],
+		name: "loans_approved_by_accounts_id_fk"
+	}).onDelete("set null"),
+]);

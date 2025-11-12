@@ -26,7 +26,7 @@ export const accounts = pgTable("accounts", {
 	philhealthNumber: varchar("philhealth_number", { length: 255 }),
 	pagibigNumber: varchar("pagibig_number", { length: 255 }),
 	tin: varchar({ length: 255 }),
-	photo: varchar({ length: 500 }),
+	photo: text(),
 	managedBranches: varchar("managed_branches", { length: 255 }).array(),
 	createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
@@ -150,6 +150,36 @@ export const overtimeRequests = pgTable("overtime_requests", {
 			foreignColumns: [accounts.id],
 			name: "overtime_requests_approved_by_accounts_id_fk"
 		}).onDelete("set null"),
+]);
+
+// ============================================
+// LOAN MANAGEMENT: loans
+// ============================================
+export const loans = pgTable("loans", {
+	id: serial().primaryKey().notNull(),
+	employeeId: uuid("employee_id").notNull(),
+	amount: numeric({ precision: 10, scale: 2 }).notNull(),
+	months: integer().notNull(),
+	interestRate: numeric("interest_rate", { precision: 5, scale: 4 }).notNull(),
+	totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
+	status: varchar({ length: 50 }).default('Pending'),
+	requestedAt: timestamp("requested_at", { withTimezone: true }).defaultNow(),
+	approvedAt: timestamp("approved_at", { withTimezone: true }),
+	approvedBy: uuid("approved_by"),
+	notes: text(),
+}, (table) => [
+	index("idx_loans_employee").using("btree", table.employeeId.asc().nullsLast().op("uuid_ops")),
+	index("idx_loans_status").using("btree", table.status.asc().nullsLast().op("text_ops")),
+	foreignKey({
+		columns: [table.employeeId],
+		foreignColumns: [accounts.id],
+		name: "loans_employee_id_accounts_id_fk"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.approvedBy],
+		foreignColumns: [accounts.id],
+		name: "loans_approved_by_accounts_id_fk"
+	}).onDelete("set null"),
 ]);
 
 // ============================================
@@ -350,6 +380,10 @@ export type NewLeaveRequest = InferInsertModel<typeof leaveRequests>;
 export type OvertimeRequest = InferSelectModel<typeof overtimeRequests>;
 export type NewOvertimeRequest = InferInsertModel<typeof overtimeRequests>;
 
+// Loan types
+export type Loan = InferSelectModel<typeof loans>;
+export type NewLoan = InferInsertModel<typeof loans>;
+
 // Attendance types
 export type Attendance = InferSelectModel<typeof attendance>;
 export type NewAttendance = InferInsertModel<typeof attendance>;
@@ -381,6 +415,7 @@ export const schema = {
   announcements,
   leaveRequests,
   overtimeRequests,
+  loans,
   attendance,
   schedules,
   payslips,

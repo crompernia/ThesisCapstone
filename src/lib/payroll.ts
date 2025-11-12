@@ -131,24 +131,147 @@ export function getHolidaysInRange(startDate: Date, endDate: Date): Holiday[] {
 }
 
 /**
- * Calculates the SSS (Social Security System) employee contribution based on Monthly Salary Credit (MSC) for 2025.
- * Employee share: 5%, Employer share: 10%, Total: 15%
+ * Calculates the SSS (Social Security System) employee contribution based on Monthly Salary Credit (MSC) for 2024-2025.
+ * Uses progressive contribution table as per SSS Circular No. 2024-001
+ * Employee share: 5% of total contribution, Employer share: 10%, Total: 15%
  * @param msc - Monthly Salary Credit
- * @returns Employee share of SSS contribution (5% of MSC)
+ * @returns Employee share of SSS contribution
  */
 export function getSSSDeduction(msc: number): number {
-  return msc * 0.05;
+  // SSS Contribution Table 2024-2025 (Employee Share - 5% of total)
+  if (msc <= 4250) {
+    return 225.00;
+  } else if (msc <= 4750) {
+    return 262.50;
+  } else if (msc <= 5250) {
+    return 300.00;
+  } else if (msc <= 5750) {
+    return 337.50;
+  } else if (msc <= 6250) {
+    return 375.00;
+  } else if (msc <= 6750) {
+    return 412.50;
+  } else if (msc <= 7250) {
+    return 450.00;
+  } else if (msc <= 7750) {
+    return 487.50;
+  } else if (msc <= 8250) {
+    return 525.00;
+  } else if (msc <= 8750) {
+    return 562.50;
+  } else if (msc <= 9250) {
+    return 600.00;
+  } else if (msc <= 9750) {
+    return 637.50;
+  } else if (msc <= 10250) {
+    return 675.00;
+  } else if (msc <= 10750) {
+    return 712.50;
+  } else if (msc <= 11250) {
+    return 750.00;
+  } else if (msc <= 11750) {
+    return 787.50;
+  } else if (msc <= 12250) {
+    return 825.00;
+  } else if (msc <= 12750) {
+    return 862.50;
+  } else if (msc <= 13250) {
+    return 900.00;
+  } else if (msc <= 13750) {
+    return 937.50;
+  } else if (msc <= 14250) {
+    return 975.00;
+  } else if (msc <= 14750) {
+    return 1012.50;
+  } else if (msc <= 15250) {
+    return 1050.00;
+  } else if (msc <= 15750) {
+    return 1087.50;
+  } else if (msc <= 16250) {
+    return 1125.00;
+  } else if (msc <= 16750) {
+    return 1162.50;
+  } else if (msc <= 17250) {
+    return 1200.00;
+  } else if (msc <= 17750) {
+    return 1237.50;
+  } else if (msc <= 18250) {
+    return 1275.00;
+  } else if (msc <= 18750) {
+    return 1312.50;
+  } else if (msc <= 19250) {
+    return 1350.00;
+  } else if (msc <= 19750) {
+    return 1387.50;
+  } else if (msc <= 20250) {
+    return 1425.00;
+  } else if (msc <= 20750) {
+    return 1462.50;
+  } else if (msc <= 21250) {
+    return 1500.00;
+  } else if (msc <= 21750) {
+    return 1537.50;
+  } else if (msc <= 22250) {
+    return 1575.00;
+  } else if (msc <= 22750) {
+    return 1612.50;
+  } else if (msc <= 23250) {
+    return 1650.00;
+  } else if (msc <= 23750) {
+    return 1687.50;
+  } else if (msc <= 24250) {
+    return 1725.00;
+  } else if (msc <= 24750) {
+    return 1762.50;
+  } else if (msc <= 25250) {
+    return 1800.00;
+  } else if (msc <= 25750) {
+    return 1837.50;
+  } else if (msc <= 26250) {
+    return 1875.00;
+  } else if (msc <= 26750) {
+    return 1912.50;
+  } else if (msc <= 27250) {
+    return 1950.00;
+  } else if (msc <= 27750) {
+    return 1987.50;
+  } else if (msc <= 28250) {
+    return 2025.00;
+  } else if (msc <= 28750) {
+    return 2062.50;
+  } else if (msc <= 29250) {
+    return 2100.00;
+  } else if (msc <= 29750) {
+    return 2137.50;
+  } else {
+    // ₱29,750 and above
+    return 2175.00;
+  }
 }
 
 /**
- * Calculates the PhilHealth employee contribution based on Monthly Salary Credit (MSC) for 2025.
- * PhilHealth contribution is 5% of MSC, employee pays half (2.5%).
+ * Calculates the PhilHealth employee contribution based on Monthly Salary Credit (MSC) for 2024-2025.
+ * Uses progressive contribution table as per PhilHealth Circular No. 2024-001
+ * Total contribution is 5% of MSC (capped), employee pays 50% of total contribution.
  * @param msc - Monthly Salary Credit
  * @returns Employee share of PhilHealth contribution
  */
 export function getPhilhealthDeduction(msc: number): number {
-  // 5% of MSC, employee pays half
-  return msc * 0.05 / 2;
+  let totalContribution: number;
+
+  if (msc <= 10000) {
+    // ₱10,000 and below: Fixed ₱300 total contribution
+    totalContribution = 300.00;
+  } else if (msc <= 79999.99) {
+    // ₱10,000.01 - ₱79,999.99: 3% of MSC
+    totalContribution = msc * 0.03;
+  } else {
+    // ₱80,000 and above: Fixed ₱4,800 total contribution
+    totalContribution = 4800.00;
+  }
+
+  // Employee pays 50% of total contribution
+  return totalContribution / 2;
 }
 
 /**
@@ -396,11 +519,11 @@ export function validatePayslipCalculation(data: {
     }
 
     // Government deduction limits validation
-    if (data.sssDeduction && data.sssDeduction > 2000) {
+    if (data.sssDeduction && data.sssDeduction > 2175) {
         errors.push('SSS deduction exceeds maximum monthly contribution');
     }
 
-    if (data.philhealthDeduction && data.philhealthDeduction > 2500) {
+    if (data.philhealthDeduction && data.philhealthDeduction > 2400) {
         errors.push('PhilHealth deduction exceeds maximum monthly contribution');
     }
 

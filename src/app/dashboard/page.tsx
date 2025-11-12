@@ -13,10 +13,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
-import { Megaphone } from "lucide-react";
+import { Megaphone, DollarSign } from "lucide-react";
 import { getEmployeeDashboardData } from "@/lib/data";
 import { getCurrentUserId } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { DashboardCharts } from "@/components/dashboard-charts";
 
 /**
  * Renders the main dashboard page for an employee.
@@ -30,13 +31,13 @@ export default async function EmployeeDashboardPage() {
     redirect("/");
   }
 
-  const { employee, announcements } = await getEmployeeDashboardData(
+  const { employee, announcements, statistics } = await getEmployeeDashboardData(
     employeeId
   );
 
   return (
-    <div className="grid gap-6 md:grid-cols-3">
-      <div className="md:col-span-2 space-y-6">
+    <div className="grid gap-6 lg:grid-cols-3">
+      <div className="lg:col-span-2 space-y-6">
         {/* Employee Profile Card: Displays key information about the logged-in employee. */}
         <Card>
           {employee ? (
@@ -107,6 +108,43 @@ export default async function EmployeeDashboardPage() {
           )}
         </Card>
 
+        {/* Statistics Charts */}
+        {statistics && (
+          <DashboardCharts
+            attendance={statistics.attendance}
+            leaveBalance={statistics.leaveBalance}
+            overtimeHours={statistics.overtimeHours}
+          />
+        )}
+
+        {/* Latest Payslip Card */}
+        {statistics?.latestPayslip && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign />
+                Latest Payslip
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Period</p>
+                  <p className="font-semibold">{statistics.latestPayslip.period}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Net Pay</p>
+                  <p className="font-semibold text-green-600">₱{statistics.latestPayslip.netPay.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Pay Date</p>
+                  <p className="font-semibold">{statistics.latestPayslip.payDate}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Announcements Card: Shows the latest company-wide announcements. */}
         <Card>
           <CardHeader>
@@ -138,7 +176,7 @@ export default async function EmployeeDashboardPage() {
         </Card>
       </div>
       {/* Calendar Card: Displays a simple calendar, could be used for upcoming events or schedules. */}
-      <div className="md:col-span-1">
+      <div className="lg:col-span-1">
         <Card>
           <CardHeader>
             <CardTitle>Calendar</CardTitle>

@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getEmployees } from "@/lib/data";
-import { generateSampleAttendance } from "./actions";
+import { generateSamplePayslipData } from "./actions";
 
 export default function DemoPage() {
   const { toast } = useToast();
@@ -47,7 +47,7 @@ export default function DemoPage() {
 
   const handleSubmit = async (formData: FormData) => {
     setIsLoading(true);
-    await generateSampleAttendance(formData);
+    await generateSamplePayslipData(formData);
     setIsLoading(false);
   };
 
@@ -55,15 +55,16 @@ export default function DemoPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold font-headline">Demo Mode</h1>
-        <p className="text-muted-foreground">Generate sample attendance data for testing purposes.</p>
+        <p className="text-muted-foreground">Generate comprehensive sample data for payslip demonstration.</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Generate Sample Attendance Data</CardTitle>
+          <CardTitle>Generate Comprehensive Payslip Data</CardTitle>
           <CardDescription>
-            Select an employee and generate sample attendance logs for 1-2 weeks.
-            This will create realistic clock-in/out records based on their schedule.
+            Select an employee and generate complete sample data for payslip demonstration.
+            This includes attendance records, leave requests, overtime data, and employee salary information.
+            The data covers the past month to enable HR to create and demonstrate payslip functionality.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -85,7 +86,7 @@ export default function DemoPage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Generating..." : "Generate Sample Data"}
+              {isLoading ? "Generating..." : "Generate Payslip Demo Data"}
             </Button>
           </form>
         </CardContent>

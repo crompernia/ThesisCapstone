@@ -16,6 +16,12 @@ import {
   SidebarInset,
 } from "@/components/ui/sidebar";
 import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
+import {
   LayoutDashboard,
   CalendarPlus,
   ClipboardCheck,
@@ -28,6 +34,7 @@ import {
   MapPin,
   Building,
   Briefcase,
+  CreditCard,
 } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
@@ -149,21 +156,39 @@ export default async function HRDashboardLayout({
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
-             <SidebarMenuItem {...({} as any)}>
-              <Link href="/hr/leave-approvals" passHref>
-                <SidebarMenuButton tooltip="Leave Approvals" className="w-full justify-start" {...({} as any)}>
-                  <ClipboardList />
-                  Leave Approvals
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
-              <Link href="/hr/overtime-approvals" passHref>
-                <SidebarMenuButton tooltip="Overtime Approvals" className="w-full justify-start" {...({} as any)}>
-                  <Timer />
-                  Overtime Approvals
-                </SidebarMenuButton>
-              </Link>
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="approvals" className="border-none">
+                  <AccordionTrigger className="flex w-full items-center justify-between py-2 px-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0">
+                    <div className="flex items-center gap-2">
+                      <ClipboardCheck />
+                      Approvals
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-0">
+                    <div className="space-y-1 pl-6">
+                      <Link href="/hr/leave-approvals" passHref>
+                        <SidebarMenuButton tooltip="Leave Approvals" className="w-full justify-start" {...({} as any)}>
+                          <ClipboardList />
+                          Leave Approvals
+                        </SidebarMenuButton>
+                      </Link>
+                      <Link href="/hr/overtime-approvals" passHref>
+                        <SidebarMenuButton tooltip="Overtime Approvals" className="w-full justify-start" {...({} as any)}>
+                          <Timer />
+                          Overtime Approvals
+                        </SidebarMenuButton>
+                      </Link>
+                      <Link href="/hr/loan-approvals" passHref>
+                        <SidebarMenuButton tooltip="Loan Approvals" className="w-full justify-start" {...({} as any)}>
+                          <CreditCard />
+                          Loan Approvals
+                        </SidebarMenuButton>
+                      </Link>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>

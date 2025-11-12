@@ -80,7 +80,6 @@ export default function SchedulingPage() {
   // internal map of employeeId -> shifts array (Mon-Fri)
   const [shiftsMap, setShiftsMap] = React.useState<Record<string, string[]>>({});
   const [breaksMap, setBreaksMap] = React.useState<Record<string, string[]>>({});
-  const [overtimeAllowedMap, setOvertimeAllowedMap] = React.useState<Record<string, boolean[]>>({});
   const [weekStart, setWeekStart] = React.useState<string>('');
   const [allEmployees, setAllEmployees] = React.useState<EmpRow[]>([]);
   const [branches, setBranches] = React.useState<{ id: number; name: string; coordinates: string | null }[]>([]);
@@ -91,7 +90,6 @@ export default function SchedulingPage() {
   const [selectedEmployee, setSelectedEmployee] = React.useState('');
   const [individualShifts, setIndividualShifts] = React.useState<string[]>(['', '', '', '', '']);
   const [individualBreaks, setIndividualBreaks] = React.useState<string[]>(['', '', '', '', '']);
-  const [individualOvertimeAllowed, setIndividualOvertimeAllowed] = React.useState<boolean[]>([false, false, false, false, false]);
   const [selectedCells, setSelectedCells] = React.useState<Set<string>>(new Set());
   const [selectedEmployeesForModal, setSelectedEmployeesForModal] = React.useState<Set<string>>(new Set());
 
@@ -130,15 +128,12 @@ export default function SchedulingPage() {
         const existingSchedules = await getSchedulesForWeek(weekStart);
         const shiftsMap: Record<string, string[]> = {};
         const breaksMap: Record<string, string[]> = {};
-        const overtimeMap: Record<string, boolean[]> = {};
         for (const [empId, data] of Object.entries(existingSchedules)) {
           shiftsMap[empId] = data.shifts;
           breaksMap[empId] = data.breaks;
-          overtimeMap[empId] = data.overtimeAllowed;
         }
         setShiftsMap(shiftsMap);
         setBreaksMap(breaksMap);
-        setOvertimeAllowedMap(overtimeMap);
       }
     }
     fetchData();
@@ -183,8 +178,6 @@ export default function SchedulingPage() {
       });
       // default 1 hour break at 12:00 - 13:00
       setBreaksMap(prev => ({ ...prev, [employee.id]: ['12:00 - 13:00','12:00 - 13:00','12:00 - 13:00','12:00 - 13:00','12:00 - 13:00'] }));
-      // default overtime not allowed
-      setOvertimeAllowedMap(prev => ({ ...prev, [employee.id]: [false, false, false, false, false] }));
     }
   };
 
@@ -215,15 +208,6 @@ export default function SchedulingPage() {
       copy[employeeId] = copy[employeeId] || ['','','','',''];
       copy[employeeId][dayIndex] = value;
       console.log('New shiftsMap:', copy);
-      return copy;
-    });
-  };
-
-  const updateOvertimeAllowed = (employeeId: string, dayIndex: number, value: boolean) => {
-    setOvertimeAllowedMap(prev => {
-      const copy = { ...(prev || {}) };
-      copy[employeeId] = copy[employeeId] || [false, false, false, false, false];
-      copy[employeeId][dayIndex] = value;
       return copy;
     });
   };
@@ -337,8 +321,7 @@ export default function SchedulingPage() {
     const payload = scheduleData.map(emp => ({
       employeeId: emp.id,
       shifts: shiftsMap[emp.id] || [emp.shift, emp.shift, emp.shift, emp.shift, emp.shift],
-      breaks: breaksMap[emp.id] || ['12:00 - 13:00','12:00 - 13:00','12:00 - 13:00','12:00 - 13:00','12:00 - 13:00'],
-      overtimeAllowed: overtimeAllowedMap[emp.id] || [false, false, false, false, false]
+      breaks: breaksMap[emp.id] || ['12:00 - 13:00','12:00 - 13:00','12:00 - 13:00','12:00 - 13:00','12:00 - 13:00']
     }));
 
     if (!payload || payload.length === 0) {
@@ -355,15 +338,12 @@ export default function SchedulingPage() {
         const existingSchedules = await getSchedulesForWeek(weekStart);
         const shiftsMap: Record<string, string[]> = {};
         const breaksMap: Record<string, string[]> = {};
-        const overtimeMap: Record<string, boolean[]> = {};
         for (const [empId, data] of Object.entries(existingSchedules)) {
           shiftsMap[empId] = data.shifts;
           breaksMap[empId] = data.breaks;
-          overtimeMap[empId] = data.overtimeAllowed;
         }
         setShiftsMap(shiftsMap);
         setBreaksMap(breaksMap);
-        setOvertimeAllowedMap(overtimeMap);
       } else {
         alert(res?.message || 'Failed to publish schedule.');
       }
@@ -389,8 +369,7 @@ export default function SchedulingPage() {
     const payload = [{
       employeeId: selectedEmployee,
       shifts: individualShifts,
-      breaks: individualBreaks,
-      overtimeAllowed: individualOvertimeAllowed
+      breaks: individualBreaks
     }];
 
     // call server action
@@ -402,7 +381,6 @@ export default function SchedulingPage() {
         setSelectedEmployee('');
         setIndividualShifts(['', '', '', '', '']);
         setIndividualBreaks(['', '', '', '', '']);
-        setIndividualOvertimeAllowed([false, false, false, false, false]);
       } else {
         alert(res?.message || 'Failed to publish individual schedule.');
       }
@@ -575,14 +553,6 @@ export default function SchedulingPage() {
                                               ))}
                                             </SelectContent>
                                           </Select>
-                                          <div className="flex items-center space-x-1">
-                                            <Checkbox
-                                              checked={(overtimeAllowedMap[emp.id] && overtimeAllowedMap[emp.id][i]) || false}
-                                              onCheckedChange={(checked: boolean) => updateOvertimeAllowed(emp.id, i, checked)}
-                                              {...({} as any)}
-                                            />
-                                            <Label className="text-xs">OT</Label>
-                                          </div>
                                         </div>
                                       )}
                                     </Draggable>
@@ -692,7 +662,7 @@ export default function SchedulingPage() {
                     <TableHead>Day</TableHead>
                     <TableHead>Shift Time</TableHead>
                     <TableHead>Break Time</TableHead>
-                    <TableHead>Allow Overtime</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -733,15 +703,6 @@ export default function SchedulingPage() {
                         />
                       </TableCell>
                       <TableCell>
-                        <Checkbox
-                          checked={individualOvertimeAllowed[index]}
-                          onCheckedChange={(checked: boolean) => {
-                            const newOvertimeAllowed = [...individualOvertimeAllowed];
-                            newOvertimeAllowed[index] = checked;
-                            setIndividualOvertimeAllowed(newOvertimeAllowed);
-                          }}
-                          {...({} as any)}
-                        />
                       </TableCell>
                     </TableRow>
                   ))}

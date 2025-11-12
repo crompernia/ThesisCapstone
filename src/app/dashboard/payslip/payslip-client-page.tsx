@@ -6,7 +6,6 @@
 
 import * as React from 'react';
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import {
   Card,
   CardContent,
@@ -90,73 +89,129 @@ export default function PayslipClientPage({ payPeriods, employeeName, employeeNu
     }).format(value);
   };
 
+  const formatCurrencyForPdf = (value) => {
+    return `PHP ${new Intl.NumberFormat('en-PH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value)}`;
+  };
+
   const handleDownloadPdf = () => {
     if (!payslipData) return;
-    
+
     const doc = new jsPDF();
+    let yPosition = 20;
 
     // Header
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
-    doc.text("Chumplace", 14, 22);
+    doc.text("Chumplace", 14, yPosition);
+    yPosition += 8;
+
     doc.setFontSize(16);
     doc.setFont("helvetica", "normal");
-    doc.text("Payslip", 14, 30);
-    
+    doc.text("Payslip", 14, yPosition);
+    yPosition += 10;
+
     doc.setFontSize(10);
-    doc.text(`Employee: ${employeeName}`, 14, 40);
-    doc.text(`Pay Period: ${payslipData.period}`, 14, 45);
-    doc.text(`Pay Date: ${payslipData.payDate}`, 14, 50);
+    doc.text(`Employee: ${employeeName}`, 14, yPosition);
+    yPosition += 5;
+    doc.text(`Pay Period: ${payslipData.period}`, 14, yPosition);
+    yPosition += 5;
+    doc.text(`Pay Date: ${displayPayDate}`, 14, yPosition);
+    yPosition += 15;
 
-    // Earnings Table
-    const filteredEarnings = payslipData.earnings.filter(e => !excludedEarnings.includes(e.name) && e.name !== 'No. of Days' && e.name !== 'Daily Rate' && e.name !== 'Basic Pay');
-    const totalEarnings = filteredEarnings.reduce((sum, e) => sum + e.amount, 0);
+    // Earnings Section
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Earnings", 14, yPosition);
+    doc.text("Amount", 120, yPosition);
+    yPosition += 8;
 
-    autoTable(doc, {
-      startY: 60,
-      head: [['Earnings', 'Amount']],
-      body: payslipData.earnings.filter(e => !excludedEarnings.includes(e.name) && e.name !== 'No. of Days' && e.name !== 'Basic Pay').map(e => [
-        e.name,
-        formatCurrency(e.amount)
-      ]),
-      foot: [
-        ['Daily Rate', formatCurrency(dailyRate)],
-        ['No. of Days', noOfDays.toString()],
-        ['Basic Pay', formatCurrency(basicPay)],
-        ['Overtime', formatCurrency(overtime)],
-        ['Night Differential', formatCurrency(nightDifferential)],
-        ['Regular Holiday', formatCurrency(regularHoliday)],
-        ['RH OT', formatCurrency(regularHoliday)]
-      ],
-      theme: 'striped',
-      headStyles: { fillColor: [22, 163, 74] }, // Green
-      footStyles: { fillColor: [244, 244, 245], textColor: [15, 23, 42], fontStyle: 'bold' },
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    // Daily Rate
+    doc.text("Daily Rate", 14, yPosition);
+    doc.text(formatCurrencyForPdf(dailyRate), 120, yPosition);
+    yPosition += 6;
+
+    // No. of Days
+    doc.text("No. of Days", 14, yPosition);
+    doc.text(noOfDays.toString(), 120, yPosition);
+    yPosition += 6;
+
+    // Basic Pay
+    doc.text("Basic Pay", 14, yPosition);
+    doc.text(formatCurrencyForPdf(basicPay), 120, yPosition);
+    yPosition += 6;
+
+    // Overtime
+    doc.text("Overtime", 14, yPosition);
+    doc.text(formatCurrencyForPdf(overtime), 120, yPosition);
+    yPosition += 6;
+
+    // Night Differential
+    doc.text("Night Differential", 14, yPosition);
+    doc.text(formatCurrencyForPdf(nightDifferential), 120, yPosition);
+    yPosition += 6;
+
+    // Regular Holiday
+    doc.text("Regular Holiday", 14, yPosition);
+    doc.text(formatCurrencyForPdf(regularHoliday), 120, yPosition);
+    yPosition += 6;
+
+    // RH OT
+    doc.text("RH OT", 14, yPosition);
+    doc.text(formatCurrencyForPdf(regularHoliday), 120, yPosition);
+    yPosition += 6;
+
+    // Special Holiday
+    doc.text("Special Holiday", 14, yPosition);
+    doc.text(formatCurrencyForPdf(specialHoliday), 120, yPosition);
+    yPosition += 6;
+
+    // SP OT
+    doc.text("SP OT", 14, yPosition);
+    doc.text(formatCurrencyForPdf(spOt), 120, yPosition);
+    yPosition += 6;
+
+    // Allowances
+    doc.text("Allowances", 14, yPosition);
+    doc.text(formatCurrencyForPdf(allowances), 120, yPosition);
+    yPosition += 15;
+
+    // Deductions Section
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Deductions", 14, yPosition);
+    doc.text("Amount", 120, yPosition);
+    yPosition += 8;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    // Loop through deductions
+    payslipData.deductions.forEach(deduction => {
+      doc.text(deduction.name, 14, yPosition);
+      doc.text(formatCurrencyForPdf(deduction.amount), 120, yPosition);
+      yPosition += 6;
     });
 
-    // Deductions Table
-    const lastTableY = (doc as any).lastAutoTable.finalY;
-    autoTable(doc, {
-      startY: lastTableY + 10,
-      head: [['Deductions', 'Amount']],
-      body: payslipData.deductions.map(d => [d.name, formatCurrency(d.amount)]),
-      foot: [
-        ['Late/Undertime', formatCurrency(0)],
-        ['Total Deductions', `(${formatCurrency(totalDeductions)})`]
-      ],
-      theme: 'striped',
-      headStyles: { fillColor: [220, 38, 38] }, // Red
-      footStyles: { fillColor: [244, 244, 245], textColor: [15, 23, 42], fontStyle: 'bold' },
-    });
-    
+    // Total Deductions
+    yPosition += 5;
+    doc.setFont("helvetica", "bold");
+    doc.text("Total Deductions", 14, yPosition);
+    doc.text(`(${formatCurrencyForPdf(totalDeductions)})`, 120, yPosition);
+    yPosition += 15;
+
     // Net Pay
-    const finalY = (doc as any).lastAutoTable.finalY;
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("Net Pay:", 132, finalY + 15);
-    doc.text(formatCurrency(netPay), doc.internal.pageSize.getWidth() - 35, finalY + 15, { align: 'right' });
+    doc.text("Net Pay:", 14, yPosition);
+    doc.text(formatCurrencyForPdf(netPay), 120, yPosition);
 
-
-    doc.save(`Payslip-${employeeName.replace(' ', '-')}-${payslipData.period}.pdf`);
+    doc.save(`Payslip-${employeeName.replace(/[^a-zA-Z0-9]/g, '-')}-${payslipData.period.replace(/[^a-zA-Z0-9-]/g, '-')}.pdf`);
   };
 
   return (
