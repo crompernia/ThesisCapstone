@@ -1,6 +1,5 @@
 import dynamic from "next/dynamic";
 import { Logo } from "../components/logo";
-import { getDb } from "../lib/db"; // Initialize DB on server side
 
 export const metadata = {
   title: 'Chumplace',
@@ -9,6 +8,8 @@ export const metadata = {
 const LoginForm = dynamic(() => import("../components/login-form").then(m => m.LoginForm));
 
 export default function LoginPage() {
+  const currentYear = new Date().getFullYear();
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
       <div className="w-full max-w-md">
@@ -22,7 +23,7 @@ export default function LoginPage() {
         <LoginForm />
 
         <p className="text-xs text-muted-foreground text-left mt-8">
-          © {new Date().getFullYear()} Chumplace Inc. All rights reserved.
+          © {currentYear} Chumplace Inc. All rights reserved.
         </p>
       </div>
     </main>
