@@ -52,6 +52,7 @@ export default function BranchAllocationPage() {
     const [branches, setBranches] = React.useState<{ id: number; name: string; coordinates: string | null }[]>([]);
     const [selectedHr, setSelectedHr] = React.useState<{ id: string; name: string; position: string | null; managed_branches: string[] } | null>(null);
     const [selectedBranches, setSelectedBranches] = React.useState(new Set());
+    const [isSaving, setIsSaving] = React.useState(false);
 
     const fetchData = React.useCallback(async () => {
         const hrData = await getHrPersonnel();
@@ -83,19 +84,24 @@ export default function BranchAllocationPage() {
 
     const handleSaveAllocation = async () => {
         if (!selectedHr) return;
-        const result = await updateHrBranchAllocation(selectedHr.id, Array.from(selectedBranches) as string[]);
-        if (result.success) {
-            toast({
-                title: 'Success',
-                description: `Branch allocation for ${selectedHr.name} has been updated.`,
-            });
-            fetchData(); // Refresh data
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: (result as any).message || 'Failed to update branch allocation.',
-            });
+        setIsSaving(true);
+        try {
+            const result = await updateHrBranchAllocation(selectedHr.id, Array.from(selectedBranches) as string[]);
+            if (result.success) {
+                toast({
+                    title: 'Success',
+                    description: `Branch allocation for ${selectedHr.name} has been updated.`,
+                });
+                fetchData(); // Refresh data
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: (result as any).message || 'Failed to update branch allocation.',
+                });
+            }
+        } finally {
+            setIsSaving(false);
         }
     };
     
@@ -195,7 +201,9 @@ export default function BranchAllocationPage() {
                                                         <Button variant="outline">Cancel</Button>
                                                     </DialogClose>
                                                     <DialogClose asChild>
-                                                      <Button onClick={handleSaveAllocation}>Save Changes</Button>
+                                                      <Button onClick={handleSaveAllocation} disabled={isSaving}>
+                                                        {isSaving ? "Saving..." : "Save Changes"}
+                                                      </Button>
                                                     </DialogClose>
                                                 </DialogFooter>
                                             </DialogContent>

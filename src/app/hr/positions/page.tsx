@@ -68,6 +68,11 @@ export default function PositionsPage() {
     const [selectedDepartmentForAlloc, setSelectedDepartmentForAlloc] = React.useState('');
     const [minimumWage, setMinimumWage] = React.useState(25.00); // Default minimum wage
     const [tempMinWage, setTempMinWage] = React.useState(String(minimumWage));
+    const [addingPosition, setAddingPosition] = React.useState(false);
+    const [addingDepartment, setAddingDepartment] = React.useState(false);
+    const [allocatingPosition, setAllocatingPosition] = React.useState(false);
+    const [deletingPosition, setDeletingPosition] = React.useState(false);
+    const [removingAllocation, setRemovingAllocation] = React.useState(false);
 
     const fetchPositions = React.useCallback(async () => {
         const data = await getPositions();
@@ -133,21 +138,26 @@ export default function PositionsPage() {
             return;
         }
 
-        const result = await createPositionAction(newPositionTitle, newPositionRate);
-        if (result.success) {
-            toast({
-                title: 'Success',
-                description: 'New position has been added.',
-            });
-            setNewPositionTitle('');
-            setNewPositionRate('');
-            fetchPositions();
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: result.message || 'Failed to add position.',
-            });
+        setAddingPosition(true);
+        try {
+            const result = await createPositionAction(newPositionTitle, newPositionRate);
+            if (result.success) {
+                toast({
+                    title: 'Success',
+                    description: 'New position has been added.',
+                });
+                setNewPositionTitle('');
+                setNewPositionRate('');
+                fetchPositions();
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: result.message || 'Failed to add position.',
+                });
+            }
+        } finally {
+            setAddingPosition(false);
         }
     };
 
@@ -161,22 +171,27 @@ export default function PositionsPage() {
             return;
         }
 
-        const branchId = parseInt(selectedBranchForDept);
-        const result = await createDepartmentAction(newDepartmentName, branchId);
-        if (result.success) {
-            toast({
-                title: 'Success',
-                description: 'New department has been added.',
-            });
-            setNewDepartmentName('');
-            setSelectedBranchForDept('');
-            fetchDepartments();
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: result.message || 'Failed to add department.',
-            });
+        setAddingDepartment(true);
+        try {
+            const branchId = parseInt(selectedBranchForDept);
+            const result = await createDepartmentAction(newDepartmentName, branchId);
+            if (result.success) {
+                toast({
+                    title: 'Success',
+                    description: 'New department has been added.',
+                });
+                setNewDepartmentName('');
+                setSelectedBranchForDept('');
+                fetchDepartments();
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: result.message || 'Failed to add department.',
+                });
+            }
+        } finally {
+            setAddingDepartment(false);
         }
     };
 
@@ -190,57 +205,72 @@ export default function PositionsPage() {
             return;
         }
 
-        const positionId = parseInt(selectedPositionForAlloc);
-        const departmentId = parseInt(selectedDepartmentForAlloc);
-        const result = await allocatePositionAction(positionId, departmentId);
-        if (result.success) {
-            toast({
-                title: 'Success',
-                description: 'Position has been allocated to department.',
-            });
-            setSelectedPositionForAlloc('');
-            setSelectedDepartmentForAlloc('');
-            fetchPositionDepartments();
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: result.message || 'Failed to allocate position.',
-            });
+        setAllocatingPosition(true);
+        try {
+            const positionId = parseInt(selectedPositionForAlloc);
+            const departmentId = parseInt(selectedDepartmentForAlloc);
+            const result = await allocatePositionAction(positionId, departmentId);
+            if (result.success) {
+                toast({
+                    title: 'Success',
+                    description: 'Position has been allocated to department.',
+                });
+                setSelectedPositionForAlloc('');
+                setSelectedDepartmentForAlloc('');
+                fetchPositionDepartments();
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: result.message || 'Failed to allocate position.',
+                });
+            }
+        } finally {
+            setAllocatingPosition(false);
         }
     };
 
     const handleRemoveAllocation = async (allocationId: number) => {
-        const result = await removeAllocationAction(allocationId);
-        if (result.success) {
-            toast({
-                title: 'Success',
-                description: 'Position allocation has been removed.',
-            });
-            fetchPositionDepartments();
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: result.message || 'Failed to remove allocation.',
-            });
+        setRemovingAllocation(true);
+        try {
+            const result = await removeAllocationAction(allocationId);
+            if (result.success) {
+                toast({
+                    title: 'Success',
+                    description: 'Position allocation has been removed.',
+                });
+                fetchPositionDepartments();
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: result.message || 'Failed to remove allocation.',
+                });
+            }
+        } finally {
+            setRemovingAllocation(false);
         }
     };
 
     const handleDeletePosition = async (id: number) => {
-        const result = await deletePositionAction(id);
-        if (result.success) {
-            toast({
-                title: 'Success',
-                description: 'Position has been deleted.',
-            });
-            fetchPositions();
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: result.message || 'Failed to delete position.',
-            });
+        setDeletingPosition(true);
+        try {
+            const result = await deletePositionAction(id);
+            if (result.success) {
+                toast({
+                    title: 'Success',
+                    description: 'Position has been deleted.',
+                });
+                fetchPositions();
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: result.message || 'Failed to delete position.',
+                });
+            }
+        } finally {
+            setDeletingPosition(false);
         }
     };
     
@@ -307,7 +337,7 @@ export default function PositionsPage() {
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button className="w-full" onClick={handleAddPosition}>Add Position</Button>
+                            <Button className="w-full" onClick={handleAddPosition} loading={addingPosition}>Add Position</Button>
                         </CardFooter>
                     </Card>
 
@@ -344,7 +374,7 @@ export default function PositionsPage() {
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button className="w-full" onClick={handleAddDepartment}>Add Department</Button>
+                            <Button className="w-full" onClick={handleAddDepartment} loading={addingDepartment}>Add Department</Button>
                         </CardFooter>
                     </Card>
 
@@ -393,7 +423,7 @@ export default function PositionsPage() {
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button className="w-full" onClick={handleAllocatePosition}>Allocate Position</Button>
+                            <Button className="w-full" onClick={handleAllocatePosition} loading={allocatingPosition}>Allocate Position</Button>
                         </CardFooter>
                     </Card>
                 </div>
@@ -437,7 +467,7 @@ export default function PositionsPage() {
                                                             </AlertDialogHeader>
                                                             <AlertDialogFooter>
                                                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDeletePosition(pos.id)}>Delete</AlertDialogAction>
+                                                                <AlertDialogAction onClick={() => handleDeletePosition(pos.id)} loading={deletingPosition}>Delete</AlertDialogAction>
                                                             </AlertDialogFooter>
                                                         </AlertDialogContent>
                                                     </AlertDialog>
@@ -491,7 +521,7 @@ export default function PositionsPage() {
                                                             </AlertDialogHeader>
                                                             <AlertDialogFooter>
                                                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleRemoveAllocation(alloc.id)}>Remove Allocation</AlertDialogAction>
+                                                                <AlertDialogAction onClick={() => handleRemoveAllocation(alloc.id)} loading={removingAllocation}>Remove Allocation</AlertDialogAction>
                                                             </AlertDialogFooter>
                                                         </AlertDialogContent>
                                                     </AlertDialog>

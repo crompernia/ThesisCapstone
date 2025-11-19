@@ -3,6 +3,8 @@
  * It includes a sidebar with navigation links specific to HR tasks and responsibilities,
  * ensuring a consistent and organized user experience for HR personnel.
  */
+'use client';
+
 import { UserNav } from "@/components/user-nav";
 import {
   SidebarProvider,
@@ -33,6 +35,11 @@ import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { useTransition } from "react";
+import { useSession } from "next-auth/react";
+import * as React from 'react';
 
 /**
  * Layout component for the HR Portal.
@@ -40,15 +47,45 @@ import { redirect } from "next/navigation";
  * @param {{ children: React.ReactNode }} props - The props for the component.
  * @returns {JSX.Element} The HR dashboard layout.
  */
-export default async function HRDashboardLayout({
+export default function HRDashboardLayout({
   children,
-}) {
-  // Get the current session to display the logged-in user
-  const session = await getSession();
+}: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
+  const { data: session, status } = useSession();
+  const [loadingHref, setLoadingHref] = React.useState<string | null>(null);
+
+  const handleNavigation = (href: string) => {
+    if (pathname === href) return; // Already on the page
+    setLoadingHref(href);
+    startTransition(() => {
+      router.push(href);
+    });
+  };
+
+  React.useEffect(() => {
+    setLoadingHref(null);
+  }, [pathname]);
 
   // Redirect to login if not authenticated
+  React.useEffect(() => {
+    if (status === "loading") return; // Still loading
+    if (!session || !session.user) {
+      router.push("/");
+    }
+  }, [session, status, router]);
+
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   if (!session || !session.user) {
-    redirect("/");
+    return null; // Will redirect
   }
 
   const hrUser = {
@@ -70,100 +107,76 @@ export default async function HRDashboardLayout({
         <SidebarContent {...({} as any)}>
           <SidebarMenu className="space-y-0.5" {...({} as any)}>
             <SidebarMenuItem {...({} as any)}>
-              <Link href="/hr/dashboard" passHref>
-                <SidebarMenuButton tooltip="Dashboard" className="w-full justify-start" {...({} as any)}>
-                  <LayoutDashboard />
-                  Dashboard
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton tooltip="Dashboard" className="w-full justify-start" onClick={() => handleNavigation("/hr/dashboard")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/hr/dashboard" ? <Loader2 className="h-4 w-4 animate-spin" /> : <LayoutDashboard />}
+                Dashboard
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
-              <SidebarMenuButton tooltip="Scheduling" asChild className="w-full justify-start" {...({} as any)}>
-               <Link href="/hr/scheduling">
-                 <CalendarPlus />
-                   Scheduling
-               </Link>
-            </SidebarMenuButton>
+              <SidebarMenuButton tooltip="Scheduling" className="w-full justify-start" onClick={() => handleNavigation("/hr/scheduling")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/hr/scheduling" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarPlus />}
+                Scheduling
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
-              <Link href="/hr/attendance-monitoring" passHref>
-                <SidebarMenuButton tooltip="Attendance Monitoring" className="w-full justify-start" {...({} as any)}>
-                  <ClipboardCheck />
-                  Attendance Monitoring
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton tooltip="Attendance Monitoring" className="w-full justify-start" onClick={() => handleNavigation("/hr/attendance-monitoring")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/hr/attendance-monitoring" ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardCheck />}
+                Attendance Monitoring
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
-              <Link href="/hr/attendance" passHref>
-                <SidebarMenuButton tooltip="Clock In/Out" className="w-full justify-start" {...({} as any)}>
-                  <Clock />
-                  Clock In/Out
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton tooltip="Clock In/Out" className="w-full justify-start" onClick={() => handleNavigation("/hr/attendance")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/hr/attendance" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock />}
+                Clock In/Out
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
-              <Link href="/hr/payslip-generation" passHref>
-                <SidebarMenuButton tooltip="Payslips" className="w-full justify-start" {...({} as any)}>
-                  <Wallet />
-                  Payslip Generation
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton tooltip="Payslips" className="w-full justify-start" onClick={() => handleNavigation("/hr/payslip-generation")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/hr/payslip-generation" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet />}
+                Payslip Generation
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
-              <Link href="/hr/employee-data" passHref>
-                <SidebarMenuButton tooltip="Employee Data" className="w-full justify-start" {...({} as any)}>
-                  <Users />
-                  Employee Data
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton tooltip="Employee Data" className="w-full justify-start" onClick={() => handleNavigation("/hr/employee-data")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/hr/employee-data" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Users />}
+                Employee Data
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
-              <Link href="/hr/branches" passHref>
-                <SidebarMenuButton tooltip="Branches" className="w-full justify-start" {...({} as any)}>
-                  <Building />
-                  Branches
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton tooltip="Branches" className="w-full justify-start" onClick={() => handleNavigation("/hr/branches")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/hr/branches" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Building />}
+                Branches
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
-              <Link href="/hr/positions" passHref>
-                <SidebarMenuButton tooltip="Positions & Rates" className="w-full justify-start" {...({} as any)}>
-                  <Briefcase />
-                  Positions & Rates
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton tooltip="Positions & Rates" className="w-full justify-start" onClick={() => handleNavigation("/hr/positions")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/hr/positions" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Briefcase />}
+                Positions & Rates
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
-              <Link href="/hr/branch-allocation" passHref>
-                <SidebarMenuButton tooltip="Branch Allocation" className="w-full justify-start" {...({} as any)}>
-                  <MapPin />
-                  Branch Allocation
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton tooltip="Branch Allocation" className="w-full justify-start" onClick={() => handleNavigation("/hr/branch-allocation")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/hr/branch-allocation" ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin />}
+                Branch Allocation
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
-              <Link href="/hr/announcements" passHref>
-                <SidebarMenuButton tooltip="Announcements" className="w-full justify-start" {...({} as any)}>
-                  <Megaphone />
-                  Announcements
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton tooltip="Announcements" className="w-full justify-start" onClick={() => handleNavigation("/hr/announcements")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/hr/announcements" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Megaphone />}
+                Announcements
+              </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem {...({} as any)}>
-              <Link href="/hr/leave-approvals" passHref>
-                <SidebarMenuButton tooltip="Leave Approvals" className="w-full justify-start" {...({} as any)}>
-                  <ClipboardList />
-                  Leave Approvals
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton tooltip="Leave Approvals" className="w-full justify-start" onClick={() => handleNavigation("/hr/leave-approvals")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/hr/leave-approvals" ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardList />}
+                Leave Approvals
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
-              <Link href="/hr/overtime-approvals" passHref>
-                <SidebarMenuButton tooltip="Overtime Approvals" className="w-full justify-start" {...({} as any)}>
-                  <Timer />
-                  Overtime Approvals
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton tooltip="Overtime Approvals" className="w-full justify-start" onClick={() => handleNavigation("/hr/overtime-approvals")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/hr/overtime-approvals" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Timer />}
+                Overtime Approvals
+              </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>

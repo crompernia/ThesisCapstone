@@ -3,6 +3,8 @@
  * It includes the primary sidebar navigation and the main content area where
  * different dashboard pages will be rendered.
  */
+'use client';
+
 import { UserNav } from "@/components/user-nav";
 import {
   SidebarProvider,
@@ -30,6 +32,10 @@ import { redirect } from "next/navigation";
 import QuickClock from '@/components/quick-clock';
 import * as React from 'react';
 import { DateTimeDisplay } from "@/components/date-time-display";
+import { useRouter, usePathname } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { useTransition } from "react";
+import { useSession } from "next-auth/react";
 // Temporary any-casts to work around UI prop typing mismatches in layout
 const SidebarProviderAny: any = (SidebarProvider as any) || (undefined as any);
 const SidebarAny: any = (Sidebar as any) || (undefined as any);
@@ -47,15 +53,45 @@ const SidebarInsetAny: any = (SidebarInset as any) || (undefined as any);
  * @param {{ children: React.ReactNode }} props - The props for the component.
  * @returns {JSX.Element} The dashboard layout.
  */
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: { children: React.ReactNode }) {
-  // Get the current session to display the logged-in user
-  const session = await getSession();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
+  const { data: session, status } = useSession();
+  const [loadingHref, setLoadingHref] = React.useState<string | null>(null);
+
+  const handleNavigation = (href: string) => {
+    if (pathname === href) return; // Already on the page
+    setLoadingHref(href);
+    startTransition(() => {
+      router.push(href);
+    });
+  };
+
+  React.useEffect(() => {
+    setLoadingHref(null);
+  }, [pathname]);
 
   // Redirect to login if not authenticated
+  React.useEffect(() => {
+    if (status === "loading") return; // Still loading
+    if (!session || !session.user) {
+      router.push("/");
+    }
+  }, [session, status, router]);
+
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   if (!session || !session.user) {
-    redirect("/");
+    return null; // Will redirect
   }
 
   const employee = {
@@ -80,52 +116,40 @@ export default async function DashboardLayout({
         <SidebarContentAny>
           <SidebarMenuAny>
             <SidebarMenuItemAny>
-              <Link href="/dashboard" passHref>
-                <SidebarMenuButtonAny tooltip="Dashboard">
-                  <LayoutDashboard />
-                  Dashboard
-                </SidebarMenuButtonAny>
-              </Link>
+              <SidebarMenuButtonAny tooltip="Dashboard" onClick={() => handleNavigation("/dashboard")} disabled={loadingHref !== null}>
+                {loadingHref === "/dashboard" ? <Loader2 className="h-4 w-4 animate-spin" /> : <LayoutDashboard />}
+                Dashboard
+              </SidebarMenuButtonAny>
             </SidebarMenuItemAny>
             <SidebarMenuItemAny>
-              <Link href="/dashboard/schedule" passHref>
-                <SidebarMenuButtonAny tooltip="Schedule">
-                  <Calendar />
-                  Schedule
-                </SidebarMenuButtonAny>
-              </Link>
+              <SidebarMenuButtonAny tooltip="Schedule" onClick={() => handleNavigation("/dashboard/schedule")} disabled={loadingHref !== null}>
+                {loadingHref === "/dashboard/schedule" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calendar />}
+                Schedule
+              </SidebarMenuButtonAny>
             </SidebarMenuItemAny>
             <SidebarMenuItemAny>
-              <Link href="/dashboard/attendance" passHref>
-                <SidebarMenuButtonAny tooltip="Attendance">
-                  <ClipboardCheck />
-                  Attendance Record
-                </SidebarMenuButtonAny>
-              </Link>
+              <SidebarMenuButtonAny tooltip="Attendance" onClick={() => handleNavigation("/dashboard/attendance")} disabled={loadingHref !== null}>
+                {loadingHref === "/dashboard/attendance" ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardCheck />}
+                Attendance Record
+              </SidebarMenuButtonAny>
             </SidebarMenuItemAny>
             <SidebarMenuItemAny>
-              <Link href="/dashboard/payslip" passHref>
-                <SidebarMenuButtonAny tooltip="Payslip">
-                  <Wallet />
-                  Payslip
-                </SidebarMenuButtonAny>
-              </Link>
+              <SidebarMenuButtonAny tooltip="Payslip" onClick={() => handleNavigation("/dashboard/payslip")} disabled={loadingHref !== null}>
+                {loadingHref === "/dashboard/payslip" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet />}
+                Payslip
+              </SidebarMenuButtonAny>
             </SidebarMenuItemAny>
             <SidebarMenuItemAny>
-              <Link href="/dashboard/leave" passHref>
-                <SidebarMenuButtonAny tooltip="Leave Request">
-                  <Send />
-                  Leave Request
-                </SidebarMenuButtonAny>
-              </Link>
+              <SidebarMenuButtonAny tooltip="Leave Request" onClick={() => handleNavigation("/dashboard/leave")} disabled={loadingHref !== null}>
+                {loadingHref === "/dashboard/leave" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send />}
+                Leave Request
+              </SidebarMenuButtonAny>
             </SidebarMenuItemAny>
             <SidebarMenuItemAny>
-              <Link href="/dashboard/overtime" passHref>
-                <SidebarMenuButtonAny tooltip="Overtime Request">
-                  <Clock />
-                  Overtime Request
-                </SidebarMenuButtonAny>
-              </Link>
+              <SidebarMenuButtonAny tooltip="Overtime Request" onClick={() => handleNavigation("/dashboard/overtime")} disabled={loadingHref !== null}>
+                {loadingHref === "/dashboard/overtime" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock />}
+                Overtime Request
+              </SidebarMenuButtonAny>
             </SidebarMenuItemAny>
           </SidebarMenuAny>
         </SidebarContentAny>

@@ -80,6 +80,7 @@ export default function PendingApprovalsPage() {
     const [employees, setEmployees] = React.useState<EmployeeView[]>([]);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [filteredEmployees, setFilteredEmployees] = React.useState<EmployeeView[]>([]);
+    const [showSuggestions, setShowSuggestions] = React.useState(false);
 
     React.useEffect(() => {
                document.title = "New Employees";
@@ -130,8 +131,31 @@ export default function PendingApprovalsPage() {
                                 placeholder="Search by name, employee number, position, or branch..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
+                                onFocus={() => setShowSuggestions(true)}
+                                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Delay to allow click
                                 className="pl-10"
                             />
+                            {showSuggestions && searchTerm && filteredEmployees.length > 0 && (
+                                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                                    {filteredEmployees.slice(0, 5).map((employee) => (
+                                        <button
+                                            key={employee.id}
+                                            className="w-full text-left px-4 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                                            onClick={() => {
+                                                setSearchTerm(employee.name);
+                                                setShowSuggestions(false);
+                                            }}
+                                        >
+                                            <div className="flex flex-col">
+                                                <span>{employee.name}</span>
+                                                <span className="text-sm text-muted-foreground">
+                                                    {employee.employeeNumber} - {employee.position} - {employee.branch}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         <Button
                             variant="outline"

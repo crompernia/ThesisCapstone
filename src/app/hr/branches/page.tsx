@@ -52,6 +52,8 @@ export default function BranchesPage() {
     const [branches, setBranches] = React.useState<{ id: number; name: string; coordinates: string | null }[]>([]);
     const [newBranchName, setNewBranchName] = React.useState('');
     const [newBranchCoordinates, setNewBranchCoordinates] = React.useState('');
+    const [isAdding, setIsAdding] = React.useState(false);
+    const [deletingId, setDeletingId] = React.useState<number | null>(null);
 
     const fetchBranches = React.useCallback(async () => {
         const data = await getBranches();
@@ -71,38 +73,48 @@ export default function BranchesPage() {
             });
             return;
         }
-        const result = await createBranchAction(newBranchName, newBranchCoordinates);
-        if (result.success) {
-            toast({
-                title: 'Success',
-                description: 'New branch has been added.',
-            });
-            setNewBranchName('');
-            setNewBranchCoordinates('');
-            fetchBranches();
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: result.message || 'Failed to add branch.',
-            });
+        setIsAdding(true);
+        try {
+            const result = await createBranchAction(newBranchName, newBranchCoordinates);
+            if (result.success) {
+                toast({
+                    title: 'Success',
+                    description: 'New branch has been added.',
+                });
+                setNewBranchName('');
+                setNewBranchCoordinates('');
+                fetchBranches();
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: result.message || 'Failed to add branch.',
+                });
+            }
+        } finally {
+            setIsAdding(false);
         }
     };
 
     const handleDeleteBranch = async (id: number) => {
-        const result = await deleteBranchAction(id);
-        if (result.success) {
-            toast({
-                title: 'Success',
-                description: 'Branch has been deleted.',
-            });
-            fetchBranches();
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: result.message || 'Failed to delete branch.',
-            });
+        setDeletingId(id);
+        try {
+            const result = await deleteBranchAction(id);
+            if (result.success) {
+                toast({
+                    title: 'Success',
+                    description: 'Branch has been deleted.',
+                });
+                fetchBranches();
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: result.message || 'Failed to delete branch.',
+                });
+            }
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -139,7 +151,9 @@ export default function BranchesPage() {
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button className="w-full" onClick={handleAddBranch}>Add Branch</Button>
+                            <Button className="w-full" onClick={handleAddBranch} disabled={isAdding}>
+                                {isAdding ? "Adding..." : "Add Branch"}
+                            </Button>
                         </CardFooter>
                     </Card>
                 </div>
@@ -169,7 +183,7 @@ export default function BranchesPage() {
                                                 <TableCell className="text-right">
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="text-destructive">
+                                                            <Button variant="ghost" size="icon" className="text-destructive" disabled={deletingId === branch.id}>
                                                                 <Trash2 className="h-4 w-4" />
                                                             </Button>
                                                         </AlertDialogTrigger>

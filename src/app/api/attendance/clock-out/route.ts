@@ -5,6 +5,7 @@ import { eq, and } from 'drizzle-orm';
 import { getCurrentUserId } from '@/lib/auth';
 import { branches } from '@/lib/schema';
 import { determineOvertimeType } from '@/lib/payroll';
+import { toZonedTime, fromZonedTime, formatInTimeZone } from 'date-fns-tz';
 
 export async function POST(req: Request) {
   try {
@@ -32,11 +33,13 @@ export async function POST(req: Request) {
     const hireDate = empData[0]?.dateHired;
     if (!hireDate) return NextResponse.json({ success: false, message: 'Employee hire date not found' }, { status: 400 });
 
-    const now = new Date();
-    const isoDate = now.toISOString().slice(0, 10);
+    const nowUtc = new Date();
+    const now = toZonedTime(nowUtc, 'Asia/Singapore');
+    const isoDate = formatInTimeZone(now, 'Asia/Singapore', 'yyyy-MM-dd');
 
     // Check if current date is before hire date
-    const hireDateStr = new Date(hireDate).toISOString().slice(0, 10);
+    const hireDateZoned = toZonedTime(new Date(hireDate), 'Asia/Singapore');
+    const hireDateStr = formatInTimeZone(hireDateZoned, 'Asia/Singapore', 'yyyy-MM-dd');
     if (isoDate < hireDateStr) {
       return NextResponse.json({ success: false, message: 'Cannot clock out before hire date' }, { status: 403 });
     }
@@ -81,15 +84,12 @@ export async function POST(req: Request) {
     // Parse date components
     const [year, month, day] = isoDate.split('-').map(Number);
 
-    // Convert current time to local time (UTC+8 for Philippines)
-    const nowLocal = new Date(now.getTime() + (8 * 60 * 60 * 1000));
-
-    // Parse shift end time as local time
+    // Parse shift end time as GMT+8
     const [endHour, endMin, endSec] = shiftEndTime.split(':').map(Number);
-    const shiftEndDate = new Date(year, month - 1, day, endHour, endMin, endSec);
+    const shiftEndDate = toZonedTime(new Date(year, month - 1, day, endHour, endMin, endSec || 0), 'Asia/Singapore');
 
     // Can only clock out at or after shift end time
-    if (nowLocal < shiftEndDate) {
+    if (now < shiftEndDate) {
       return NextResponse.json({
         success: false,
         message: `Cannot clock out before your shift end time (${shiftEndTime}).`
@@ -102,9 +102,10 @@ export async function POST(req: Request) {
     }
 
     const row = existing[0] as any;
-    const timeIn = row.timeIn ? new Date(row.timeIn) : null;
+    const timeInUtc = row.timeIn ? new Date(row.timeIn) : null;
+    const timeIn = timeInUtc ? toZonedTime(timeInUtc, 'Asia/Singapore') : null;
   // Update timeOut and compute hours (store ISO string for timestamp)
-  await db.update(attendance).set({ timeOut: now.toISOString() }).where(eq(attendance.id, row.id));
+  await db.update(attendance).set({ timeOut: fromZonedTime(now, 'Asia/Singapore').toISOString() }).where(eq(attendance.id, row.id));
 
     let hoursWorked = 0;
     if (timeIn) {
@@ -207,10 +208,9 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
  * @returns Number of night hours worked
  */
 function calculateNightHours(timeIn: Date, timeOut: Date): number {
-  // Convert to Philippine time (UTC+8)
-  const philippineOffset = 8 * 60 * 60 * 1000; // 8 hours in milliseconds
-  const start = new Date(timeIn.getTime() + philippineOffset);
-  const end = new Date(timeOut.getTime() + philippineOffset);
+  // timeIn and timeOut are already in GMT+8
+  const start = timeIn;
+  const end = timeOut;
 
   let nightMinutes = 0;
   let current = new Date(start);

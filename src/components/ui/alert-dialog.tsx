@@ -8,6 +8,7 @@
 
 import * as React from "react"
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
+import { Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
@@ -122,12 +123,20 @@ AlertDialogDescription.displayName =
 /**
  * The action button that typically performs the primary action of the dialog.
  */
-const AlertDialogAction = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(({ className, ...props }, ref) => (
+type AlertDialogActionProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  loading?: boolean
+}
+
+const AlertDialogAction = React.forwardRef<HTMLButtonElement, AlertDialogActionProps>(({ className, loading = false, children, ...props }, ref) => (
   <AlertDialogPrimitive.Action
     ref={ref}
     className={cn(buttonVariants(), className)}
+    disabled={loading || props.disabled}
     {...props}
-  />
+  >
+    {loading && <Loader2 className="animate-spin mr-2" />}
+    {children}
+  </AlertDialogPrimitive.Action>
 ))
 AlertDialogAction.displayName = AlertDialogPrimitive.Action.displayName
 

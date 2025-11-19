@@ -69,6 +69,7 @@ export default function AnnouncementsPage() {
     const [title, setTitle] = React.useState('');
     const [content, setContent] = React.useState('');
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [deletingId, setDeletingId] = React.useState<number | null>(null);
 
     const fetchAnnouncements = React.useCallback(async () => {
         const data = await getPastAnnouncements();
@@ -101,19 +102,24 @@ export default function AnnouncementsPage() {
     };
 
     const handleDelete = async (id: number) => {
-        const result = await deleteAnnouncementAction(id);
-        if (result?.success) {
-            toast({
-                title: 'Success',
-                description: 'Announcement has been deleted.',
-            });
-            fetchAnnouncements();
-        } else {
-             toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: result?.message || 'Failed to delete announcement.',
-            });
+        setDeletingId(id);
+        try {
+            const result = await deleteAnnouncementAction(id);
+            if (result?.success) {
+                toast({
+                    title: 'Success',
+                    description: 'Announcement has been deleted.',
+                });
+                fetchAnnouncements();
+            } else {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: result?.message || 'Failed to delete announcement.',
+                });
+            }
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -176,7 +182,7 @@ export default function AnnouncementsPage() {
                                         <TableCell className="text-right">
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="text-destructive">
+                                                    <Button variant="ghost" size="icon" className="text-destructive" disabled={deletingId === a.id}>
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </AlertDialogTrigger>

@@ -5,6 +5,7 @@
 
 import { getDb } from './db';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { eq, and, desc, sql, inArray, ne, isNotNull, asc, or } from 'drizzle-orm';
 import * as schema from './schema';
 const { accounts, announcements, leaveRequests, branches, positions, schedules, attendance, departments, positionDepartments, attendanceRecords, payslips } = schema;
@@ -184,7 +185,7 @@ export async function getHRDashboardData() {
             employeeNumber: req.employeeNumber,
             employeeName: `${req.first_name} ${req.last_name}`,
             activity: req.action,
-            timestamp: req.createdAt ? format(new Date(req.createdAt), 'MMM dd, yyyy HH:mm') : 'Unknown'
+            timestamp: req.createdAt ? formatInTimeZone(new Date(req.createdAt), 'Asia/Singapore', 'MMM dd, yyyy HH:mm') : 'Unknown'
         })),
         ...recentAttendance.map(att => ({
             id: `attendance-${att.id}`,
@@ -192,7 +193,7 @@ export async function getHRDashboardData() {
             employeeNumber: att.employeeNumber,
             employeeName: `${att.first_name} ${att.last_name}`,
             activity: att.action,
-            timestamp: att.createdAt ? format(new Date(att.createdAt), 'MMM dd, yyyy HH:mm') : 'Unknown'
+            timestamp: att.createdAt ? formatInTimeZone(new Date(att.createdAt), 'Asia/Singapore', 'MMM dd, yyyy HH:mm') : 'Unknown'
         }))
     ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .slice(0, 10); // Take top 10 most recent
@@ -272,7 +273,7 @@ export async function getDailyAttendanceData(date: string): Promise<unknown[]> {
         const timeOutRaw = (a as any).time_out as Date | undefined | null;
         const attendanceStatus = (a as any).attendance_status as string | undefined | null;
 
-        const fmt = (d?: Date | null) => d ? format(new Date(d), 'hh:mm a') : null;
+        const fmt = (d?: Date | null) => d ? formatInTimeZone(new Date(d), 'Asia/Singapore', 'hh:mm a') : null;
 
         return {
             id: a.id,
@@ -734,11 +735,13 @@ export async function getAttendanceData(employeeId: string) {
 
     // Process records for display and general metrics
     for (const record of attendanceRecords) {
-        const timeIn = record.timeIn ? new Date(record.timeIn) : null;
-        const timeOut = record.timeOut ? new Date(record.timeOut) : null;
+        const timeInUtc = record.timeIn ? new Date(record.timeIn) : null;
+        const timeOutUtc = record.timeOut ? new Date(record.timeOut) : null;
+        const timeIn = timeInUtc ? toZonedTime(timeInUtc, 'Asia/Singapore') : null;
+        const timeOut = timeOutUtc ? toZonedTime(timeOutUtc, 'Asia/Singapore') : null;
         const shiftStartStr = record.shiftStart || '09:00:00'; // default 9:00
-        const [h, m] = shiftStartStr.split(':').map(Number);
-        const shiftStart = new Date(timeIn ? timeIn.getFullYear() : now.getFullYear(), timeIn ? timeIn.getMonth() : now.getMonth(), timeIn ? timeIn.getDate() : now.getDate(), h, m);
+        const shiftStartUtc = new Date(`${record.date}T${shiftStartStr}+08:00`);
+        const shiftStart = toZonedTime(shiftStartUtc, 'Asia/Singapore');
 
         let minutesLate = 0;
         if (timeIn && timeIn > shiftStart) {
@@ -748,8 +751,8 @@ export async function getAttendanceData(employeeId: string) {
         let status = record.status || 'Present';
         // Recalculate status based on actual time-in vs shift start
         if (timeIn && shiftStart) {
-            const minutesLate = Math.floor((timeIn.getTime() - shiftStart.getTime()) / (1000 * 60));
-            if (minutesLate > 5) {
+            const minutesLateCalc = Math.floor((timeIn.getTime() - shiftStart.getTime()) / (1000 * 60));
+            if (minutesLateCalc > 5) {
                 status = 'Late';
             } else {
                 status = 'Present';
@@ -764,7 +767,7 @@ export async function getAttendanceData(employeeId: string) {
         totalHours += Number(record.hoursWorked) || 0;
 
         // Format for display
-        const fmtTime = (d: Date | null) => d ? d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+        const fmtTime = (d: Date | null) => d ? formatInTimeZone(d, 'Asia/Singapore', 'hh:mm a') : '--:--';
         records.push({
             date: record.date as string,
             timeIn: fmtTime(timeIn),
@@ -776,10 +779,11 @@ export async function getAttendanceData(employeeId: string) {
 
     // Calculate lates only within current half-month period (resets each period)
     for (const record of latesRecords) {
-        const timeIn = record.timeIn ? new Date(record.timeIn) : null;
+        const timeInUtc = record.timeIn ? new Date(record.timeIn) : null;
+        const timeIn = timeInUtc ? toZonedTime(timeInUtc, 'Asia/Singapore') : null;
         const shiftStartStr = record.shiftStart || '09:00:00';
-        const [h, m] = shiftStartStr.split(':').map(Number);
-        const shiftStart = new Date(timeIn ? timeIn.getFullYear() : now.getFullYear(), timeIn ? timeIn.getMonth() : now.getMonth(), timeIn ? timeIn.getDate() : now.getDate(), h, m);
+        const shiftStartUtc = new Date(`${record.date}T${shiftStartStr}+08:00`);
+        const shiftStart = toZonedTime(shiftStartUtc, 'Asia/Singapore');
 
         let minutesLate = 0;
         if (timeIn && timeIn > shiftStart) {
@@ -789,7 +793,7 @@ export async function getAttendanceData(employeeId: string) {
             if (minutesLate > 480) { // More than 8 hours late
                 console.log(`[DEBUG] Excessive lateness detected for employee ${employeeId}:`, {
                     date: record.date,
-                    timeIn: timeIn.toISOString(),
+                    timeIn: timeIn ? timeIn.toISOString() : null,
                     shiftStart: shiftStart.toISOString(),
                     minutesLate,
                     shiftStartStr,
@@ -831,11 +835,11 @@ export async function getAttendanceData(employeeId: string) {
     let totalAbsences = 0;
 
     for (const record of allAttendanceRecords) {
-        const timeIn = record.timeIn ? new Date(record.timeIn) : null;
+        const timeInUtc = record.timeIn ? new Date(record.timeIn) : null;
+        const timeIn = timeInUtc ? toZonedTime(timeInUtc, 'Asia/Singapore') : null;
         const shiftStartStr = record.shiftStart || '09:00:00';
-        const [h, m] = shiftStartStr.split(':').map(Number);
-        const date = new Date(record.date);
-        const shiftStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m);
+        const shiftStartUtc = new Date(`${record.date}T${shiftStartStr}+08:00`);
+        const shiftStart = toZonedTime(shiftStartUtc, 'Asia/Singapore');
 
         let minutesLate = 0;
         if (timeIn && timeIn > shiftStart) {

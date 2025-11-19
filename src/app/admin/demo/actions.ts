@@ -137,16 +137,15 @@ export async function generateSampleAttendance(formData: FormData) {
       const [startHour, startMin] = schedule.shiftStart.split(':').map(Number);
       const [endHour, endMin] = schedule.shiftEnd.split(':').map(Number);
 
-      // Generate realistic clock-in time (sometimes on time, sometimes late)
-      const isLate = Math.random() < 0.2; // 20% chance of being late
-      const lateMinutes = isLate ? Math.floor(Math.random() * 30) + 1 : 0; // 1-30 minutes late
+      // Generate clock-in time (always 1-45 minutes late)
+      const lateMinutes = Math.floor(Math.random() * 45) + 1; // 1-45 minutes late
 
       const timeIn = new Date(currentDate);
       timeIn.setHours(startHour, startMin + lateMinutes, 0, 0);
 
-      // Generate clock-out time (usually on time or slightly early/late)
+      // Generate clock-out time (1-45 minutes after shift end)
       const timeOut = new Date(currentDate);
-      const endVariation = Math.floor(Math.random() * 31) - 15; // -15 to +15 minutes
+      const endVariation = Math.floor(Math.random() * 45) + 1; // 1-45 minutes
       timeOut.setHours(endHour, endMin + endVariation, 0, 0);
 
       // Calculate hours worked

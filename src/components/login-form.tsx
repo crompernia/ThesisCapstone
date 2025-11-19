@@ -129,6 +129,7 @@ export function LoginForm() {
           title: "Login Failed",
           description: result.error || "Invalid credentials. Please check your username and password.",
         });
+        setIsLoading(false);
       } else if (result?.ok) {
         // Redirect based on role
         switch (role) {
@@ -143,6 +144,7 @@ export function LoginForm() {
             break;
         }
         router.refresh();
+        // Keep loading until navigation completes
       }
     } catch (error) {
       toast({
@@ -150,12 +152,19 @@ export function LoginForm() {
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
       });
-    } finally {
       setIsLoading(false);
     }
   };
 
   
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <Card>
@@ -173,7 +182,6 @@ export function LoginForm() {
                     <Input
                       placeholder="Employee Number, HR email, or Admin email"
                       {...field}
-                      disabled={isLoading}
                     />
                   </FormControl>
                   <FormMessage />
@@ -187,15 +195,14 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} disabled={isLoading}/>
+                    <Input type="password" placeholder="••••••••" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <div className="pt-2">
-              <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" className="w-full" size="lg">
                 Login
               </Button>
             </div>

@@ -2,6 +2,8 @@
  * @fileoverview This file defines the layout for the Admin Portal section of the application.
  * It includes a sidebar with navigation links specific to administrative tasks.
  */
+'use client';
+
 import { UserNav } from "@/components/user-nav";
 import {
   SidebarProvider,
@@ -23,10 +25,12 @@ import {
   Briefcase,
   PlayCircle
 } from "lucide-react";
-import Link from "next/link";
 import { Logo } from "@/components/logo";
-import { getSession } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { useTransition } from "react";
+import { useSession } from "next-auth/react";
+import * as React from 'react';
 
 /**
  * Layout component for the Admin Portal.
@@ -34,17 +38,47 @@ import { redirect } from "next/navigation";
  * @param {{ children: React.ReactNode }} props - The props for the component.
  * @returns {JSX.Element} The admin dashboard layout.
  */
-export default async function AdminDashboardLayout({
+export default function AdminDashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Get the current session to display the logged-in user
-  const session = await getSession();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
+  const { data: session, status } = useSession();
+  const [loadingHref, setLoadingHref] = React.useState<string | null>(null);
+
+  const handleNavigation = (href: string) => {
+    if (pathname === href) return; // Already on the page
+    setLoadingHref(href);
+    startTransition(() => {
+      router.push(href);
+    });
+  };
+
+  React.useEffect(() => {
+    setLoadingHref(null);
+  }, [pathname]);
 
   // Redirect to login if not authenticated
+  React.useEffect(() => {
+    if (status === "loading") return; // Still loading
+    if (!session || !session.user) {
+      router.push("/");
+    }
+  }, [session, status, router]);
+
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   if (!session || !session.user) {
-    redirect("/");
+    return null; // Will redirect
   }
 
   const adminUser = {
@@ -66,36 +100,28 @@ export default async function AdminDashboardLayout({
         <SidebarContent {...({} as any)}>
           <SidebarMenu {...({} as any)}>
             <SidebarMenuItem {...({} as any)}>
-              <Link href="/admin/dashboard" passHref>
-                <SidebarMenuButton {...({ tooltip: "Dashboard" } as any)}>
-                  <LayoutDashboard />
-                  Dashboard
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton tooltip="Dashboard" className="w-full justify-start" onClick={() => handleNavigation("/admin/dashboard")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/admin/dashboard" ? <Loader2 className="h-4 w-4 animate-spin" /> : <LayoutDashboard />}
+                Dashboard
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
-              <Link href="/admin/approvals" passHref>
-                <SidebarMenuButton {...({ tooltip: "New Employees" } as any)}>
-                  <UserCheck />
-                  New Employees
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton tooltip="New Employees" className="w-full justify-start" onClick={() => handleNavigation("/admin/approvals")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/admin/approvals" ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck />}
+                New Employees
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
-              <Link href="/admin/reports" passHref>
-                <SidebarMenuButton {...({ tooltip: "Reports" } as any)}>
-                  <FileText />
-                  Report Monitoring
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton tooltip="Reports" className="w-full justify-start" onClick={() => handleNavigation("/admin/reports")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/admin/reports" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText />}
+                Report Monitoring
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
-              <Link href="/admin/demo" passHref>
-                <SidebarMenuButton {...({ tooltip: "Demo Mode / Generate Sample Data" } as any)}>
-                  <PlayCircle />
-                  Demo Mode
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton tooltip="Demo Mode / Generate Sample Data" className="w-full justify-start" onClick={() => handleNavigation("/admin/demo")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/admin/demo" ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle />}
+                Demo Mode
+              </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>

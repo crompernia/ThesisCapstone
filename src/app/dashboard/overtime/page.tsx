@@ -69,6 +69,7 @@ export default function OvertimeRequestPage() {
   const { data: session } = useSession();
   const employeeId = session?.user?.id;
   const [pastRequests, setPastRequests] = React.useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm({
     resolver: zodResolver(overtimeRequestSchema),
@@ -99,27 +100,32 @@ export default function OvertimeRequestPage() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("employeeId", employeeId);
-    formData.append("date", data.date);
-    formData.append("hoursRequested", data.hoursRequested);
-    formData.append("reason", data.reason || "");
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append("employeeId", employeeId);
+      formData.append("date", data.date);
+      formData.append("hoursRequested", data.hoursRequested);
+      formData.append("reason", data.reason || "");
 
-    const result = await createOvertimeRequest(null, formData);
+      const result = await createOvertimeRequest(null, formData);
 
-    if (result?.message.includes("success")) {
-      toast({
-        title: "Success",
-        description: "Your overtime request has been submitted.",
-      });
-      form.reset();
-      fetchOvertimeRequests();
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: result?.message || "An unknown error occurred.",
-      });
+      if (result?.message.includes("success")) {
+        toast({
+          title: "Success",
+          description: "Your overtime request has been submitted.",
+        });
+        form.reset();
+        fetchOvertimeRequests();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result?.message || "An unknown error occurred.",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -199,7 +205,9 @@ export default function OvertimeRequestPage() {
                 <CardFooter>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button type="button" className="w-full">Submit Request</Button>
+                      <Button type="button" className="w-full" disabled={isSubmitting}>
+                        {isSubmitting ? "Submitting..." : "Submit Request"}
+                      </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>

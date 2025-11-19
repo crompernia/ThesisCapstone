@@ -17,6 +17,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { signOut } from "next-auth/react";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
 
 interface UserNavProps {
   employeeName: string;
@@ -29,6 +31,8 @@ interface UserNavProps {
  * Displays the user's avatar, name, email, and provides links to profile, settings, and logout.
  */
 export function UserNav({ employeeName, employeeEmail, employeePhoto }: UserNavProps) {
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   // Generate initials from the employee's name for the avatar fallback.
   const initials = employeeName
     .split(' ')
@@ -37,11 +41,20 @@ export function UserNav({ employeeName, employeeEmail, employeePhoto }: UserNavP
 
   // Logout handler
   async function handleLogout() {
+    setIsLoggingOut(true);
     // Use NextAuth signOut to properly clear the session
     await signOut({
       callbackUrl: "/",
       redirect: true
     });
+  }
+
+  if (isLoggingOut) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (

@@ -614,7 +614,9 @@ export default function AddEmployeePage() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={form.handleSubmit(handleSubmit)}>Create Account</AlertDialogAction>
+                            <AlertDialogAction onClick={form.handleSubmit(handleSubmit)} disabled={form.formState.isSubmitting}>
+                                {form.formState.isSubmitting ? "Creating..." : "Create Account"}
+                            </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>

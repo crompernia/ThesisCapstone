@@ -4,6 +4,7 @@ import { accounts, attendance, schedules } from '@/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { getCurrentUserId } from '@/lib/auth';
 import { branches } from '@/lib/schema';
+import { toZonedTime, fromZonedTime, formatInTimeZone } from 'date-fns-tz';
 
 export async function POST(req: Request) {
   console.log('[clock-in] Route called');
@@ -40,12 +41,14 @@ export async function POST(req: Request) {
     const hireDate = empData[0]?.dateHired;
     if (!hireDate) return NextResponse.json({ success: false, message: 'Employee hire date not found' }, { status: 400 });
 
-    const now = new Date();
+    const nowUtc = new Date();
+    const now = toZonedTime(nowUtc, 'Asia/Singapore');
     // Keep date comparison as YYYY-MM-DD string (matches Drizzle date column mapping in this project)
-    const isoDate = now.toISOString().slice(0, 10); // YYYY-MM-DD
+    const isoDate = formatInTimeZone(now, 'Asia/Singapore', 'yyyy-MM-dd'); // YYYY-MM-DD in GMT+8
 
     // Check if current date is before hire date
-    const hireDateStr = new Date(hireDate).toISOString().slice(0, 10);
+    const hireDateZoned = toZonedTime(new Date(hireDate), 'Asia/Singapore');
+    const hireDateStr = formatInTimeZone(hireDateZoned, 'Asia/Singapore', 'yyyy-MM-dd');
     if (isoDate < hireDateStr) {
       return NextResponse.json({ success: false, message: 'Cannot clock in before hire date' }, { status: 403 });
     }
@@ -100,29 +103,26 @@ export async function POST(req: Request) {
     // Parse date components
     const [year, month, day] = isoDate.split('-').map(Number);
 
-    // Convert current time to local time (UTC+8 for Philippines)
-    const nowLocal = new Date(now.getTime() + (8 * 60 * 60 * 1000));
-
-    // Parse shift start time as local time
+    // Parse shift start time as GMT+8
     const [startHour, startMin, startSec] = shiftStartTime.split(':').map(Number);
-    const shiftStartDate = new Date(year, month - 1, day, startHour, startMin, startSec);
+    const shiftStartDate = toZonedTime(new Date(year, month - 1, day, startHour, startMin, startSec || 0), 'Asia/Singapore');
 
-    // Parse shift end time as local time
+    // Parse shift end time as GMT+8
     const [endHour, endMin, endSec] = shiftEndTime.split(':').map(Number);
-    const shiftEndDate = new Date(year, month - 1, day, endHour, endMin, endSec);
+    const shiftEndDate = toZonedTime(new Date(year, month - 1, day, endHour, endMin, endSec || 0), 'Asia/Singapore');
 
     // Define clock-in window: from shift start to shift end time
     const earlyClockInLimit = shiftStartDate; // Cannot clock in before shift start
     const lateClockInLimit = shiftEndDate; // Until shift end
 
-    if (nowLocal < earlyClockInLimit) {
+    if (now < earlyClockInLimit) {
       return NextResponse.json({
         success: false,
         message: `Cannot clock in before your shift start time (${shiftStartTime}).`
       }, { status: 403 });
     }
 
-    if (nowLocal > lateClockInLimit) {
+    if (now > lateClockInLimit) {
       return NextResponse.json({
         success: false,
         message: 'Cannot clock in after your shift end time.'
@@ -133,9 +133,9 @@ export async function POST(req: Request) {
     const gracePeriodEnd = new Date(shiftStartDate.getTime() + (5 * 60 * 1000)); // 5 minutes after shift start
     let clockInStatus = 'Present';
 
-    if (now <= gracePeriodEnd) {
+    if (now.getTime() <= gracePeriodEnd.getTime()) {
       clockInStatus = 'Present'; // On time within grace period
-    } else if (now > gracePeriodEnd && now <= lateClockInLimit) {
+    } else if (now.getTime() > gracePeriodEnd.getTime() && now.getTime() <= lateClockInLimit.getTime()) {
       clockInStatus = 'Late'; // Late but within allowed window
     }
 
@@ -147,10 +147,10 @@ export async function POST(req: Request) {
        const row = existing[0] as any;
        if (!row.timeIn) {
          // store ISO strings for timestamp columns
-         await db.update(attendance).set({ timeIn: now.toISOString(), status: clockInStatus }).where(eq(attendance.id, row.id));
+         await db.update(attendance).set({ timeIn: fromZonedTime(now, 'Asia/Singapore').toISOString(), status: clockInStatus }).where(eq(attendance.id, row.id));
        }
      } else {
-       await db.insert(attendance).values({ employeeId: employeeId as any, date: isoDate as any, timeIn: now.toISOString(), status: clockInStatus, createdAt: now.toISOString() } as any);
+       await db.insert(attendance).values({ employeeId: employeeId as any, date: isoDate as any, timeIn: fromZonedTime(now, 'Asia/Singapore').toISOString(), status: clockInStatus, createdAt: fromZonedTime(now, 'Asia/Singapore').toISOString() } as any);
      }
     console.log('[clock-in] Returning success response');
 

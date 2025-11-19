@@ -86,6 +86,7 @@ export default function LeaveRequestPage() {
   const { data: session } = useSession();
   const employeeId = session?.user?.id;
   const [pastRequests, setPastRequests] = React.useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm({
     resolver: zodResolver(leaveRequestSchema),
@@ -142,34 +143,39 @@ export default function LeaveRequestPage() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("employeeId", employeeId);
-    formData.append("leaveType", data.leaveType);
-    formData.append("startDate", data.startDate);
-    formData.append("endDate", data.endDate);
-    formData.append("reason", data.reason || "");
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append("employeeId", employeeId);
+      formData.append("leaveType", data.leaveType);
+      formData.append("startDate", data.startDate);
+      formData.append("endDate", data.endDate);
+      formData.append("reason", data.reason || "");
 
-    if (data.attachments && data.attachments.length > 0) {
-      Array.from(data.attachments).forEach((file: any) => {
-        formData.append("attachments", file);
-      });
-    }
+      if (data.attachments && data.attachments.length > 0) {
+        Array.from(data.attachments).forEach((file: any) => {
+          formData.append("attachments", file);
+        });
+      }
 
-    const result = await createLeaveRequest(null, formData);
+      const result = await createLeaveRequest(null, formData);
 
-    if (result?.message.includes("success")) {
-      toast({
-        title: "Success",
-        description: "Your leave request has been submitted.",
-      });
-      form.reset();
-      fetchLeaveRequests();
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: result?.message || "An unknown error occurred.",
-      });
+      if (result?.message.includes("success")) {
+        toast({
+          title: "Success",
+          description: "Your leave request has been submitted.",
+        });
+        form.reset();
+        fetchLeaveRequests();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result?.message || "An unknown error occurred.",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -342,7 +348,9 @@ export default function LeaveRequestPage() {
                 <CardFooter>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button type="button" className="w-full">Submit Request</Button>
+                      <Button type="button" className="w-full" disabled={isSubmitting}>
+                        {isSubmitting ? "Submitting..." : "Submit Request"}
+                      </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>

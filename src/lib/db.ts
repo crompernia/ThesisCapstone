@@ -3,6 +3,7 @@
  * This file provides a connection pool to PostgreSQL using Drizzle ORM.
  */
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { sql } from 'drizzle-orm';
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import * as schema from './schema';
@@ -31,6 +32,9 @@ async function initializeDb(): Promise<DrizzleDB> {
 
     // Initialize Drizzle ORM with the pool and schema
     db = drizzle(pool, { schema });
+
+    // Set timezone to GMT+8
+    await db.execute(sql`SET timezone = 'Asia/Singapore'`);
 
     console.log('Database pool created and Drizzle ORM initialized.');
 

@@ -76,6 +76,7 @@ export default function OvertimeApprovalsPage() {
         status: string | null;
     }
     const [overtimeRequests, setOvertimeRequests] = React.useState<OvertimeRequest[]>([]);
+    const [updatingRequest, setUpdatingRequest] = React.useState(false);
 
     const fetchOvertimeRequests = React.useCallback(async () => {
         const requests = await getOvertimeRequests();
@@ -88,19 +89,24 @@ export default function OvertimeApprovalsPage() {
 
 
     const handleUpdateRequest = async (requestId: number, status: string) => {
-        const result = await updateOvertimeRequestStatusAction(requestId, status);
-        if (result?.success) {
-            toast({
-                title: 'Success',
-                description: `Overtime request has been ${status.toLowerCase()}.`,
-            });
-            fetchOvertimeRequests();
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: result?.message || `Failed to ${status.toLowerCase()} overtime request.`,
-            });
+        setUpdatingRequest(true);
+        try {
+            const result = await updateOvertimeRequestStatusAction(requestId, status);
+            if (result?.success) {
+                toast({
+                    title: 'Success',
+                    description: `Overtime request has been ${status.toLowerCase()}.`,
+                });
+                fetchOvertimeRequests();
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: result?.message || `Failed to ${status.toLowerCase()} overtime request.`,
+                });
+            }
+        } finally {
+            setUpdatingRequest(false);
         }
     }
 
@@ -239,6 +245,7 @@ export default function OvertimeApprovalsPage() {
                                                                         onClick={() =>
                                                                             handleUpdateRequest(req.id, 'Approved')
                                                                         }
+                                                                        loading={updatingRequest}
                                                                     >
                                                                         Approve
                                                                     </AlertDialogAction>
@@ -264,6 +271,7 @@ export default function OvertimeApprovalsPage() {
                                                                         onClick={() =>
                                                                             handleUpdateRequest(req.id, 'Rejected')
                                                                         }
+                                                                        loading={updatingRequest}
                                                                     >
                                                                         Reject
                                                                     </AlertDialogAction>
