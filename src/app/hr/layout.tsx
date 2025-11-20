@@ -30,6 +30,7 @@ import {
   MapPin,
   Building,
   Briefcase,
+  DollarSign,
 } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
@@ -176,6 +177,12 @@ export default function HRDashboardLayout({
               <SidebarMenuButton tooltip="Overtime Approvals" className="w-full justify-start" onClick={() => handleNavigation("/hr/overtime-approvals")} disabled={loadingHref !== null} {...({} as any)}>
                 {loadingHref === "/hr/overtime-approvals" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Timer />}
                 Overtime Approvals
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem {...({} as any)}>
+              <SidebarMenuButton tooltip="Loan Approvals" className="w-full justify-start" onClick={() => handleNavigation("/hr/loan-approvals")} disabled={loadingHref !== null} {...({} as any)}>
+                {loadingHref === "/hr/loan-approvals" ? <Loader2 className="h-4 w-4 animate-spin" /> : <DollarSign />}
+                Loan Approvals
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

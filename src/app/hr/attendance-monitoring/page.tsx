@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search } from "lucide-react";
-import { getDailyAttendanceData, getBranches, getDepartmentsForBranch, getPositionsForDepartment, getEmployeeAbsenceSummary } from "@/lib/data";
+import { getDailyAttendanceData, getEmployeeAbsenceSummary } from "@/lib/data";
 
 /**
  * Renders the HR attendance monitoring page.
@@ -43,19 +43,13 @@ export default function AttendanceMonitoringPage() {
       document.title = "HR Attendance Monitoring";
       }, []);
   type AttendanceRow = { id: string; employeeNumber?: string; name?: string; position?: string; branch?: string; timeIn?: string | null; timeOut?: string | null; status?: string };
-  type BranchType = { id: number; name: string; coordinates: string | null };
 
   const [attendanceData, setAttendanceData] = React.useState<AttendanceRow[]>([]);
   const [filteredAttendanceData, setFilteredAttendanceData] = React.useState<AttendanceRow[]>([]);
   const [absenceData, setAbsenceData] = React.useState<any[]>([]);
   const [filteredAbsenceData, setFilteredAbsenceData] = React.useState<any[]>([]);
-  const [branches, setBranches] = React.useState<BranchType[]>([]);
-  const [departments, setDepartments] = React.useState<string[]>([]);
-  const [positions, setPositions] = React.useState<string[]>([]);
-  const [selectedBranch, setSelectedBranch] = React.useState<string>('');
-  const [selectedDepartment, setSelectedDepartment] = React.useState<string>('');
-  const [selectedPosition, setSelectedPosition] = React.useState<string>('');
   const [searchQuery, setSearchQuery] = React.useState<string>('');
+  const [showSuggestions, setShowSuggestions] = React.useState<boolean>(false);
   const today = new Date().toISOString().substring(0, 10);
   const [selectedDate, setSelectedDate] = React.useState<string>(today);
   const dateInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -63,46 +57,18 @@ export default function AttendanceMonitoringPage() {
 
   React.useEffect(() => {
     const fetchInitialData = async () => {
-        const [attendance, branchesData, absence] = await Promise.all([
+        const [attendance, absence] = await Promise.all([
             getDailyAttendanceData(selectedDate),
-            getBranches(),
             getEmployeeAbsenceSummary()
         ]);
     setAttendanceData(attendance as AttendanceRow[]);
     setFilteredAttendanceData(attendance as AttendanceRow[]);
-    setBranches(branchesData as BranchType[]);
     setAbsenceData(absence);
     setFilteredAbsenceData(absence);
      };
     fetchInitialData();
   }, [selectedDate]);
   
-  React.useEffect(() => {
-    const fetchDepartments = async () => {
-      if (selectedBranch) {
-        const depts = await getDepartmentsForBranch(selectedBranch);
-        setDepartments(depts);
-        setSelectedDepartment('');
-        setPositions([]);
-      } else {
-        setDepartments([]);
-        setPositions([]);
-      }
-    };
-    fetchDepartments();
-  }, [selectedBranch]);
-
-  React.useEffect(() => {
-    const fetchPositions = async () => {
-      if (selectedDepartment) {
-        const pos = await getPositionsForDepartment(selectedDepartment);
-        setPositions(pos);
-      } else {
-        setPositions([]);
-      }
-    };
-    fetchPositions();
-  }, [selectedDepartment]);
 
   const handleSearch = () => {
     let filteredAttendance = attendanceData;
@@ -119,24 +85,6 @@ export default function AttendanceMonitoringPage() {
         emp.name?.toLowerCase().includes(query) ||
         emp.employeeNumber?.toLowerCase().includes(query)
       );
-    }
-
-    // Filter by branch
-    if (selectedBranch) {
-      filteredAttendance = filteredAttendance.filter(emp => emp.branch === selectedBranch);
-      filteredAbsence = filteredAbsence.filter(emp => emp.branch === selectedBranch);
-    }
-
-    // Filter by department
-    if (selectedDepartment) {
-      filteredAttendance = filteredAttendance.filter(emp => emp.position && positions.includes(emp.position));
-      filteredAbsence = filteredAbsence.filter(emp => emp.department === selectedDepartment);
-    }
-
-    // Filter by position
-    if (selectedPosition) {
-      filteredAttendance = filteredAttendance.filter(emp => emp.position === selectedPosition);
-      filteredAbsence = filteredAbsence.filter(emp => emp.position === selectedPosition);
     }
 
     // Sort by employee number
@@ -163,7 +111,7 @@ export default function AttendanceMonitoringPage() {
   // Auto-filter when filters change
   React.useEffect(() => {
     handleSearch();
-  }, [selectedBranch, selectedDepartment, selectedPosition, attendanceData, absenceData]);
+  }, [searchQuery, attendanceData, absenceData]);
 
   // Also sort initial data by employee number
   React.useEffect(() => {
@@ -244,7 +192,7 @@ export default function AttendanceMonitoringPage() {
             </CardDescription>
           </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Date input restored (inline in filter controls) */}
             <div>
               <input
@@ -258,42 +206,38 @@ export default function AttendanceMonitoringPage() {
               />
             </div>
             {/* Search input */}
-            <Input
-              placeholder="Search by name or ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {/* Dropdown to filter by branch */}
-            <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Branch" />
-              </SelectTrigger>
-              <SelectContent>
-                {branches.map(b => <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            {/* Dropdown to filter by department */}
-            <Select value={selectedDepartment} onValueChange={setSelectedDepartment} disabled={!selectedBranch || departments.length === 0}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Department" />
-              </SelectTrigger>
-              <SelectContent>
-                {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            {/* Dropdown to filter by position */}
-            <Select value={selectedPosition} onValueChange={setSelectedPosition} disabled={!selectedDepartment || positions.length === 0}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Position" />
-              </SelectTrigger>
-              <SelectContent>
-                {positions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button className="w-full" onClick={handleSearch}>
-              <Search />
-              Search
-            </Button>
+            <div className="relative lg:col-span-2">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search by name or ID..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              />
+              {showSuggestions && searchQuery && (viewMode === 'daily' ? filteredAttendanceData : filteredAbsenceData).length > 0 && (
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                  {(viewMode === 'daily' ? filteredAttendanceData : filteredAbsenceData).slice(0, 5).map((emp) => (
+                    <button
+                      key={emp.id}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                      onClick={() => {
+                        setSearchQuery(emp.name);
+                        setShowSuggestions(false);
+                      }}
+                    >
+                      <div className="flex flex-col">
+                        <span>{emp.name}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {emp.employeeNumber} - {emp.position} - {emp.branch}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

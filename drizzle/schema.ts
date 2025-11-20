@@ -1,4 +1,4 @@
-import { pgTable, index, foreignKey, unique, serial, uuid, varchar, integer, numeric, timestamp, date, text, time, jsonb } from "drizzle-orm/pg-core"
+import { pgTable, index, foreignKey, unique, serial, uuid, varchar, integer, numeric, timestamp, date, text, time, jsonb, boolean } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 // NextAuth.js database adapter tables
@@ -89,6 +89,11 @@ export const attendance = pgTable("attendance", {
 	timeOut: timestamp("time_out", { withTimezone: true, mode: 'string' }),
 	status: varchar({ length: 50 }).default('Present'),
 	hoursWorked: numeric("hours_worked", { precision: 5, scale:  2 }),
+	nightHours: numeric("night_hours", { precision: 5, scale:  2 }),
+	overtimeHours: numeric("overtime_hours", { precision: 5, scale:  2 }),
+	undertimeHours: numeric("undertime_hours", { precision: 5, scale:  2 }),
+	overtimeType: varchar("overtime_type", { length: 50 }),
+	overtimeApproved: boolean("overtime_approved").default(false),
 	notes: text(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 }, (table) => [
@@ -254,6 +259,7 @@ export const payslips = pgTable("payslips", {
 	netPay: numeric("net_pay", { precision: 10, scale:  2 }).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 	lateDeduction: numeric("late_deduction", { precision: 10, scale:  2 }).default('0'),
+	undertimeDeduction: numeric("undertime_deduction", { precision: 10, scale:  2 }).default('0'),
 }, (table) => [
 	index("idx_payslips_employee").using("btree", table.employeeId.asc().nullsLast().op("uuid_ops")),
 	index("idx_payslips_pay_date").using("btree", table.payDate.asc().nullsLast().op("date_ops")),
@@ -275,20 +281,49 @@ export const positions = pgTable("positions", {
 ]);
 
 export const positionDepartments = pgTable("position_departments", {
-	id: serial().primaryKey().notNull(),
-	positionId: integer("position_id").notNull(),
-	departmentId: integer("department_id").notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
-}, (table) => [
-	foreignKey({
-			columns: [table.positionId],
-			foreignColumns: [positions.id],
-			name: "position_departments_position_id_positions_id_fk"
-		}).onDelete("cascade"),
-	foreignKey({
-			columns: [table.departmentId],
-			foreignColumns: [departments.id],
-			name: "position_departments_department_id_departments_id_fk"
-		}).onDelete("cascade"),
-	unique("position_departments_position_id_department_id_unique").on(table.positionId, table.departmentId),
-]);
+ 	id: serial().primaryKey().notNull(),
+ 	positionId: integer("position_id").notNull(),
+ 	departmentId: integer("department_id").notNull(),
+ 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
+ }, (table) => [
+ 	foreignKey({
+ 			columns: [table.positionId],
+ 			foreignColumns: [positions.id],
+ 			name: "position_departments_position_id_positions_id_fk"
+ 		}).onDelete("cascade"),
+ 	foreignKey({
+ 			columns: [table.departmentId],
+ 			foreignColumns: [departments.id],
+ 			name: "position_departments_department_id_departments_id_fk"
+ 		}).onDelete("cascade"),
+ 	unique("position_departments_position_id_department_id_unique").on(table.positionId, table.departmentId),
+ ]);
+
+export const loans = pgTable("loans", {
+  	id: serial().primaryKey().notNull(),
+  	employeeId: uuid("employee_id").notNull(),
+  	amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  	months: integer().notNull(),
+  	interestRate: numeric("interest_rate", { precision: 5, scale: 4 }).notNull(),
+  	totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
+  	monthlyPayment: numeric("monthly_payment", { precision: 10, scale: 2 }),
+  	status: varchar({ length: 50 }).default('Pending'),
+  	approvedBy: uuid("approved_by"),
+  	approvedAt: timestamp("approved_at", { withTimezone: true, mode: 'string' }),
+  	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }),
+  	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }),
+  	notes: text(),
+  }, (table) => [
+  	index("idx_loans_employee").using("btree", table.employeeId.asc().nullsLast().op("uuid_ops")),
+  	index("idx_loans_status").using("btree", table.status.asc().nullsLast().op("text_ops")),
+  	foreignKey({
+  			columns: [table.employeeId],
+  			foreignColumns: [accounts.id],
+  			name: "loans_employee_id_accounts_id_fk"
+  		}).onDelete("cascade"),
+  	foreignKey({
+  			columns: [table.approvedBy],
+  			foreignColumns: [accounts.id],
+  			name: "loans_approved_by_accounts_id_fk"
+  		}).onDelete("set null"),
+  ]);

@@ -3,7 +3,7 @@
  */
 'use server';
 
-import { createBranch, deleteBranch } from '@/lib/data';
+import { createBranch, updateBranch, deleteBranch } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
 
 export async function createBranchAction(branchName: string, coordinates: string) {
@@ -17,6 +17,20 @@ export async function createBranchAction(branchName: string, coordinates: string
         return { success: true };
     } catch (e: any) {
         return { success: false, message: e.message || 'Failed to create branch.' };
+    }
+}
+
+export async function updateBranchAction(id: number, branchName: string, coordinates: string) {
+    if (!id || !branchName || !coordinates) {
+        return { success: false, message: 'Branch ID, name, and coordinates are required.' };
+    }
+    try {
+        await updateBranch(id, branchName, coordinates);
+        revalidatePath('/hr/branches');
+        revalidatePath('/hr/branch-allocation');
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Failed to update branch.' };
     }
 }
 

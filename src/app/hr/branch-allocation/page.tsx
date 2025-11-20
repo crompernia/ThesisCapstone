@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { getHrPersonnel, getBranches, updateHrBranchAllocation } from "@/lib/data";
+import { getHrPersonnel, getAllBranches, updateHrBranchAllocation } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -56,7 +56,7 @@ export default function BranchAllocationPage() {
 
     const fetchData = React.useCallback(async () => {
         const hrData = await getHrPersonnel();
-        const branchData = await getBranches();
+        const branchData = await getAllBranches();
         setHrPersonnel(hrData);
         setBranches(branchData);
     }, []);

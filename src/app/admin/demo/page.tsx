@@ -84,6 +84,7 @@ export default function DemoPage() {
               </Select>
             </div>
 
+
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Generating..." : "Generate Sample Data"}
             </Button>

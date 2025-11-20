@@ -34,9 +34,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { UploadCloud, PlusCircle, Copy } from "lucide-react";
+import { UploadCloud, PlusCircle, Copy, Check, ChevronsUpDown } from "lucide-react";
 import { getEmployeesForScheduling, getBranches, getDepartmentsForBranch, getPositionsForDepartment, getSchedulesForWeek } from "@/lib/data";
 import { publishScheduleAction } from './actions';
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -49,6 +51,11 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const SHIFT_OPTIONS = [
   '8:00 - 17:00',
@@ -75,12 +82,12 @@ const SHIFT_TEMPLATES = {
  * @returns {JSX.Element} The scheduling page component.
  */
 export default function SchedulingPage() {
+  const { toast } = useToast();
   type EmpRow = { id: string; name: string; shift: string };
   const [scheduleData, setScheduleData] = React.useState<EmpRow[]>([]);
   // internal map of employeeId -> shifts array (Mon-Fri)
   const [shiftsMap, setShiftsMap] = React.useState<Record<string, string[]>>({});
   const [breaksMap, setBreaksMap] = React.useState<Record<string, string[]>>({});
-  const [overtimeAllowedMap, setOvertimeAllowedMap] = React.useState<Record<string, boolean[]>>({});
   const [weekStart, setWeekStart] = React.useState<string>('');
   const [allEmployees, setAllEmployees] = React.useState<EmpRow[]>([]);
   const [branches, setBranches] = React.useState<{ id: number; name: string; coordinates: string | null }[]>([]);
@@ -94,6 +101,8 @@ export default function SchedulingPage() {
   const [individualOvertimeAllowed, setIndividualOvertimeAllowed] = React.useState<boolean[]>([false, false, false, false, false]);
   const [selectedCells, setSelectedCells] = React.useState<Set<string>>(new Set());
   const [selectedEmployeesForModal, setSelectedEmployeesForModal] = React.useState<Set<string>>(new Set());
+  const [employeeSearchOpen, setEmployeeSearchOpen] = React.useState(false);
+  const [employeeSearchQuery, setEmployeeSearchQuery] = React.useState('');
 
   React.useEffect(() => {
     document.title = "HR Employee Scheduling";
@@ -123,22 +132,19 @@ export default function SchedulingPage() {
       setScheduleData(initialSchedule);
       // In a real app, you might want a different function to get *all* employees for the modal
       setAllEmployees(initialSchedule);
-      setBranches(branchesData);
+      setBranches(branchesData.branches);
 
       // Load existing schedules for the current week
       if (weekStart) {
         const existingSchedules = await getSchedulesForWeek(weekStart);
         const shiftsMap: Record<string, string[]> = {};
         const breaksMap: Record<string, string[]> = {};
-        const overtimeMap: Record<string, boolean[]> = {};
         for (const [empId, data] of Object.entries(existingSchedules)) {
           shiftsMap[empId] = data.shifts;
           breaksMap[empId] = data.breaks;
-          overtimeMap[empId] = data.overtimeAllowed;
         }
         setShiftsMap(shiftsMap);
         setBreaksMap(breaksMap);
-        setOvertimeAllowedMap(overtimeMap);
       }
     }
     fetchData();
@@ -183,8 +189,6 @@ export default function SchedulingPage() {
       });
       // default 1 hour break at 12:00 - 13:00
       setBreaksMap(prev => ({ ...prev, [employee.id]: ['12:00 - 13:00','12:00 - 13:00','12:00 - 13:00','12:00 - 13:00','12:00 - 13:00'] }));
-      // default overtime not allowed
-      setOvertimeAllowedMap(prev => ({ ...prev, [employee.id]: [false, false, false, false, false] }));
     }
   };
 
@@ -219,14 +223,6 @@ export default function SchedulingPage() {
     });
   };
 
-  const updateOvertimeAllowed = (employeeId: string, dayIndex: number, value: boolean) => {
-    setOvertimeAllowedMap(prev => {
-      const copy = { ...(prev || {}) };
-      copy[employeeId] = copy[employeeId] || [false, false, false, false, false];
-      copy[employeeId][dayIndex] = value;
-      return copy;
-    });
-  };
 
   // updateBreak removed: not used currently
 
@@ -338,7 +334,7 @@ export default function SchedulingPage() {
       employeeId: emp.id,
       shifts: shiftsMap[emp.id] || [emp.shift, emp.shift, emp.shift, emp.shift, emp.shift],
       breaks: breaksMap[emp.id] || ['12:00 - 13:00','12:00 - 13:00','12:00 - 13:00','12:00 - 13:00','12:00 - 13:00'],
-      overtimeAllowed: overtimeAllowedMap[emp.id] || [false, false, false, false, false]
+      overtimeAllowed: [false, false, false, false, false]
     }));
 
     if (!payload || payload.length === 0) {
@@ -355,15 +351,12 @@ export default function SchedulingPage() {
         const existingSchedules = await getSchedulesForWeek(weekStart);
         const shiftsMap: Record<string, string[]> = {};
         const breaksMap: Record<string, string[]> = {};
-        const overtimeMap: Record<string, boolean[]> = {};
         for (const [empId, data] of Object.entries(existingSchedules)) {
           shiftsMap[empId] = data.shifts;
           breaksMap[empId] = data.breaks;
-          overtimeMap[empId] = data.overtimeAllowed;
         }
         setShiftsMap(shiftsMap);
         setBreaksMap(breaksMap);
-        setOvertimeAllowedMap(overtimeMap);
       } else {
         alert(res?.message || 'Failed to publish schedule.');
       }
@@ -377,12 +370,20 @@ export default function SchedulingPage() {
   const handlePublishIndividual = async () => {
     // basic weekStart validation (YYYY-MM-DD)
     if (!weekStart || !/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) {
-      alert('Please enter a valid Week Start date in YYYY-MM-DD format.');
+      toast({
+        title: "Invalid Date",
+        description: 'Please enter a valid Week Start date in YYYY-MM-DD format.',
+        variant: "destructive"
+      });
       return;
     }
 
     if (!selectedEmployee) {
-      alert('Please select an employee.');
+      toast({
+        title: "No Employee Selected",
+        description: 'Please select an employee.',
+        variant: "destructive"
+      });
       return;
     }
 
@@ -397,18 +398,29 @@ export default function SchedulingPage() {
     try {
       const res = await publishScheduleAction(payload, weekStart);
       if (res?.success) {
-        alert('Individual schedule published successfully.');
+        toast({
+          title: "Success",
+          description: 'Individual schedule published successfully.'
+        });
         // Reset form
         setSelectedEmployee('');
         setIndividualShifts(['', '', '', '', '']);
         setIndividualBreaks(['', '', '', '', '']);
         setIndividualOvertimeAllowed([false, false, false, false, false]);
       } else {
-        alert(res?.message || 'Failed to publish individual schedule.');
+        toast({
+          title: "Error",
+          description: res?.message || 'Failed to publish individual schedule.',
+          variant: "destructive"
+        });
       }
     } catch (e) {
       console.error('Publish individual failed', e);
-      alert('Publish failed. See console for details.');
+      toast({
+        title: "Error",
+        description: 'Publish failed. See console for details.',
+        variant: "destructive"
+      });
     }
   };
 
@@ -575,14 +587,6 @@ export default function SchedulingPage() {
                                               ))}
                                             </SelectContent>
                                           </Select>
-                                          <div className="flex items-center space-x-1">
-                                            <Checkbox
-                                              checked={(overtimeAllowedMap[emp.id] && overtimeAllowedMap[emp.id][i]) || false}
-                                              onCheckedChange={(checked: boolean) => updateOvertimeAllowed(emp.id, i, checked)}
-                                              {...({} as any)}
-                                            />
-                                            <Label className="text-xs">OT</Label>
-                                          </div>
                                         </div>
                                       )}
                                     </Draggable>
@@ -649,16 +653,61 @@ export default function SchedulingPage() {
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <Label htmlFor="employee-select">Select Employee:</Label>
-                  <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
-                    <SelectTrigger id="employee-select" className="w-[300px]">
-                      <SelectValue placeholder="Choose an employee" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allEmployees.map(emp => (
-                        <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={employeeSearchOpen} onOpenChange={setEmployeeSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-[300px] justify-between"
+                        onClick={() => setEmployeeSearchOpen(!employeeSearchOpen)}
+                      >
+                        {selectedEmployee
+                          ? allEmployees.find((emp) => emp.id === selectedEmployee)?.name
+                          : "Choose an employee..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0">
+                      <div className="p-2">
+                        <Input
+                          placeholder="Search employees..."
+                          value={employeeSearchQuery}
+                          onChange={(e) => setEmployeeSearchQuery(e.target.value)}
+                          className="mb-2"
+                        />
+                        <ScrollArea className="h-[200px]">
+                          {allEmployees
+                            .filter((emp) =>
+                              emp.name.toLowerCase().includes(employeeSearchQuery.toLowerCase())
+                            )
+                            .map((emp) => (
+                              <Button
+                                key={emp.id}
+                                variant="ghost"
+                                className="w-full justify-start"
+                                onClick={() => {
+                                  setSelectedEmployee(emp.id);
+                                  setEmployeeSearchOpen(false);
+                                  setEmployeeSearchQuery('');
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    selectedEmployee === emp.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {emp.name}
+                              </Button>
+                            ))}
+                          {allEmployees.filter((emp) =>
+                            emp.name.toLowerCase().includes(employeeSearchQuery.toLowerCase())
+                          ).length === 0 && (
+                            <p className="text-sm text-muted-foreground p-2">No employee found.</p>
+                          )}
+                        </ScrollArea>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
               <div className="flex items-center gap-2">

@@ -153,6 +153,37 @@ export const overtimeRequests = pgTable("overtime_requests", {
 ]);
 
 // ============================================
+// LOAN MANAGEMENT: loans
+// ============================================
+export const loans = pgTable("loans", {
+	id: serial().primaryKey().notNull(),
+	employeeId: uuid("employee_id").notNull(),
+	amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+	months: integer().notNull(),
+	interestRate: numeric("interest_rate", { precision: 5, scale: 4 }).notNull(),
+	totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
+	monthlyPayment: numeric("monthly_payment", { precision: 10, scale: 2 }).notNull(),
+	status: varchar({ length: 50 }).default('Pending'),
+	approvedBy: uuid("approved_by"),
+	approvedAt: timestamp("approved_at", { withTimezone: true }),
+	createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (table) => [
+	index("idx_loans_employee").using("btree", table.employeeId.asc().nullsLast().op("uuid_ops")),
+	index("idx_loans_status").using("btree", table.status.asc().nullsLast().op("text_ops")),
+	foreignKey({
+			columns: [table.employeeId],
+			foreignColumns: [accounts.id],
+			name: "loans_employee_id_accounts_id_fk"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.approvedBy],
+			foreignColumns: [accounts.id],
+			name: "loans_approved_by_accounts_id_fk"
+		}).onDelete("set null"),
+]);
+
+// ============================================
 // ATTENDANCE TRACKING
 // ============================================
 export const attendance = pgTable("attendance", {
@@ -225,6 +256,7 @@ export const payslips = pgTable("payslips", {
 	hdmfLoan: numeric("hdmf_loan", { precision: 10, scale:  2 }).default('0'),
 	companyLoan: numeric("company_loan", { precision: 10, scale:  2 }).default('0'),
 	lateDeduction: numeric("late_deduction", { precision: 10, scale:  2 }).default('0'),
+	undertimeDeduction: numeric("undertime_deduction", { precision: 10, scale:  2 }).default('0'),
 	otherDeductions: numeric("other_deductions", { precision: 10, scale:  2 }).default('0'),
 	netPay: numeric("net_pay", { precision: 10, scale:  2 }).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
@@ -350,6 +382,10 @@ export type NewLeaveRequest = InferInsertModel<typeof leaveRequests>;
 export type OvertimeRequest = InferSelectModel<typeof overtimeRequests>;
 export type NewOvertimeRequest = InferInsertModel<typeof overtimeRequests>;
 
+// Loan types
+export type Loan = InferSelectModel<typeof loans>;
+export type NewLoan = InferInsertModel<typeof loans>;
+
 // Attendance types
 export type Attendance = InferSelectModel<typeof attendance>;
 export type NewAttendance = InferInsertModel<typeof attendance>;
@@ -381,6 +417,7 @@ export const schema = {
   announcements,
   leaveRequests,
   overtimeRequests,
+  loans,
   attendance,
   schedules,
   payslips,

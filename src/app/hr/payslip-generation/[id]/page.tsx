@@ -31,8 +31,8 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { getEmployeeById, getPositions, getAttendanceData, getLeaveDataForPayPeriod } from '@/lib/data';
-import { getSSSDeduction, getPhilhealthDeduction, getPagibigDeduction, getProratedDeduction, getOvertimePay, getRestDayOvertimePay, getTaxDeduction, getNightDifferential, getLeaveDeduction, getPaidLeaveCompensation, validatePayslipCalculation, calculatePayPeriodDates, PayrollCycleType, calculateHolidayPayFromAttendance, calculateEstimatedNightDifferential, getHolidaysInRange, calculateNightDifferentialFromAttendance, calculateOvertimePayFromAttendance } from '@/lib/payroll';
+import { getEmployeeById, getPositions, getAttendanceData, getLeaveDataForPayPeriod, getActiveLoansForEmployee } from '@/lib/data';
+import { getSSSDeduction, getPhilhealthDeduction, getPagibigDeduction, getProratedDeduction, getOvertimePay, getRestDayOvertimePay, getTaxDeduction, getNightDifferential, getLeaveDeduction, getPaidLeaveCompensation, validatePayslipCalculation, calculatePayPeriodDates, PayrollCycleType, calculateHolidayPayFromAttendance, calculateEstimatedNightDifferential, getHolidaysInRange, calculateNightDifferentialFromAttendance, calculateOvertimePayFromAttendance, getUndertimeDeduction, calculateUndertimeFromAttendance } from '@/lib/payroll';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -70,6 +70,8 @@ export default function GenerateEmployeePayslipPage({ params }: { params: Promis
     const [specialHolidayAmount, setSpecialHolidayAmount] = React.useState(0);
     const [specialHolidayOvertimeAmount, setSpecialHolidayOvertimeAmount] = React.useState(0);
     const [nightDifferential, setNightDifferential] = React.useState(0);
+    const [activeLoans, setActiveLoans] = React.useState<any[]>([]);
+    const [totalLoanDeduction, setTotalLoanDeduction] = React.useState(0);
 
     // Mock data for attendance summary
     const dataSummary = {
@@ -115,33 +117,43 @@ export default function GenerateEmployeePayslipPage({ params }: { params: Promis
                 const leaveInfo = await getLeaveDataForPayPeriod(resolvedParams.id, periodStart, periodEnd);
                 setLeaveData(leaveInfo);
 
+                // Fetch active loans for the employee
+                const loans = await getActiveLoansForEmployee(resolvedParams.id);
+                setActiveLoans(loans);
+
+                // Calculate total loan deduction (sum of monthly payments for all active loans)
+                const totalLoanDed = loans.reduce((sum, loan) => sum + loan.monthlyPayment, 0);
+                setTotalLoanDeduction(totalLoanDed);
+
                 // Calculate holiday pay for the pay period
                 const holidaysInPeriod = getHolidaysInRange(periodStart, periodEnd);
 
                 // Get actual attendance records for the pay period
                 const attendanceData = await getAttendanceData(resolvedParams.id);
 
-                // Calculate holiday pay based on actual attendance
-                // Transform attendance records to match expected format
-                const transformedRecords = attendanceData.records.map(record => ({
-                    date: record.date,
-                    hoursWorked: 8, // Assume 8 hours for holiday calculations
-                    isOvertime: false,
-                    overtimeHours: 0,
-                }));
+                if (attendanceData.records) {
+                    // Calculate holiday pay based on actual attendance
+                    // Transform attendance records to match expected format
+                    const transformedRecords = attendanceData.records.map(record => ({
+                        date: record.date,
+                        hoursWorked: 8, // Assume 8 hours for holiday calculations
+                        isOvertime: false,
+                        overtimeHours: 0,
+                    }));
 
-                const holidayPayResults = calculateHolidayPayFromAttendance(dailyRate, transformedRecords);
-                setRegularHolidayAmount(holidayPayResults.regularHolidayPay);
-                setSpecialHolidayAmount(holidayPayResults.specialHolidayPay);
-                setRegularHolidayOvertimeAmount(holidayPayResults.regularHolidayOvertime);
-                setSpecialHolidayOvertimeAmount(holidayPayResults.specialHolidayOvertime);
+                    const holidayPayResults = calculateHolidayPayFromAttendance(dailyRate, transformedRecords);
+                    setRegularHolidayAmount(holidayPayResults.regularHolidayPay);
+                    setSpecialHolidayAmount(holidayPayResults.specialHolidayPay);
+                    setRegularHolidayOvertimeAmount(holidayPayResults.regularHolidayOvertime);
+                    setSpecialHolidayOvertimeAmount(holidayPayResults.specialHolidayOvertime);
 
-                // Calculate night differential from actual attendance records
-                const nightDifferentialAmount = calculateNightDifferentialFromAttendance(hourlyRate, attendanceData.records.map(record => ({
-                    date: record.date,
-                    nightHours: 0, // For now, assume no night hours tracked
-                })));
-                setNightDifferential(nightDifferentialAmount);
+                    // Calculate night differential from actual attendance records
+                    const nightDifferentialAmount = calculateNightDifferentialFromAttendance(hourlyRate, attendanceData.records.map(record => ({
+                        date: record.date,
+                        nightHours: 0, // For now, assume no night hours tracked
+                    })));
+                    setNightDifferential(nightDifferentialAmount);
+                }
             } catch (error) {
                 toast({
                     variant: 'destructive',
@@ -153,6 +165,16 @@ export default function GenerateEmployeePayslipPage({ params }: { params: Promis
         };
         fetchData();
     }, [params, toast, selectedHalf]);
+
+    // Reset loan and other deduction inputs when switching to 2nd half
+    React.useEffect(() => {
+        if (selectedHalf === '2nd') {
+            setSssLoan(0);
+            setHdmfLoan(0);
+            setCompanyLoan(0);
+            setDeductions(deductions.map(d => ({ ...d, amount: '0' })));
+        }
+    }, [selectedHalf]);
 
     const employeePosition = positions.find(p => p.title === employee?.position);
     const hourlyRate = Number(employeePosition?.rate ?? 0);
@@ -166,11 +188,11 @@ export default function GenerateEmployeePayslipPage({ params }: { params: Promis
     const basicPay = dailyRate * (attendanceData?.summary?.daysAttended || 0);
 
     // Calculate comprehensive overtime pay from attendance records
-    const overtimeResults = calculateOvertimePayFromAttendance(hourlyRate, attendanceData.records.map(record => ({
+    const overtimeResults = attendanceData.records ? calculateOvertimePayFromAttendance(hourlyRate, attendanceData.records.map(record => ({
         date: record.date,
         overtimeHours: 0, // Will be populated from actual attendance data
         overtimeType: 'regular' as any
-    })));
+    }))) : { totalOvertime: 0 };
 
     // For now, use the existing calculation as fallback
     const overtimePay = overtimeResults.totalOvertime || getOvertimePay(hourlyRate, halfMonthOvertimeHours);
@@ -185,6 +207,13 @@ export default function GenerateEmployeePayslipPage({ params }: { params: Promis
     const perMinuteRate = (dailyRate / (numberOfHoursPerDay || 1)) / 60;
     const lateDeduction = perMinuteRate * (Number(minutesLate) || 0);
 
+    // Calculate undertime deduction from attendance records
+    const undertimeHours = attendanceData.records ? calculateUndertimeFromAttendance(attendanceData.records.map(record => ({
+        date: record.date,
+        undertimeHours: record.undertimeHours || 0,
+    }))) : 0;
+    const undertimeDeduction = getUndertimeDeduction(hourlyRate, undertimeHours);
+
     const isHalfMonth = true; // Since we're implementing bi-monthly, all payslips are now half-month
     const sssDeduction = getProratedDeduction(getSSSDeduction(monthlySalaryCredit), isHalfMonth);
     const philhealthDeduction = getProratedDeduction(getPhilhealthDeduction(monthlySalaryCredit), isHalfMonth);
@@ -197,6 +226,23 @@ export default function GenerateEmployeePayslipPage({ params }: { params: Promis
     // Calculate taxable income (basic pay + overtime + allowances + paid leave compensation - deductions before tax)
     const taxableIncome = basicPay + overtimePay + additionalEarnings.reduce((s, a) => s + (Number(a.amount) || 0), 0) + regularHolidayAmount + regularHolidayOvertimeAmount + specialHolidayAmount + specialHolidayOvertimeAmount + paidLeaveCompensation;
     const taxDeduction = getTaxDeduction(taxableIncome);
+
+    // Apply conditional deductions based on pay period half
+    const sssDeductionApplied = selectedHalf === '2nd' ? sssDeduction : 0;
+    const philhealthDeductionApplied = selectedHalf === '2nd' ? philhealthDeduction : 0;
+    const pagibigDeductionApplied = selectedHalf === '2nd' ? pagibigDeduction : 0;
+    const taxDeductionApplied = selectedHalf === '2nd' ? taxDeduction : 0;
+
+    const sssLoanApplied = selectedHalf === '1st' ? sssLoan : 0;
+    const hdmfLoanApplied = selectedHalf === '1st' ? hdmfLoan : 0;
+    const companyLoanApplied = selectedHalf === '1st' ? companyLoan : 0;
+    const totalLoanDeductionApplied = selectedHalf === '1st' ? totalLoanDeduction : 0;
+    const otherDeductionsApplied = selectedHalf === '1st' ? deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0) : 0;
+
+    const totalAdditional = additionalEarnings.reduce((s, a) => s + (Number(a.amount) || 0), 0) + regularHolidayAmount + regularHolidayOvertimeAmount + specialHolidayAmount + specialHolidayOvertimeAmount + paidLeaveCompensation;
+    const totalEarnings = basicPay + overtimePay + totalAdditional + nightDifferential;
+    const totalDeductions = otherDeductionsApplied + lateDeduction + undertimeDeduction + sssDeductionApplied + philhealthDeductionApplied + pagibigDeductionApplied + taxDeductionApplied + unpaidLeaveDeduction + sssLoanApplied + hdmfLoanApplied + companyLoanApplied + totalLoanDeductionApplied;
+    const netPay = totalEarnings - totalDeductions;
 
     // Night differential is now calculated from actual attendance data above
     // This variable is set in the useEffect when attendance data is fetched
@@ -278,11 +324,6 @@ export default function GenerateEmployeePayslipPage({ params }: { params: Promis
             return;
         }
 
-        const totalAdditional = additionalEarnings.reduce((s, a) => s + (Number(a.amount) || 0), 0) + regularHolidayAmount + regularHolidayOvertimeAmount + specialHolidayAmount + specialHolidayOvertimeAmount + paidLeaveCompensation;
-        const totalUserDeductions = deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0);
-        const totalEarnings = basicPay + overtimePay + totalAdditional + nightDifferential;
-        const totalDeductions = totalUserDeductions + lateDeduction + sssDeduction + philhealthDeduction + pagibigDeduction + taxDeduction + unpaidLeaveDeduction + sssLoan + hdmfLoan + companyLoan;
-        const netPay = totalEarnings - totalDeductions;
 
         // Validate calculation data
         const validation = validatePayslipCalculation({
@@ -290,12 +331,13 @@ export default function GenerateEmployeePayslipPage({ params }: { params: Promis
             basicPay,
             overtime: overtimePay,
             allowances: totalAdditional,
-            sssDeduction,
-            philhealthDeduction,
-            pagibigDeduction,
-            taxDeduction,
+            sssDeduction: sssDeductionApplied,
+            philhealthDeduction: philhealthDeductionApplied,
+            pagibigDeduction: pagibigDeductionApplied,
+            taxDeduction: taxDeductionApplied,
             lateDeduction,
-            otherDeductions: totalUserDeductions + unpaidLeaveDeduction + sssLoan + hdmfLoan + companyLoan,
+            undertimeDeduction,
+            otherDeductions: otherDeductionsApplied + unpaidLeaveDeduction + sssLoanApplied + hdmfLoanApplied + companyLoanApplied + totalLoanDeductionApplied,
             netPay,
             daysWorked: attendanceData?.summary?.daysAttended || 0,
             dailyRate: hourlyRate * numberOfHoursPerDay,
@@ -327,15 +369,16 @@ export default function GenerateEmployeePayslipPage({ params }: { params: Promis
             basicPay,
             overtime: overtimePay,
             allowances: totalAdditional,
-            sssDeduction,
-            philhealthDeduction,
-            pagibigDeduction,
-            taxDeduction: taxDeduction,
-            sssLoan: sssLoan,
-            hdmfLoan: hdmfLoan,
-            companyLoan: companyLoan,
+            sssDeduction: sssDeductionApplied,
+            philhealthDeduction: philhealthDeductionApplied,
+            pagibigDeduction: pagibigDeductionApplied,
+            taxDeduction: taxDeductionApplied,
+            sssLoan: sssLoanApplied,
+            hdmfLoan: hdmfLoanApplied,
+            companyLoan: companyLoanApplied + totalLoanDeductionApplied,
             lateDeduction: lateDeduction,
-            otherDeductions: totalUserDeductions,
+            undertimeDeduction: undertimeDeduction,
+            otherDeductions: otherDeductionsApplied,
             netPay,
             daysWorked: Math.max(0, attendanceData?.summary?.daysAttended || 0), // Use actual days attended from attendance data
             dailyRate: Math.max(0, hourlyRate * numberOfHoursPerDay), // Ensure non-negative
@@ -616,19 +659,19 @@ export default function GenerateEmployeePayslipPage({ params }: { params: Promis
                                 ))}
                                 <div className="flex justify-between items-center">
                                     <Label htmlFor="sss-deduction" className="font-medium">SSS Deduction</Label>
-                                    <Input id="sss-deduction" type="number" value={sssDeduction} readOnly className="bg-muted w-44"/>
+                                    <Input id="sss-deduction" type="number" value={sssDeductionApplied} readOnly className="bg-muted w-44"/>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <Label htmlFor="philhealth-deduction" className="font-medium">PhilHealth Deduction</Label>
-                                    <Input id="philhealth-deduction" type="number" value={philhealthDeduction} readOnly className="bg-muted w-44"/>
+                                    <Input id="philhealth-deduction" type="number" value={philhealthDeductionApplied} readOnly className="bg-muted w-44"/>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <Label htmlFor="pagibig-deduction" className="font-medium">Pag-IBIG Deduction</Label>
-                                    <Input id="pagibig-deduction" type="number" value={pagibigDeduction} readOnly className="bg-muted w-44"/>
+                                    <Input id="pagibig-deduction" type="number" value={pagibigDeductionApplied} readOnly className="bg-muted w-44"/>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <Label htmlFor="tax-deduction" className="font-medium">Tax Deduction</Label>
-                                    <Input id="tax-deduction" type="number" value={taxDeduction} readOnly className="bg-muted w-44"/>
+                                    <Input id="tax-deduction" type="number" value={taxDeductionApplied} readOnly className="bg-muted w-44"/>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <Label htmlFor="sss-loan" className="font-medium">SSS Loan</Label>
@@ -680,40 +723,43 @@ export default function GenerateEmployeePayslipPage({ params }: { params: Promis
                             )}
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="text-sm text-muted-foreground">Total Earnings</div>
-                                <div className="text-right font-mono">{formatCurrency(basicPay + overtimePay + additionalEarnings.reduce((s, a) => s + (Number(a.amount) || 0), 0) + regularHolidayAmount + regularHolidayOvertimeAmount + specialHolidayAmount + specialHolidayOvertimeAmount + nightDifferential + paidLeaveCompensation)}</div>
+                                <div className="text-right font-mono">{formatCurrency(totalEarnings)}</div>
 
                                 <div className="text-sm text-muted-foreground">Total Deductions (incl. Late, SSS, PhilHealth, Pag-IBIG, Tax, Leave & Loans)</div>
-                                <div className="text-right font-mono">{formatCurrency(deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0) + lateDeduction + sssDeduction + philhealthDeduction + pagibigDeduction + taxDeduction + unpaidLeaveDeduction + sssLoan + hdmfLoan + companyLoan)}</div>
+                                <div className="text-right font-mono">{formatCurrency(totalDeductions)}</div>
 
                                 <div className="text-sm text-muted-foreground">Late Deduction</div>
                                 <div className="text-right font-mono">{formatCurrency(lateDeduction)}</div>
 
                                 <div className="text-sm text-muted-foreground">SSS Deduction</div>
-                                <div className="text-right font-mono">{formatCurrency(sssDeduction)}</div>
+                                <div className="text-right font-mono">{formatCurrency(sssDeductionApplied)}</div>
 
                                 <div className="text-sm text-muted-foreground">PhilHealth Deduction</div>
-                                <div className="text-right font-mono">{formatCurrency(philhealthDeduction)}</div>
+                                <div className="text-right font-mono">{formatCurrency(philhealthDeductionApplied)}</div>
 
                                 <div className="text-sm text-muted-foreground">Pag-IBIG Deduction</div>
-                                <div className="text-right font-mono">{formatCurrency(pagibigDeduction)}</div>
+                                <div className="text-right font-mono">{formatCurrency(pagibigDeductionApplied)}</div>
 
                                 <div className="text-sm text-muted-foreground">Tax Deduction</div>
-                                <div className="text-right font-mono">{formatCurrency(taxDeduction)}</div>
+                                <div className="text-right font-mono">{formatCurrency(taxDeductionApplied)}</div>
 
                                 <div className="text-sm text-muted-foreground">Unpaid Leave Deduction</div>
                                 <div className="text-right font-mono">{formatCurrency(unpaidLeaveDeduction)}</div>
 
                                 <div className="text-sm text-muted-foreground">SSS Loan</div>
-                                <div className="text-right font-mono">{formatCurrency(sssLoan)}</div>
+                                <div className="text-right font-mono">{formatCurrency(sssLoanApplied)}</div>
 
                                 <div className="text-sm text-muted-foreground">HDMF Loan (Pag-IBIG)</div>
-                                <div className="text-right font-mono">{formatCurrency(hdmfLoan)}</div>
+                                <div className="text-right font-mono">{formatCurrency(hdmfLoanApplied)}</div>
 
                                 <div className="text-sm text-muted-foreground">Company Loan</div>
-                                <div className="text-right font-mono">{formatCurrency(companyLoan)}</div>
+                                <div className="text-right font-mono">{formatCurrency(companyLoanApplied)}</div>
+
+                                <div className="text-sm text-muted-foreground">Loan Deductions</div>
+                                <div className="text-right font-mono">{formatCurrency(totalLoanDeductionApplied)}</div>
 
                                 <div className="text-sm text-muted-foreground">Net Pay</div>
-                                <div className="text-right font-mono">{formatCurrency((basicPay + overtimePay + additionalEarnings.reduce((s, a) => s + (Number(a.amount) || 0), 0) + regularHolidayAmount + regularHolidayOvertimeAmount + specialHolidayAmount + specialHolidayOvertimeAmount + nightDifferential + paidLeaveCompensation) - (deductions.reduce((s, d) => s + (Number(d.amount) || 0), 0) + lateDeduction + sssDeduction + philhealthDeduction + pagibigDeduction + taxDeduction + unpaidLeaveDeduction + sssLoan + hdmfLoan + companyLoan))}</div>
+                                <div className="text-right font-mono">{formatCurrency(netPay)}</div>
                             </div>
                         </div>
                     </CardContent>

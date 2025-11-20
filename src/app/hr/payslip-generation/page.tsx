@@ -36,6 +36,7 @@ import {
   getEmployeesWithPayslipStatus,
   getBranches,
   getDepartmentsForBranch,
+  getPositionsForDepartment,
 } from "@/lib/data";
 
 /**
@@ -53,8 +54,11 @@ export default function PayslipGenerationPage() {
   const [departments, setDepartments] = React.useState<any[]>([]);
   const [selectedBranch, setSelectedBranch] = React.useState<string>("");
   const [selectedDepartment, setSelectedDepartment] = React.useState<string>("");
+  const [selectedPosition, setSelectedPosition] = React.useState<string>("");
   const [selectedPayslipStatus, setSelectedPayslipStatus] = React.useState<string>("");
+  const [positions, setPositions] = React.useState<any[]>([]);
   const [searchQuery, setSearchQuery] = React.useState<string>("");
+  const [showSuggestions, setShowSuggestions] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     const fetchInitialData = async () => {
@@ -64,7 +68,7 @@ export default function PayslipGenerationPage() {
       ]);
       setEmployees(employeesData);
       setFilteredEmployees(employeesData);
-      setBranches(branchesData);
+      setBranches(branchesData.branches);
     };
     fetchInitialData();
   }, []);
@@ -74,12 +78,32 @@ export default function PayslipGenerationPage() {
       if (selectedBranch) {
         const depts = await getDepartmentsForBranch(selectedBranch);
         setDepartments(depts);
+        setSelectedDepartment("");
+        setPositions([]);
+        setSelectedPosition("");
       } else {
         setDepartments([]);
+        setSelectedDepartment("");
+        setPositions([]);
+        setSelectedPosition("");
       }
     };
     fetchDepartments();
   }, [selectedBranch]);
+
+  React.useEffect(() => {
+    const fetchPositions = async () => {
+      if (selectedDepartment) {
+        const pos = await getPositionsForDepartment(selectedDepartment);
+        setPositions(pos);
+        setSelectedPosition("");
+      } else {
+        setPositions([]);
+        setSelectedPosition("");
+      }
+    };
+    fetchPositions();
+  }, [selectedDepartment]);
 
   const handleSearch = () => {
     let filtered = employees;
@@ -101,6 +125,11 @@ export default function PayslipGenerationPage() {
     // Filter by department
     if (selectedDepartment) {
       filtered = filtered.filter(emp => emp.department === selectedDepartment);
+    }
+
+    // Filter by position
+    if (selectedPosition) {
+      filtered = filtered.filter(emp => emp.position === selectedPosition);
     }
 
     // Filter by payslip status
@@ -132,10 +161,10 @@ export default function PayslipGenerationPage() {
     setFilteredEmployees(filtered);
   };
 
-  // Auto-filter when filters change (except search query which requires button click)
+  // Auto-filter when filters change
   React.useEffect(() => {
     handleSearch();
-  }, [selectedBranch, selectedDepartment, selectedPayslipStatus, employees]);
+  }, [selectedBranch, selectedDepartment, selectedPosition, selectedPayslipStatus, searchQuery, employees]);
 
   // Also sort initial employees list
   React.useEffect(() => {
@@ -176,12 +205,38 @@ export default function PayslipGenerationPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-            <Input
-              placeholder="Search by name or ID..."
-              className="lg:col-span-2"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <div className="relative lg:col-span-2">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search by name or ID..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              />
+              {showSuggestions && searchQuery && filteredEmployees.length > 0 && (
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                  {filteredEmployees.slice(0, 5).map((emp) => (
+                    <button
+                      key={emp.id}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                      onClick={() => {
+                        setSearchQuery(emp.name);
+                        setShowSuggestions(false);
+                      }}
+                    >
+                      <div className="flex flex-col">
+                        <span>{emp.name}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {emp.employeeNumber} - {emp.position} - {emp.branch}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <Select value={selectedBranch} onValueChange={setSelectedBranch}>
               <SelectTrigger>
                 <SelectValue placeholder="Select Branch" />
@@ -210,6 +265,22 @@ export default function PayslipGenerationPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Select
+              value={selectedPosition}
+              onValueChange={setSelectedPosition}
+              disabled={!selectedDepartment || positions.length === 0}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select Position" />
+              </SelectTrigger>
+              <SelectContent>
+                {positions.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={selectedPayslipStatus} onValueChange={setSelectedPayslipStatus}>
               <SelectTrigger>
                 <SelectValue placeholder="Payslip Status" />
@@ -219,10 +290,6 @@ export default function PayslipGenerationPage() {
                 <SelectItem value="pending">Pending</SelectItem>
               </SelectContent>
             </Select>
-            <Button className="w-full" onClick={handleSearch}>
-              <Search className="mr-2" />
-              Search
-            </Button>
           </div>
         </CardContent>
       </Card>

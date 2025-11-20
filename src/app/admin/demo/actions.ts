@@ -3,6 +3,7 @@
 import { getDb } from '@/lib/db';
 import { eq, and, sql } from 'drizzle-orm';
 import { attendance, schedules, accounts } from '@/lib/schema';
+import * as schema from '@/lib/schema';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -41,21 +42,25 @@ export async function generateSampleAttendance(formData: FormData) {
   const endDate = new Date(now);
   endDate.setDate(now.getDate() + 7); // End 1 week from now
 
-  // Generate default schedules for weekdays if none exist
+  const startDateStr = startDate.toISOString().slice(0, 10);
+  const endDateStr = endDate.toISOString().slice(0, 10);
+
+  // Delete existing schedules for the period
+  try {
+    await db.delete(schedules).where(and(
+      eq(schedules.employeeId, employeeId),
+      sql`${schedules.date} >= ${startDateStr}`,
+      sql`${schedules.date} <= ${endDateStr}`
+    ));
+    console.log('Deleted existing schedules for employee:', employeeId);
+  } catch (error) {
+    console.error('Failed to delete existing schedules:', error);
+    redirect('/admin/demo?error=Failed to delete existing schedules. Please try again.');
+  }
+
+  // Generate default schedules for weekdays
   try {
     console.log('Generating schedules for employee:', employeeId);
-    // Get all existing schedules for the period
-    const existingSchedules = await db
-      .select({ date: schedules.date })
-      .from(schedules)
-      .where(and(
-        eq(schedules.employeeId, employeeId),
-        sql`${schedules.date} >= ${startDate.toISOString().slice(0, 10)}`,
-        sql`${schedules.date} <= ${endDate.toISOString().slice(0, 10)}`
-      ));
-
-    const existingDates = new Set(existingSchedules.map(s => s.date as string));
-    console.log('Existing schedule dates:', existingDates);
 
     const scheduleInserts = [];
     const scheduleDate = new Date(startDate);
@@ -65,7 +70,7 @@ export async function generateSampleAttendance(formData: FormData) {
       const dayOfWeek = scheduleDate.getDay(); // 0 = Sunday, 6 = Saturday
 
       // Skip weekends
-      if (dayOfWeek !== 0 && dayOfWeek !== 6 && !existingDates.has(dateStr)) {
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
         scheduleInserts.push({
           employeeId,
           date: dateStr,
@@ -137,23 +142,51 @@ export async function generateSampleAttendance(formData: FormData) {
       const [startHour, startMin] = schedule.shiftStart.split(':').map(Number);
       const [endHour, endMin] = schedule.shiftEnd.split(':').map(Number);
 
-      // Generate clock-in time (always 1-45 minutes late)
-      const lateMinutes = Math.floor(Math.random() * 45) + 1; // 1-45 minutes late
+      // Generate clock-in time with variation (early, on time, or late)
+      const attendanceType = Math.random(); // Random number between 0 and 1
 
-      const timeIn = new Date(currentDate);
-      timeIn.setHours(startHour, startMin + lateMinutes, 0, 0);
+      let timeVariation = 0;
+      if (attendanceType < 0.3) {
+        // 30% chance: Early (1-10 minutes before shift)
+        timeVariation = -(Math.floor(Math.random() * 10) + 1);
+      } else if (attendanceType < 0.7) {
+        // 40% chance: On time (within 5 minutes of shift start)
+        timeVariation = Math.floor(Math.random() * 11) - 5; // -5 to +5 minutes
+      } else {
+        // 30% chance: Late (1-45 minutes late)
+        timeVariation = Math.floor(Math.random() * 45) + 1;
+      }
+
+      // Create timeIn by combining date string with time
+      let actualHour = startHour;
+      let actualMin = startMin + timeVariation;
+
+      // Handle negative minutes (borrow from hours)
+      while (actualMin < 0) {
+        actualMin += 60;
+        actualHour -= 1;
+      }
+
+      // Ensure hour doesn't go negative (edge case)
+      if (actualHour < 0) {
+        actualHour = 0;
+        actualMin = 0;
+      }
+
+      const timeInStr = `${dateStr}T${String(actualHour).padStart(2, '0')}:${String(actualMin).padStart(2, '0')}:00`;
+      const timeIn = new Date(timeInStr);
 
       // Generate clock-out time (1-45 minutes after shift end)
-      const timeOut = new Date(currentDate);
       const endVariation = Math.floor(Math.random() * 45) + 1; // 1-45 minutes
-      timeOut.setHours(endHour, endMin + endVariation, 0, 0);
+      const timeOutStr = `${dateStr}T${String(endHour).padStart(2, '0')}:${String(endMin + endVariation).padStart(2, '0')}:00`;
+      const timeOut = new Date(timeOutStr);
 
       // Calculate hours worked
       const hoursWorked = (timeOut.getTime() - timeIn.getTime()) / (1000 * 60 * 60);
 
       // Determine status
       let status = 'Present';
-      if (lateMinutes > 5) {
+      if (timeVariation > 5) {
         status = 'Late';
       }
 
@@ -182,12 +215,23 @@ export async function generateSampleAttendance(formData: FormData) {
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
-  // Insert attendance records (skip if already exists for that date)
+  // Delete existing attendance records for the period
+  try {
+    await db.delete(attendance).where(and(
+      eq(attendance.employeeId, employeeId),
+      sql`${attendance.date} >= ${startDateStr}`,
+      sql`${attendance.date} <= ${endDateStr}`
+    ));
+    console.log('Deleted existing attendance for employee:', employeeId);
+  } catch (error) {
+    console.error('Failed to delete existing attendance:', error);
+    redirect('/admin/demo?error=Failed to delete existing attendance. Please try again.');
+  }
+
+  // Insert attendance records
   for (const record of attendanceRecords) {
     try {
-      await db.insert(attendance).values(record).onConflictDoNothing({
-        target: [attendance.employeeId, attendance.date],
-      });
+      await db.insert(attendance).values(record);
     } catch (error) {
       // Log error but continue with other records
       console.error(`Failed to insert attendance for ${record.date}:`, error);
@@ -199,6 +243,46 @@ export async function generateSampleAttendance(formData: FormData) {
   if (attendanceRecords.length === 0) {
     console.log('No attendance records generated');
     redirect('/admin/demo?error=No attendance records were generated. The employee may not have a schedule.');
+  }
+
+  // Create a sample overtime request
+  try {
+    const overtimeDate = new Date(now);
+    overtimeDate.setDate(now.getDate() - 3); // 3 days ago
+    const overtimeDateStr = overtimeDate.toISOString().slice(0, 10);
+
+    await db.insert(schema.overtimeRequests).values({
+      employeeId,
+      date: overtimeDateStr,
+      hoursRequested: '2.5', // 2.5 hours overtime
+      reason: 'Demo overtime request - additional work required',
+      status: 'Approved', // Pre-approve for demo purposes
+      approvedBy: employeeId, // Self-approved for demo
+      approvedAt: new Date(),
+    });
+    console.log('Sample overtime request created');
+  } catch (error) {
+    console.error('Failed to create overtime request:', error);
+    // Don't fail the whole process for this
+  }
+
+  // Create a sample loan
+  try {
+    await db.insert(schema.loans).values({
+      employeeId,
+      amount: '50000.00', // 50,000 PHP loan
+      months: 12, // 12 months
+      interestRate: '0.05', // 5% interest
+      totalAmount: '52500.00', // Amount + interest
+      monthlyPayment: '4375.00', // Monthly payment
+      status: 'Approved', // Pre-approve for demo purposes
+      approvedBy: employeeId, // Self-approved for demo
+      approvedAt: new Date(),
+    });
+    console.log('Sample loan created');
+  } catch (error) {
+    console.error('Failed to create loan:', error);
+    // Don't fail the whole process for this
   }
 
   console.log('Revalidating and redirecting to success');

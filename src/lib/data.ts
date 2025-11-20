@@ -8,7 +8,7 @@ import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { eq, and, desc, sql, inArray, ne, isNotNull, asc, or } from 'drizzle-orm';
 import * as schema from './schema';
-const { accounts, announcements, leaveRequests, branches, positions, schedules, attendance, departments, positionDepartments, attendanceRecords, payslips } = schema;
+const { accounts, announcements, leaveRequests, branches, positions, schedules, attendance, departments, positionDepartments, attendanceRecords, payslips, loans } = schema;
 
 // Type definitions for database query results
 interface CountResult {
@@ -263,6 +263,7 @@ export async function getDailyAttendanceData(date: string): Promise<unknown[]> {
             time_in: attendance.timeIn,
             time_out: attendance.timeOut,
             attendance_status: attendance.status,
+            overtimeHours: attendance.overtimeHours,
         })
         .from(accounts)
         .leftJoin(attendance, and(eq(attendance.employeeId, accounts.id), eq(attendance.date, sql`${targetDate.toISOString().slice(0, 10)}`)))
@@ -272,8 +273,14 @@ export async function getDailyAttendanceData(date: string): Promise<unknown[]> {
         const timeInRaw = (a as any).time_in as Date | undefined | null;
         const timeOutRaw = (a as any).time_out as Date | undefined | null;
         const attendanceStatus = (a as any).attendance_status as string | undefined | null;
+        const overtimeHours = (a as any).overtimeHours as number | undefined | null;
 
         const fmt = (d?: Date | null) => d ? formatInTimeZone(new Date(d), 'Asia/Singapore', 'hh:mm a') : null;
+
+        let status = attendanceStatus || 'Away';
+        if (attendanceStatus && (attendanceStatus === 'Present' || attendanceStatus === 'Late') && overtimeHours && overtimeHours > 0) {
+            status += ' overtime';
+        }
 
         return {
             id: a.id,
@@ -283,8 +290,7 @@ export async function getDailyAttendanceData(date: string): Promise<unknown[]> {
             branch: a.branch,
             timeIn: fmt(timeInRaw) || null,
             timeOut: fmt(timeOutRaw) || null,
-            // default to 'Away' when there's no attendance row
-            status: attendanceStatus || 'Away'
+            status
         };
     });
 }
@@ -697,6 +703,7 @@ export async function getAttendanceData(employeeId: string) {
             timeOut: attendance.timeOut,
             status: attendance.status,
             hoursWorked: attendance.hoursWorked,
+            overtimeHours: attendance.overtimeHours,
             shiftStart: schedules.shiftStart,
         })
         .from(attendance)
@@ -758,7 +765,11 @@ export async function getAttendanceData(employeeId: string) {
                 status = 'Present';
             }
         }
-        if (status === 'Present' || status === 'Late') {
+        // Append " overtime" if employee worked overtime
+        if ((status === 'Present' || status === 'Late') && record.overtimeHours && Number(record.overtimeHours) > 0) {
+            status += ' overtime';
+        }
+        if (status === 'Present' || status === 'Late' || status === 'Present overtime' || status === 'Late overtime') {
             daysAttended++;
         } else if (status === 'Absent') {
             absences++;
@@ -998,6 +1009,177 @@ export async function createOvertimeRequest(data: {
     });
 
     return { success: true };
+}
+
+export async function createLoanRequest(data: {
+    employeeId: string;
+    amount: number;
+    months: number;
+    interestRate: number;
+}) {
+    try {
+        const db = await getDb();
+        const { employeeId, amount, months, interestRate } = data;
+
+        // Calculate total amount and monthly payment
+        const totalAmount = amount + (amount * interestRate * months);
+        const monthlyPayment = totalAmount / months;
+
+        await db.insert(loans).values({
+            employeeId,
+            amount: amount.toString(),
+            months,
+            interestRate: interestRate.toString(),
+            totalAmount: totalAmount.toString(),
+            monthlyPayment: monthlyPayment.toString(),
+        });
+
+        return { success: true };
+    } catch (error) {
+        // If loans table doesn't exist yet, return error
+        console.warn('Loans table not available, cannot create loan request:', error);
+        return { success: false, error: 'Loans functionality not available yet' };
+    }
+}
+
+export async function getPastLoanRequests(employeeId: string) {
+    try {
+        const db = await getDb();
+
+        const result = await db
+            .select({
+                id: schema.loans.id,
+                amount: schema.loans.amount,
+                months: schema.loans.months,
+                interestRate: schema.loans.interestRate,
+                totalAmount: schema.loans.totalAmount,
+                monthlyPayment: schema.loans.monthlyPayment,
+                status: schema.loans.status,
+                createdAt: schema.loans.createdAt,
+            })
+            .from(schema.loans)
+            .where(eq(schema.loans.employeeId, employeeId))
+            .orderBy(desc(schema.loans.createdAt));
+
+        return result.map(loan => ({
+            id: loan.id,
+            amount: loan.amount,
+            months: loan.months,
+            interestRate: loan.interestRate,
+            totalAmount: loan.totalAmount,
+            monthlyPayment: loan.monthlyPayment,
+            status: loan.status,
+            createdAt: format(new Date(loan.createdAt!), 'yyyy-MM-dd'),
+        }));
+    } catch (error) {
+        // If loans table doesn't exist yet, return empty array
+        console.warn('Loans table not available, returning empty loan requests array:', error);
+        return [];
+    }
+}
+
+export async function getLoanRequests() {
+    try {
+        const db = await getDb();
+
+        const result = await db
+            .select({
+                id: schema.loans.id,
+                amount: schema.loans.amount,
+                months: schema.loans.months,
+                interestRate: schema.loans.interestRate,
+                totalAmount: schema.loans.totalAmount,
+                monthlyPayment: schema.loans.monthlyPayment,
+                status: schema.loans.status,
+                employeeId: accounts.id,
+                employeeNumber: accounts.employeeNumber,
+                first_name: accounts.firstName,
+                last_name: accounts.lastName,
+                createdAt: schema.loans.createdAt,
+            })
+            .from(schema.loans)
+            .leftJoin(accounts, eq(schema.loans.employeeId, accounts.id))
+            .orderBy(desc(schema.loans.createdAt));
+
+        return result.map(loan => ({
+            id: loan.id,
+            employeeId: loan.employeeId,
+            employeeNumber: loan.employeeNumber,
+            employeeName: `${loan.first_name} ${loan.last_name}`,
+            amount: loan.amount,
+            months: loan.months,
+            interestRate: loan.interestRate,
+            totalAmount: loan.totalAmount,
+            monthlyPayment: loan.monthlyPayment,
+            status: loan.status,
+            createdAt: format(new Date(loan.createdAt!), 'yyyy-MM-dd'),
+        }));
+    } catch (error) {
+        // If loans table doesn't exist yet, return empty array
+        console.warn('Loans table not available, returning empty loan requests array:', error);
+        return [];
+    }
+}
+
+export async function approveLoanRequest(requestId: number): Promise<void> {
+    const db = await getDb();
+
+    await db
+        .update(schema.loans)
+        .set({ status: 'Approved' })
+        .where(eq(schema.loans.id, requestId));
+}
+
+export async function rejectLoanRequest(requestId: number): Promise<void> {
+    const db = await getDb();
+
+    await db
+        .update(schema.loans)
+        .set({ status: 'Rejected' })
+        .where(eq(schema.loans.id, requestId));
+}
+
+export async function updateLoanRequestStatus(requestId: number, status: string): Promise<void> {
+    const db = await getDb();
+    await db.update(schema.loans)
+        .set({ status })
+        .where(eq(schema.loans.id, requestId));
+}
+
+export async function getActiveLoansForEmployee(employeeId: string) {
+    try {
+        const db = await getDb();
+
+        const result = await db
+            .select({
+                id: schema.loans.id,
+                amount: schema.loans.amount,
+                months: schema.loans.months,
+                interestRate: schema.loans.interestRate,
+                totalAmount: schema.loans.totalAmount,
+                monthlyPayment: schema.loans.monthlyPayment,
+                status: schema.loans.status,
+                createdAt: schema.loans.createdAt,
+            })
+            .from(schema.loans)
+            .where(and(eq(schema.loans.employeeId, employeeId), eq(schema.loans.status, 'Approved')))
+            .orderBy(desc(schema.loans.createdAt));
+
+        return result.map(loan => ({
+            id: loan.id,
+            amount: Number(loan.amount),
+            months: loan.months,
+            interestRate: Number(loan.interestRate),
+            totalAmount: Number(loan.totalAmount),
+            monthlyPayment: Number(loan.monthlyPayment),
+            status: loan.status,
+            createdAt: loan.createdAt,
+        }));
+    } catch (error) {
+        // If loans table doesn't exist yet, return empty array
+        console.warn('Loans table not available, returning empty loans array:', error);
+        return [];
+    }
 }
 
 export async function getPayPeriods(employeeId: string): Promise<PayPeriodData[]> {
@@ -1446,7 +1628,44 @@ export async function getHrPersonnel() {
     }));
 }
 
-export async function getBranches() {
+export async function getBranches(search?: string, page: number = 1, limit: number = 10) {
+    const db = await getDb();
+
+    const offset = (page - 1) * limit;
+
+    // Build where condition
+    const whereCondition = search && search.trim()
+        ? sql`${branches.name} ILIKE ${`%${search.trim()}%`}`
+        : undefined;
+
+    // Get total count for pagination
+    const totalCountResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(branches)
+        .where(whereCondition);
+
+    const totalCount = totalCountResult[0]?.count || 0;
+
+    // Get paginated results
+    const result = await db
+        .select()
+        .from(branches)
+        .where(whereCondition)
+        .orderBy(asc(branches.name))
+        .limit(limit)
+        .offset(offset);
+
+    return {
+        branches: result,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        currentPage: page,
+        hasNextPage: page * limit < totalCount,
+        hasPrevPage: page > 1
+    };
+}
+
+export async function getAllBranches() {
     const db = await getDb();
 
     const result = await db
@@ -1468,6 +1687,32 @@ export async function createBranch(branchName: string, coordinates: string): Pro
                 coordinates,
             })
             .returning();
+
+        return result[0];
+    } catch(e: any) {
+        if (e.code === '23505') { // unique_violation
+            throw new Error('A branch with this name already exists.');
+        }
+        throw e;
+    }
+}
+
+export async function updateBranch(branchId: number, branchName: string, coordinates: string): Promise<BranchRow> {
+    const db = await getDb();
+
+    try {
+        const result = await db
+            .update(branches)
+            .set({
+                name: branchName,
+                coordinates,
+            })
+            .where(eq(branches.id, branchId))
+            .returning();
+
+        if (result.length === 0) {
+            throw new Error('Branch not found.');
+        }
 
         return result[0];
     } catch(e: any) {
@@ -1584,6 +1829,32 @@ export async function createPosition(title: string, rate: string): Promise<Posit
                 rate,
             })
             .returning();
+
+        return result[0];
+    } catch(e: any) {
+        if (e.code === '23505') { // unique_violation
+            throw new Error('A position with this title already exists.');
+        }
+        throw e;
+    }
+}
+
+export async function updatePosition(id: number, title: string, rate: string): Promise<PositionRow> {
+    const db = await getDb();
+
+    try {
+        const result = await db
+            .update(positions)
+            .set({
+                title,
+                rate,
+            })
+            .where(eq(positions.id, id))
+            .returning();
+
+        if (result.length === 0) {
+            throw new Error('Position not found.');
+        }
 
         return result[0];
     } catch(e: any) {
@@ -1767,6 +2038,25 @@ export async function allocatePositionToDepartment(positionId: number, departmen
             positionId,
             departmentId,
         });
+    } catch(e: any) {
+        if (e.code === '23505') { // unique_violation
+            throw new Error('This position is already allocated to this department.');
+        }
+        throw e;
+    }
+}
+
+export async function updatePositionDepartmentAllocation(allocationId: number, positionId: number, departmentId: number): Promise<void> {
+    const db = await getDb();
+
+    try {
+        await db
+            .update(positionDepartments)
+            .set({
+                positionId,
+                departmentId,
+            })
+            .where(eq(positionDepartments.id, allocationId));
     } catch(e: any) {
         if (e.code === '23505') { // unique_violation
             throw new Error('This position is already allocated to this department.');

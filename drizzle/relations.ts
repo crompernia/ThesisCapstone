@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { accounts, attendanceRecords, attendance, schedules, announcements, branches, departments, leaveRequests, reports, payslips, positions, positionDepartments } from "./schema";
+import { accounts, attendanceRecords, attendance, schedules, announcements, branches, departments, leaveRequests, reports, payslips, positions, positionDepartments, loans } from "./schema";
 
 export const attendanceRecordsRelations = relations(attendanceRecords, ({one}) => ({
 	account: one(accounts, {
@@ -16,6 +16,7 @@ export const accountsRelations = relations(accounts, ({many}) => ({
 	leaveRequests: many(leaveRequests),
 	reports: many(reports),
 	payslips: many(payslips),
+	loans: many(loans),
 }));
 
 export const attendanceRelations = relations(attendance, ({one}) => ({
@@ -85,4 +86,16 @@ export const positionDepartmentsRelations = relations(positionDepartments, ({one
 
 export const positionsRelations = relations(positions, ({many}) => ({
 	positionDepartments: many(positionDepartments),
+}));
+
+export const loansRelations = relations(loans, ({one}) => ({
+	account: one(accounts, {
+		fields: [loans.employeeId],
+		references: [accounts.id]
+	}),
+	approvedByAccount: one(accounts, {
+		fields: [loans.approvedBy],
+		references: [accounts.id],
+		relationName: "loans_approved_by_accounts_id_fk"
+	}),
 }));

@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db';
 import { attendance } from '@/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { getCurrentUserId } from '@/lib/auth';
+import { formatInTimeZone } from 'date-fns-tz';
 
 export async function GET() {
   try {
@@ -13,8 +14,9 @@ export async function GET() {
 
     const db = await getDb();
 
-    const today = new Date();
-    const isoDate = today.toISOString().slice(0, 10); // YYYY-MM-DD
+    // Use Singapore timezone consistently with clock-in/out operations
+    const nowUtc = new Date();
+    const isoDate = formatInTimeZone(nowUtc, 'Asia/Singapore', 'yyyy-MM-dd');
 
     const existingRecord = await db
       .select()

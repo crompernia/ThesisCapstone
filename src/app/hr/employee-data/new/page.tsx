@@ -45,7 +45,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { addEmployee } from './actions';
-import { getBranches, getDepartmentsForBranchById, getPositionsForDepartment } from '@/lib/data';
+import { getAllBranches, getDepartmentsForBranchById, getPositionsForDepartment } from '@/lib/data';
 
 const employeeSchema = z.object({
     firstName: z.string().min(1, "First name is required."),
@@ -62,20 +62,16 @@ const employeeSchema = z.object({
         return /^\+63\s\d{3}\s\d{3}\s\d{4}$/.test(val);
     }, "Phone number must be in format +63 XXX XXX XXXX"),
     photo: z.any().optional(),
-    sssNumber: z.string().optional().refine((val) => {
-        if (!val) return true; // Allow empty
+    sssNumber: z.string().min(1, "SSS Number is required.").refine((val) => {
         return /^\d{2}-\d{7}-\d{1}$/.test(val);
     }, "SSS number must be in format XX-XXXXXXX-X"),
-    philhealthNumber: z.string().optional().refine((val) => {
-        if (!val) return true; // Allow empty
+    philhealthNumber: z.string().min(1, "PhilHealth Number is required.").refine((val) => {
         return /^\d{2}-\d{9}-\d{1}$/.test(val);
     }, "PhilHealth number must be in format XX-XXXXXXXXX-X"),
-    pagibigNumber: z.string().optional().refine((val) => {
-        if (!val) return true; // Allow empty
+    pagibigNumber: z.string().min(1, "Pag-IBIG Number is required.").refine((val) => {
         return /^\d{4}-\d{4}-\d{4}$/.test(val);
     }, "Pag-IBIG number must be in format XXXX-XXXX-XXXX"),
-    tin: z.string().optional().refine((val) => {
-        if (!val) return true; // Allow empty
+    tin: z.string().min(1, "TIN is required.").refine((val) => {
         return /^\d{3}-\d{3}-\d{3}-\d{3}$/.test(val);
     }, "TIN must be in format XXX-XXX-XXX-XXX"),
 });
@@ -120,7 +116,7 @@ export default function AddEmployeePage() {
 
   React.useEffect(() => {
     const fetchBranches = async () => {
-        const branchesData = await getBranches();
+        const branchesData = await getAllBranches();
         setBranches(branchesData);
     };
     fetchBranches();
@@ -410,8 +406,8 @@ export default function AddEmployeePage() {
             </div>
 
              {/* Government Benefits Section */}
-            <div className="space-y-4">
-                <h3 className="text-lg font-medium">Government Benefits (Optional)</h3>
+             <div className="space-y-4">
+                 <h3 className="text-lg font-medium">Government Benefits <span className="text-red-500">* Required</span></h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                         control={form.control}

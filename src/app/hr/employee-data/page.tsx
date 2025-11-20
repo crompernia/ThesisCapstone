@@ -32,18 +32,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, PlusCircle, FileText, MoreHorizontal } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Search, PlusCircle, FileText, Pencil, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import {
   getEmployees,
   deleteEmployee,
-  getBranches,
+  getAllBranches,
   getDepartmentsForBranch,
   getPositionsForDepartment,
 } from "@/lib/data";
@@ -76,16 +70,25 @@ export default function EmployeeDataPage() {
   const [positions, setPositions] = React.useState([]);
   const [selectedBranch, setSelectedBranch] = React.useState("");
   const [selectedDepartment, setSelectedDepartment] = React.useState("");
+  const [selectedPosition, setSelectedPosition] = React.useState("");
+  const [searchQuery, setSearchQuery] = React.useState<string>("");
+  const [filteredEmployees, setFilteredEmployees] = React.useState([]);
+  const [showSuggestions, setShowSuggestions] = React.useState<boolean>(false);
+  const [currentPage, setCurrentPage] = React.useState<number>(1);
+  const [itemsPerPage] = React.useState<number>(10);
+  const [sortField, setSortField] = React.useState<string>("employeeNumber");
+  const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">("asc");
 
   const fetchEmployees = React.useCallback(async () => {
     const data = await getEmployees();
     setEmployees(data);
+    setFilteredEmployees(data);
   }, []);
 
   React.useEffect(() => {
     fetchEmployees();
     const fetchFilterData = async () => {
-      const branchesData = await getBranches();
+      const branchesData = await getAllBranches();
       setBranches(branchesData);
     };
     fetchFilterData();
@@ -98,9 +101,11 @@ export default function EmployeeDataPage() {
         setDepartments(depts);
         setSelectedDepartment("");
         setPositions([]);
+        setSelectedPosition("");
       } else {
         setDepartments([]);
         setPositions([]);
+        setSelectedPosition("");
       }
     };
     fetchDepartments();
@@ -111,12 +116,29 @@ export default function EmployeeDataPage() {
       if (selectedDepartment) {
         const pos = await getPositionsForDepartment(selectedDepartment);
         setPositions(pos);
+        setSelectedPosition("");
       } else {
         setPositions([]);
+        setSelectedPosition("");
       }
     };
     fetchPositions();
   }, [selectedDepartment]);
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // Auto-filter when filters change
+  React.useEffect(() => {
+    handleSearch();
+  }, [selectedBranch, selectedDepartment, selectedPosition, searchQuery, employees, sortField, sortDirection]);
+
 
   const handleGenerateReport = () => {
     const doc = new jsPDF();
@@ -129,7 +151,7 @@ export default function EmployeeDataPage() {
     autoTable(doc, {
       startY: 40,
       head: [["Employee ID", "Name", "Position", "Branch", "Status"]],
-      body: employees.map((emp) => [
+      body: filteredEmployees.map((emp) => [
         emp.employeeNumber,
         emp.name,
         emp.position,
@@ -160,16 +182,74 @@ export default function EmployeeDataPage() {
     }
   };
 
+  const handleSearch = () => {
+    let filtered = employees;
+
+    // Filter by search query (name or employee number)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(emp =>
+        emp.name.toLowerCase().includes(query) ||
+        emp.employeeNumber.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by branch
+    if (selectedBranch) {
+      filtered = filtered.filter(emp => emp.branch === selectedBranch);
+    }
+
+    // Filter by department
+    if (selectedDepartment) {
+      filtered = filtered.filter(emp => emp.department === selectedDepartment);
+    }
+
+    // Filter by position
+    if (selectedPosition) {
+      filtered = filtered.filter(emp => emp.position === selectedPosition);
+    }
+
+    // Sort by selected field
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any;
+
+      if (sortField === "employeeNumber") {
+        aValue = parseInt(a.employeeNumber) || a.employeeNumber;
+        bValue = parseInt(b.employeeNumber) || b.employeeNumber;
+      } else {
+        aValue = a[sortField as keyof typeof a];
+        bValue = b[sortField as keyof typeof b];
+      }
+
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        const comparison = aValue.localeCompare(bValue);
+        return sortDirection === "asc" ? comparison : -comparison;
+      } else if (typeof aValue === "number" && typeof bValue === "number") {
+        return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+      }
+
+      return 0;
+    });
+
+    setFilteredEmployees(filtered);
+    setCurrentPage(1);
+  };
+
+  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedEmployees = filteredEmployees.slice(startIndex, endIndex);
+
   return (
     <div className="space-y-6">
       {/* Page Header and Actions */}
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold font-headline">
-            Employee Data Management
+            Employees
           </h1>
           <p className="text-muted-foreground">
-            Add, search, and manage employee profiles.
+            Manage employee profiles.
           </p>
         </div>
         <div className="flex gap-2">
@@ -193,15 +273,39 @@ export default function EmployeeDataPage() {
             Use the filters below to search for specific employees.
           </CardDescription>
           {/* A set of controls to filter the employee list */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 pt-4">
-            <Input
-              placeholder="Search by name or employee ID..."
-              className="lg:col-span-2"
-              onChange={(e) => {
-                // TODO: Implement search functionality
-                console.log('Search:', e.target.value);
-              }}
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 pt-4">
+            <div className="relative lg:col-span-2">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search by name or employee ID..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              />
+              {showSuggestions && searchQuery && filteredEmployees.length > 0 && (
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                  {filteredEmployees.slice(0, 5).map((emp) => (
+                    <button
+                      key={emp.id}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                      onClick={() => {
+                        setSearchQuery(emp.name);
+                        setShowSuggestions(false);
+                      }}
+                    >
+                      <div className="flex flex-col">
+                        <span>{emp.name}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {emp.employeeNumber} - {emp.position} - {emp.branch}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <Select value={selectedBranch} onValueChange={setSelectedBranch}>
               <SelectTrigger>
                 <SelectValue placeholder="Select Branch" />
@@ -232,7 +336,11 @@ export default function EmployeeDataPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select disabled={!selectedDepartment || positions.length === 0}>
+            <Select
+              value={selectedPosition}
+              onValueChange={setSelectedPosition}
+              disabled={!selectedDepartment || positions.length === 0}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select Position" />
               </SelectTrigger>
@@ -244,32 +352,46 @@ export default function EmployeeDataPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button className="w-full">
-              <Search />
-              Search
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
-          {employees.length > 0 ? (
+          {filteredEmployees.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Employee ID</TableHead>
-                  <TableHead>Name</TableHead>
+                  <TableHead>
+                    <Button variant="ghost" onClick={() => handleSort("name")} className="h-auto p-0 font-semibold">
+                      Name
+                      {sortField === "name" && (
+                        sortDirection === "asc" ? <ChevronUp className="inline h-4 w-4 ml-1" /> : <ChevronDown className="inline h-4 w-4 ml-1" />
+                      )}
+                    </Button>
+                  </TableHead>
                   <TableHead>Position</TableHead>
                   <TableHead>Branch</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>
+                    <Button variant="ghost" onClick={() => handleSort("status")} className="h-auto p-0 font-semibold">
+                      Status
+                      {sortField === "status" && (
+                        sortDirection === "asc" ? <ChevronUp className="inline h-4 w-4 ml-1" /> : <ChevronDown className="inline h-4 w-4 ml-1" />
+                      )}
+                    </Button>
+                  </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {employees.map((emp) => (
+                {paginatedEmployees.map((emp) => (
                   <TableRow key={emp.id}>
                     <TableCell className="font-mono text-xs">
                       {emp.employeeNumber}
                     </TableCell>
-                    <TableCell className="font-medium">{emp.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link href={`/hr/employee-data/${emp.id}`} className="hover:underline">
+                        {emp.name}
+                      </Link>
+                    </TableCell>
                     <TableCell>{emp.position}</TableCell>
                     <TableCell>{emp.branch}</TableCell>
                     <TableCell>
@@ -290,58 +412,40 @@ export default function EmployeeDataPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {/* Dropdown menu for individual employee actions */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" {...({} as any)}>
-                          <DropdownMenuItem asChild {...({} as any)}>
-                            <Link href={`/hr/employee-data/${emp.id}`}>
-                              View Profile
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild {...({} as any)}>
-                            <Link href={`/hr/employee-data/${emp.id}/edit`}>
-                              Edit
-                            </Link>
-                          </DropdownMenuItem>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild {...({} as any)}>
-                              <DropdownMenuItem
-                                onSelect={(e) => e.preventDefault()}
-                                className="text-red-600"
-                                {...({} as any)}
+                      <div className="flex gap-2">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/hr/employee-data/${emp.id}/edit`}>
+                            <Pencil className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Are you absolutely sure?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will
+                                permanently delete the employee's data from
+                                the servers.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(emp.id)}
                               >
-                                Delete Employee Data
-                              </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  Are you absolutely sure?
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This action cannot be undone. This will
-                                  permanently delete the employee's data from
-                                  the servers.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDelete(emp.id)}
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -349,10 +453,45 @@ export default function EmployeeDataPage() {
             </Table>
           ) : (
             <p className="text-muted-foreground text-center">
-              No employees found.
+              {employees.length === 0 ? "No employees found." : "No employees found matching your filter criteria."}
             </p>
           )}
         </CardContent>
+        {filteredEmployees.length > 0 && (
+          <div className="flex justify-between items-center p-4 border-t">
+            <p className="text-sm text-muted-foreground">
+              Showing {startIndex + 1} to {Math.min(endIndex, filteredEmployees.length)} of {filteredEmployees.length} entries
+            </p>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                variant="outline"
+                size="sm"
+              >
+                Previous
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <Button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  variant={page === currentPage ? "default" : "outline"}
+                  size="sm"
+                >
+                  {page}
+                </Button>
+              ))}
+              <Button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                variant="outline"
+                size="sm"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );

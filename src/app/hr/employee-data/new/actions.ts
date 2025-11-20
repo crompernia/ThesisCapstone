@@ -24,10 +24,10 @@ const employeeSchema = z.object({
   email: z.string().email(),
   phone: z.string().min(1),
   photo: z.any().optional(),
-  sssNumber: z.string().optional(),
-  philhealthNumber: z.string().optional(),
-  pagibigNumber: z.string().optional(),
-  tin: z.string().optional(),
+  sssNumber: z.string().min(1).refine((val) => /^\d{2}-\d{7}-\d{1}$/.test(val), "SSS number must be in format XX-XXXXXXX-X"),
+  philhealthNumber: z.string().min(1).refine((val) => /^\d{2}-\d{9}-\d{1}$/.test(val), "PhilHealth number must be in format XX-XXXXXXXXX-X"),
+  pagibigNumber: z.string().min(1).refine((val) => /^\d{4}-\d{4}-\d{4}$/.test(val), "Pag-IBIG number must be in format XXXX-XXXX-XXXX"),
+  tin: z.string().min(1).refine((val) => /^\d{3}-\d{3}-\d{3}-\d{3}$/.test(val), "TIN must be in format XXX-XXX-XXX-XXX"),
 });
 
 export async function addEmployee(formData: FormData) {
@@ -106,9 +106,15 @@ export async function addEmployee(formData: FormData) {
     const employeeNumber = "001-" + String(maxNumeric + 1).padStart(5, '0');
     console.log('addEmployee: Generated employee number:', employeeNumber);
 
-    console.log('addEmployee: Hashing default password');
+    console.log('addEmployee: Generating default password');
+    // Generate default password: lastName.toLowerCase() + '.' + MMDDYYYY
+    const [year, month, day] = dob.split('-');
+    const formattedDob = month.padStart(2, '0') + day.padStart(2, '0') + year;
+    const defaultPassword = lastName.toLowerCase() + '.' + formattedDob;
+    console.log('addEmployee: Default password generated:', defaultPassword);
+
     // Hash the default password
-    const hashedPassword = await hashPassword('password');
+    const hashedPassword = await hashPassword(defaultPassword);
     console.log('addEmployee: Password hashed successfully');
 
     const insertData = {

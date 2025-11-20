@@ -4,15 +4,17 @@ import * as React from 'react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Clock, X, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function QuickClock() {
-   const [open, setOpen] = React.useState(false);
-   const [isProcessing, setIsProcessing] = React.useState(false);
-   const [autoAction, setAutoAction] = React.useState<'in' | 'out' | null>(null);
-   const [showClockIn, setShowClockIn] = React.useState(true);
-   const videoRef = React.useRef<HTMLVideoElement | null>(null);
-   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
-   const [error, setError] = React.useState<string | null>(null);
+    const { toast } = useToast();
+    const [open, setOpen] = React.useState(false);
+    const [isProcessing, setIsProcessing] = React.useState(false);
+    const [autoAction, setAutoAction] = React.useState<'in' | 'out' | null>(null);
+    const [showClockIn, setShowClockIn] = React.useState(true);
+    const videoRef = React.useRef<HTMLVideoElement | null>(null);
+    const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+    const [error, setError] = React.useState<string | null>(null);
 
   const getPosition = async (): Promise<GeolocationPosition> => {
     if (!navigator.geolocation) throw new Error('Geolocation not available');
@@ -117,9 +119,7 @@ export default function QuickClock() {
       setOpen(false);
       // notify other parts of the app that quick-clock completed a clock-in
       window.dispatchEvent(new CustomEvent('quick-clock-done', { detail: { action: 'in', status: json.status } }));
-      alert('Clock-in successful');
-      // After clock-in, hide the clock-in button
-      setShowClockIn(false);
+      toast({ title: "Clocked In", description: "Successfully clocked in" });
     } catch (e: any) {
       setError(e.message || 'Error');
     } finally {
@@ -131,6 +131,16 @@ export default function QuickClock() {
     setError(null);
     setIsProcessing(true);
     try {
+      // Check if user has clocked in today
+      const statusRes = await fetch('/api/attendance/check-status');
+      if (statusRes.ok) {
+        const statusData = await statusRes.json();
+        if (!statusData.hasClockedInToday) {
+          toast({ title: "Cannot Clock Out", description: "You are not clocked in", variant: "destructive" });
+          setIsProcessing(false);
+          return;
+        }
+      }
       const pos = await getPosition();
       await startCamera();
       let dataUri: string | null = null;
@@ -158,7 +168,7 @@ export default function QuickClock() {
   setOpen(false);
   // notify other parts of the app that quick-clock completed a clock-out
   window.dispatchEvent(new CustomEvent('quick-clock-done', { detail: { action: 'out', hoursWorked: json.hoursWorked } }));
-  alert(`Clock-out successful. Hours: ${json.hoursWorked}`);
+  toast({ title: "Clocked Out", description: `Hours worked: ${json.hoursWorked}` });
     } catch (e: any) {
       setError(e.message || 'Error');
     } finally {
@@ -188,7 +198,7 @@ export default function QuickClock() {
               <canvas ref={canvasRef} className="hidden" />
             </div>
             <div className="flex gap-2 justify-center">
-               {showClockIn && <Button variant="outline" onClick={handleClockIn} disabled={isProcessing}>{isProcessing ? <Loader2 className="animate-spin" /> : 'Clock In'}</Button>}
+               <Button variant="outline" onClick={handleClockIn} disabled={isProcessing}>{isProcessing ? <Loader2 className="animate-spin" /> : 'Clock In'}</Button>
                <Button variant="outline" onClick={handleClockOut} disabled={isProcessing}>{isProcessing ? <Loader2 className="animate-spin" /> : 'Clock Out'}</Button>
                <Button variant="ghost" onClick={() => setOpen(false)}><X /></Button>
              </div>

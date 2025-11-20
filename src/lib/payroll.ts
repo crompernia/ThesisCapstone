@@ -302,6 +302,40 @@ export function getNightDifferential(hourlyRate: number, nightHours: number): nu
 }
 
 /**
+ * Calculates undertime deduction based on hours short of regular work hours.
+ * Undertime is calculated as the difference between required hours (8) and actual hours worked.
+ * @param hourlyRate - Employee's hourly rate
+ * @param undertimeHours - Number of undertime hours
+ * @returns Undertime deduction amount
+ */
+export function getUndertimeDeduction(hourlyRate: number, undertimeHours: number): number {
+    return undertimeHours * hourlyRate;
+}
+
+/**
+ * Calculates undertime from attendance records.
+ * @param attendanceRecords - Array of attendance records with undertime hours
+ * @returns Total undertime hours for the period
+ */
+export function calculateUndertimeFromAttendance(
+    attendanceRecords: Array<{
+        date: string;
+        undertimeHours: number;
+    }>
+): number {
+    let totalUndertime = 0;
+
+    for (const record of attendanceRecords) {
+        const undertimeHours = record.undertimeHours || 0;
+        if (undertimeHours > 0) {
+            totalUndertime += undertimeHours;
+        }
+    }
+
+    return totalUndertime;
+}
+
+/**
  * Calculates 13th month pay (Christmas bonus).
  * Based on 1/12 of annual basic salary, prorated for months worked.
  * @param monthlyBasicSalary - Monthly basic salary
@@ -327,6 +361,7 @@ export function validatePayslipCalculation(data: {
     pagibigDeduction?: number;
     taxDeduction?: number;
     lateDeduction?: number;
+    undertimeDeduction?: number;
     otherDeductions?: number;
     netPay?: number;
     daysWorked?: number;
@@ -386,7 +421,7 @@ export function validatePayslipCalculation(data: {
 
         const calculatedEarnings = data.basicPay + data.overtime + data.allowances;
         const calculatedDeductions = data.sssDeduction + data.philhealthDeduction + data.pagibigDeduction +
-                                   data.taxDeduction + data.lateDeduction + data.otherDeductions;
+                                    data.taxDeduction + data.lateDeduction + (data.undertimeDeduction || 0) + data.otherDeductions;
         const calculatedNetPay = calculatedEarnings - calculatedDeductions;
 
         const variance = Math.abs(data.netPay - calculatedNetPay);

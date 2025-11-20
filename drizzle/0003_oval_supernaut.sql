@@ -1,0 +1,1 @@
+ALTER TABLE "attendance" ADD COLUMN "undertime_hours" numeric(5, 2) DEFAULT '0';

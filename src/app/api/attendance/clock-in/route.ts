@@ -22,23 +22,27 @@ export async function POST(req: Request) {
     console.log('[clock-in] Resolving employeeId');
     // Resolve employeeId: prefer provided employeeNumber (used on login page), otherwise use authenticated user
     let employeeId: string | null = null;
+    let hireDate: string | null = null;
+
     if (employeeNumber) {
       console.log('[clock-in] Using employeeNumber:', employeeNumber);
       const res = await db.select({ id: accounts.id, dateHired: accounts.dateHired }).from(accounts).where(eq(accounts.employeeNumber, employeeNumber));
       const emp = res[0];
       if (!emp) return NextResponse.json({ success: false, message: 'Employee not found' }, { status: 404 });
       employeeId = emp.id;
+      hireDate = emp.dateHired;
     } else {
       console.log('[clock-in] Getting current user ID');
       const userId = await getCurrentUserId();
       console.log('[clock-in] Current user ID:', userId);
       if (!userId) return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 });
       employeeId = userId;
+
+      // Get employee's hire date
+      const empData = await db.select({ dateHired: accounts.dateHired }).from(accounts).where(eq(accounts.id, employeeId));
+      hireDate = empData[0]?.dateHired;
     }
 
-    // Get employee's hire date to check if clock-in is allowed
-    const empData = await db.select({ dateHired: accounts.dateHired }).from(accounts).where(eq(accounts.id, employeeId));
-    const hireDate = empData[0]?.dateHired;
     if (!hireDate) return NextResponse.json({ success: false, message: 'Employee hire date not found' }, { status: 400 });
 
     const nowUtc = new Date();
@@ -55,50 +59,65 @@ export async function POST(req: Request) {
 
     // Geofence check: if coordinates provided, verify distance against branch coordinates.
     if (latitude && longitude) {
-      // Resolve employee's branch from accounts
-      const acc = await db.select({ branch: accounts.branch, role: accounts.role }).from(accounts).where(eq(accounts.id, employeeId));
-      const branchName = acc[0]?.branch;
-      // const userRole = acc[0]?.role;
+      // Get employee's branch and coordinates in a single query with join
+      const branchData = await db
+        .select({
+          branch: accounts.branch,
+          coordinates: branches.coordinates
+        })
+        .from(accounts)
+        .leftJoin(branches, eq(accounts.branch, branches.name))
+        .where(eq(accounts.id, employeeId))
+        .limit(1);
+
+      const branchName = branchData[0]?.branch;
+      const coords = branchData[0]?.coordinates;
 
       // Allow remote employees to clock in from anywhere
       if (branchName && branchName.toLowerCase() === 'remote') {
         // skip geofence for Remote employees
-      } else if (branchName) {
-        const b = await db.select().from(branches).where(eq(branches.name, branchName));
-        if (b.length > 0) {
-          const coords = (b[0] as any).coordinates;
-          if (coords) {
-            try {
-              const [latS, lonS] = coords.split(',').map((s: string) => parseFloat(s.trim()));
-              const lat = parseFloat(latitude as any);
-              const lon = parseFloat(longitude as any);
-              if (Number.isNaN(latS) || Number.isNaN(lonS) || Number.isNaN(lat) || Number.isNaN(lon)) {
-                return NextResponse.json({ success: false, message: 'Invalid coordinate format' }, { status: 400 });
-              }
-              const distanceMeters = haversineDistance(lat, lon, latS, lonS);
-              const allowedMeters = 200; // default allowed radius 200m
-              if (distanceMeters > allowedMeters) {
-                return NextResponse.json({ success: false, message: 'Outside allowed geofence' }, { status: 403 });
-              }
-            } catch (coordErr: any) {
-              console.error('coordinate parse error', coordErr);
-              return NextResponse.json({ success: false, message: 'Error parsing branch coordinates' }, { status: 500 });
-            }
+      } else if (coords) {
+        try {
+          const [latS, lonS] = coords.split(',').map((s: string) => parseFloat(s.trim()));
+          const lat = parseFloat(latitude as any);
+          const lon = parseFloat(longitude as any);
+          if (Number.isNaN(latS) || Number.isNaN(lonS) || Number.isNaN(lat) || Number.isNaN(lon)) {
+            return NextResponse.json({ success: false, message: 'Invalid coordinate format' }, { status: 400 });
           }
+          const distanceMeters = haversineDistance(lat, lon, latS, lonS);
+          const allowedMeters = 200; // default allowed radius 200m
+          if (distanceMeters > allowedMeters) {
+            return NextResponse.json({ success: false, message: 'Outside allowed geofence' }, { status: 403 });
+          }
+        } catch (coordErr: any) {
+          console.error('coordinate parse error', coordErr);
+          return NextResponse.json({ success: false, message: 'Error parsing branch coordinates' }, { status: 500 });
         }
       }
     }
 
-    // Check if employee has a schedule for today
-    const scheduleCheck = await db.select().from(schedules).where(and(eq(schedules.employeeId, employeeId), eq(schedules.date, isoDate)));
-    if (scheduleCheck.length === 0) {
+    // Check if employee has a schedule for today and get attendance status in one query
+    const scheduleAndAttendance = await db
+      .select({
+        shiftStart: schedules.shiftStart,
+        shiftEnd: schedules.shiftEnd,
+        timeIn: attendance.timeIn,
+        attendanceId: attendance.id
+      })
+      .from(schedules)
+      .leftJoin(attendance, and(eq(attendance.employeeId, employeeId), eq(attendance.date, isoDate)))
+      .where(and(eq(schedules.employeeId, employeeId), eq(schedules.date, isoDate)))
+      .limit(1);
+
+    if (scheduleAndAttendance.length === 0) {
       return NextResponse.json({ success: false, message: 'No schedule assigned for today. Cannot clock in.' }, { status: 403 });
     }
 
-    // Validate clock-in time against scheduled shift times
-    const schedule = scheduleCheck[0];
+    const schedule = scheduleAndAttendance[0];
     const shiftStartTime = schedule.shiftStart;
     const shiftEndTime = schedule.shiftEnd;
+    const existingAttendanceId = schedule.attendanceId;
+    const hasExistingTimeIn = schedule.timeIn !== null;
 
     // Parse date components
     const [year, month, day] = isoDate.split('-').map(Number);
@@ -140,14 +159,11 @@ export async function POST(req: Request) {
     }
 
     // Upsert attendance: if a record exists for employee + date, update timeIn if empty; otherwise insert
-    const existing = await db.select().from(attendance).where(and(eq(attendance.employeeId, employeeId), eq(attendance.date, isoDate)));
-
-    if (existing.length > 0) {
+    if (existingAttendanceId) {
        // If timeIn is null, set it; also set status based on clock-in time
-       const row = existing[0] as any;
-       if (!row.timeIn) {
+       if (!hasExistingTimeIn) {
          // store ISO strings for timestamp columns
-         await db.update(attendance).set({ timeIn: fromZonedTime(now, 'Asia/Singapore').toISOString(), status: clockInStatus }).where(eq(attendance.id, row.id));
+         await db.update(attendance).set({ timeIn: fromZonedTime(now, 'Asia/Singapore').toISOString(), status: clockInStatus }).where(eq(attendance.id, existingAttendanceId));
        }
      } else {
        await db.insert(attendance).values({ employeeId: employeeId as any, date: isoDate as any, timeIn: fromZonedTime(now, 'Asia/Singapore').toISOString(), status: clockInStatus, createdAt: fromZonedTime(now, 'Asia/Singapore').toISOString() } as any);

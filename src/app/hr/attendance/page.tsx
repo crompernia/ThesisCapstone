@@ -244,7 +244,9 @@ export default function HRAttendancePage() {
     const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
       'Present': 'default',
       'Late': 'destructive',
-      'Absent': 'secondary'
+      'Absent': 'secondary',
+      'Present overtime': 'default',
+      'Late overtime': 'destructive'
     };
     return <Badge variant={variants[status] || 'secondary'} className="">{status}</Badge>;
   };

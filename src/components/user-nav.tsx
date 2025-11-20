@@ -1,6 +1,7 @@
 
 "use client"
 
+import * as React from "react";
 import {
   Avatar,
   AvatarFallback,
@@ -19,6 +20,8 @@ import {
 import { signOut } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useTransition } from "react";
 
 interface UserNavProps {
   employeeName: string;
@@ -32,12 +35,30 @@ interface UserNavProps {
  */
 export function UserNav({ employeeName, employeeEmail, employeePhoto }: UserNavProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
+  const [loadingHref, setLoadingHref] = useState<string | null>(null);
 
   // Generate initials from the employee's name for the avatar fallback.
   const initials = employeeName
     .split(' ')
     .map((n: string) => n[0])
     .join('');
+
+  // Navigation handler with loading state
+  const handleNavigation = (href: string) => {
+    if (pathname === href) return; // Already on the page
+    setLoadingHref(href);
+    startTransition(() => {
+      router.push(href);
+    });
+  };
+
+  // Reset loading state when pathname changes
+  React.useEffect(() => {
+    setLoadingHref(null);
+  }, [pathname]);
 
   // Logout handler
   async function handleLogout() {
@@ -78,16 +99,36 @@ export function UserNav({ employeeName, employeeEmail, employeePhoto }: UserNavP
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>
-            Profile
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            Settings
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleLogout}>
-            Logout
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
+           <DropdownMenuItem
+             onClick={() => handleNavigation('/dashboard/profile')}
+             disabled={loadingHref !== null}
+           >
+             {loadingHref === '/dashboard/profile' ? (
+               <>
+                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                 Loading...
+               </>
+             ) : (
+               'Profile'
+             )}
+           </DropdownMenuItem>
+           <DropdownMenuItem
+             onClick={() => handleNavigation('/dashboard/settings')}
+             disabled={loadingHref !== null}
+           >
+             {loadingHref === '/dashboard/settings' ? (
+               <>
+                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                 Loading...
+               </>
+             ) : (
+               'Settings'
+             )}
+           </DropdownMenuItem>
+           <DropdownMenuItem onClick={handleLogout} disabled={loadingHref !== null}>
+             Logout
+           </DropdownMenuItem>
+         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   )

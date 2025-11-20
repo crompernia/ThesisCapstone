@@ -32,7 +32,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { getEmployeeById, getBranches, getDepartmentsForBranch, getPositionsForDepartment } from '@/lib/data';
+import { getEmployeeById, getAllBranches, getDepartmentsForBranch, getPositionsForDepartment } from '@/lib/data';
 import { updateEmployeeAction } from './actions';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -128,7 +128,7 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
         try {
             const [employee, branchesData] = await Promise.all([
                 getEmployeeById(resolvedId),
-                getBranches()
+                getAllBranches()
             ]);
 
             if (employee) {

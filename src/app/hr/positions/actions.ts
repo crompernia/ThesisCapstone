@@ -3,7 +3,7 @@
  */
 'use server';
 
-import { createPosition, deletePosition, createDepartment, allocatePositionToDepartment, removePositionFromDepartment } from '@/lib/data';
+import { createPosition, deletePosition, updatePosition, createDepartment, allocatePositionToDepartment, updatePositionDepartmentAllocation, removePositionFromDepartment } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
 
 export async function createPositionAction(title: string, rate: string) {
@@ -69,5 +69,32 @@ export async function removeAllocationAction(allocationId: number) {
         return { success: true };
     } catch (e: any) {
         return { success: false, message: e.message || 'Failed to remove allocation.' };
+    }
+}
+
+export async function updateAllocationAction(allocationId: number, positionId: number, departmentId: number) {
+    if (!allocationId || !positionId || !departmentId) {
+        return { success: false, message: 'Allocation ID, position ID, and department ID are required.' };
+    }
+    try {
+        await updatePositionDepartmentAllocation(allocationId, positionId, departmentId);
+        revalidatePath('/hr/positions');
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Failed to update allocation.' };
+    }
+}
+
+export async function updatePositionAction(id: number, title: string, rate: string) {
+    const rateNumber = parseFloat(rate);
+    if (!id || !title || isNaN(rateNumber) || rateNumber <= 0) {
+        return { success: false, message: 'Valid position ID, title and a positive rate are required.' };
+    }
+    try {
+        await updatePosition(id, title, rate);
+        revalidatePath('/hr/positions');
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Failed to update position.' };
     }
 }

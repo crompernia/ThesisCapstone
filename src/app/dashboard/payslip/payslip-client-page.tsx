@@ -84,79 +84,186 @@ export default function PayslipClientPage({ payPeriods, employeeName, employeeNu
   const allowances = payslipData?.earnings.find(item => item.name === "Allowances")?.amount || 0;
 
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP',
-    }).format(value);
+    // Use plain text to avoid jsPDF Unicode issues with ₱ symbol
+    return `PHP ${value.toLocaleString('en-PH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
   };
 
   const handleDownloadPdf = () => {
     if (!payslipData) return;
-    
-    const doc = new jsPDF();
 
-    // Header
-    doc.setFontSize(22);
-    doc.setFont("helvetica", "bold");
-    doc.text("Chumplace", 14, 22);
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "normal");
-    doc.text("Payslip", 14, 30);
-    
+    // Create PDF in landscape orientation
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    // Set font to ensure proper encoding - use standard ASCII-compatible font
+    doc.setFont("courier", "normal");
+
+    // Company Header with border
+    doc.setFillColor(240, 240, 240);
+    doc.rect(0, 0, pageWidth, 30, 'F');
+
+    doc.setFontSize(18);
+    doc.setFont("courier", "bold");
+    doc.text("CHUMTING TRADING CORPORATION", pageWidth / 2, 12, { align: 'center' });
+
     doc.setFontSize(10);
-    doc.text(`Employee: ${employeeName}`, 14, 40);
-    doc.text(`Pay Period: ${payslipData.period}`, 14, 45);
-    doc.text(`Pay Date: ${payslipData.payDate}`, 14, 50);
+    doc.setFont("courier", "normal");
+    doc.text("Payslip", pageWidth / 2, 20, { align: 'center' });
 
-    // Earnings Table
-    const filteredEarnings = payslipData.earnings.filter(e => !excludedEarnings.includes(e.name) && e.name !== 'No. of Days' && e.name !== 'Daily Rate' && e.name !== 'Basic Pay');
-    const totalEarnings = filteredEarnings.reduce((sum, e) => sum + e.amount, 0);
+    // Company Details
+    doc.setFontSize(7);
+    doc.text("123 Business District, Makati City, Philippines 1200", pageWidth / 2, 26, { align: 'center' });
+    doc.text("Tel: (02) 123-4567 | Email: hr@chumtingtrading.com", pageWidth / 2, 31, { align: 'center' });
+
+    // Employee Information Box
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.5);
+    doc.rect(10, 38, pageWidth - 20, 20);
+
+    doc.setFontSize(9);
+    doc.setFont("courier", "bold");
+    doc.text("EMPLOYEE INFORMATION", 12, 45);
+
+    doc.setFont("courier", "normal");
+    doc.setFontSize(8);
+    doc.text(`Employee Name: ${employeeName}`, 12, 52);
+    doc.text(`Employee ID: ${employeeNumber}`, 12, 57);
+    doc.text(`Pay Period: ${payslipData.period}`, pageWidth / 2 + 10, 52);
+    doc.text(`Pay Date: ${displayPayDate}`, pageWidth / 2 + 10, 57);
+
+    // Earnings Section (Left side)
+    doc.setFontSize(11);
+    doc.setFont("courier", "bold");
+    doc.text("EARNINGS", 10, 68);
+
+    // Earnings Table with all detailed items
+    const earningsData = [
+      ['Daily Rate', formatCurrency(dailyRate)],
+      ['No. of Days', noOfDays.toString()],
+      ['Basic Pay', formatCurrency(basicPay)],
+      ['Overtime', formatCurrency(overtime)],
+      ['Night Differential', formatCurrency(nightDifferential)],
+      ['Regular Holiday', formatCurrency(regularHoliday)],
+      ['RH OT', formatCurrency(regularHoliday)],
+      ['Special Holiday', formatCurrency(specialHoliday)],
+      ['SP OT', formatCurrency(spOt)],
+      ['Allowance', formatCurrency(allowances)],
+    ];
 
     autoTable(doc, {
-      startY: 60,
-      head: [['Earnings', 'Amount']],
-      body: payslipData.earnings.filter(e => !excludedEarnings.includes(e.name) && e.name !== 'No. of Days' && e.name !== 'Basic Pay').map(e => [
-        e.name,
-        formatCurrency(e.amount)
-      ]),
-      foot: [
-        ['Daily Rate', formatCurrency(dailyRate)],
-        ['No. of Days', noOfDays.toString()],
-        ['Basic Pay', formatCurrency(basicPay)],
-        ['Overtime', formatCurrency(overtime)],
-        ['Night Differential', formatCurrency(nightDifferential)],
-        ['Regular Holiday', formatCurrency(regularHoliday)],
-        ['RH OT', formatCurrency(regularHoliday)]
-      ],
-      theme: 'striped',
-      headStyles: { fillColor: [22, 163, 74] }, // Green
-      footStyles: { fillColor: [244, 244, 245], textColor: [15, 23, 42], fontStyle: 'bold' },
+      startY: 73,
+      head: [['Description', 'Amount']],
+      body: earningsData,
+      foot: [['TOTAL EARNINGS', formatCurrency(totalEarnings)]],
+      theme: 'grid',
+      headStyles: {
+        fillColor: [34, 197, 94],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      bodyStyles: {
+        textColor: [0, 0, 0], // Black text for body
+        fontStyle: 'normal'
+      },
+      footStyles: {
+        fillColor: [34, 197, 94],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      columnStyles: {
+        0: { cellWidth: 70 },
+        1: { cellWidth: 40, halign: 'right' }
+      },
+      margin: { left: 10, right: 10 },
+      styles: { fontSize: 6, font: "courier" },
+      tableWidth: 110
     });
+
+    // Deductions Section (Right side)
+    doc.setFontSize(11);
+    doc.setFont("courier", "bold");
+    doc.text("DEDUCTIONS", pageWidth / 2 + 10, 68);
 
     // Deductions Table
-    const lastTableY = (doc as any).lastAutoTable.finalY;
+    const deductionsData = payslipData.deductions.map(d => [d.name, formatCurrency(d.amount)]);
+
     autoTable(doc, {
-      startY: lastTableY + 10,
-      head: [['Deductions', 'Amount']],
-      body: payslipData.deductions.map(d => [d.name, formatCurrency(d.amount)]),
-      foot: [
-        ['Late/Undertime', formatCurrency(0)],
-        ['Total Deductions', `(${formatCurrency(totalDeductions)})`]
-      ],
-      theme: 'striped',
-      headStyles: { fillColor: [220, 38, 38] }, // Red
-      footStyles: { fillColor: [244, 244, 245], textColor: [15, 23, 42], fontStyle: 'bold' },
+      startY: 73,
+      head: [['Description', 'Amount']],
+      body: deductionsData,
+      foot: [['TOTAL DEDUCTIONS', `(${formatCurrency(totalDeductions)})`]],
+      theme: 'grid',
+      headStyles: {
+        fillColor: [239, 68, 68],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      bodyStyles: {
+        textColor: [0, 0, 0], // Black text for body
+        fontStyle: 'normal'
+      },
+      footStyles: {
+        fillColor: [239, 68, 68],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      columnStyles: {
+        0: { cellWidth: 70 },
+        1: { cellWidth: 40, halign: 'right' }
+      },
+      margin: { left: pageWidth / 2 + 10, right: 10 },
+      styles: { fontSize: 6, font: "courier" },
+      tableWidth: 110
     });
-    
-    // Net Pay
-    const finalY = (doc as any).lastAutoTable.finalY;
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text("Net Pay:", 132, finalY + 15);
-    doc.text(formatCurrency(netPay), doc.internal.pageSize.getWidth() - 35, finalY + 15, { align: 'right' });
 
+    // Net Pay Section
+    const netPayY = (doc as any).lastAutoTable.finalY + 10;
 
-    doc.save(`Payslip-${employeeName.replace(' ', '-')}-${payslipData.period}.pdf`);
+    // Net Pay Box
+    doc.setFillColor(240, 240, 240);
+    doc.rect(10, netPayY - 3, pageWidth - 20, 10, 'F');
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.5);
+    doc.rect(10, netPayY - 3, pageWidth - 20, 10);
+
+    doc.setFontSize(11);
+    doc.setFont("courier", "bold");
+    doc.text("NET PAY:", 12, netPayY + 3);
+    doc.text(formatCurrency(netPay), pageWidth - 12, netPayY + 3, { align: 'right' });
+
+    // Signature Section
+    const signatureY = netPayY + 15;
+    doc.setFontSize(8);
+    doc.setFont("courier", "bold");
+    doc.text("EMPLOYEE SIGNATURE", 10, signatureY);
+    doc.text("SUPERVISOR SIGNATURE", pageWidth - 60, signatureY);
+
+    // Signature lines
+    doc.setLineWidth(0.3);
+    doc.line(10, signatureY + 10, 65, signatureY + 10);
+    doc.line(pageWidth - 60, signatureY + 10, pageWidth - 10, signatureY + 10);
+
+    doc.setFontSize(5);
+    doc.setFont("courier", "normal");
+    doc.text("Date: ________________", 10, signatureY + 13);
+    doc.text("Date: ________________", pageWidth - 60, signatureY + 13);
+
+    // Footer
+    const footerY = pageHeight - 12;
+    doc.setFontSize(5);
+    doc.setFont("courier", "italic");
+    doc.text("This is a system-generated payslip. Please keep this document for your records.", pageWidth / 2, footerY, { align: 'center' });
+    doc.text("Generated on: " + new Date().toLocaleDateString(), pageWidth / 2, footerY + 3, { align: 'center' });
+
+    doc.save(`Payslip-${employeeName.replace(/\s+/g, '-')}-${payslipData.period.replace(/\s+/g, '-')}.pdf`);
   };
 
   return (

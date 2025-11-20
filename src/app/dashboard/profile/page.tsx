@@ -1,0 +1,124 @@
+/**
+ * @fileoverview This file defines the employee profile view page for the dashboard.
+ * It displays detailed information about the current logged-in employee.
+ */
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { getEmployeeById } from "@/lib/data";
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
+
+/**
+ * Renders the detailed view of the current employee's profile.
+ * @returns {JSX.Element} The employee profile page component.
+ */
+export default async function EmployeeProfilePage() {
+  const session = await getSession();
+
+  if (!session || !session.user) {
+    redirect("/");
+  }
+
+  const employee = await getEmployeeById(session.user.id);
+
+  if (!employee) {
+    return (
+      <div className="text-center">
+        <h1 className="text-2xl font-bold">Profile not found</h1>
+        <p className="text-muted-foreground">
+          Your profile information could not be found.
+        </p>
+      </div>
+    );
+  }
+
+  const initials = employee.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("");
+
+  return (
+    <div className="space-y-6">
+      <Card className="max-w-4xl mx-auto">
+        <CardHeader>
+          <div className="flex items-start gap-6">
+            <Avatar className="h-24 w-24">
+              <AvatarImage
+                src={employee.photo || "/default-avatar.png"}
+                alt={employee.name}
+              />
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+              <div className="flex-1">
+              <div className="flex justify-between items-center">
+                <CardTitle className="font-headline text-3xl">
+                  {employee.name}
+                </CardTitle>
+                <Badge
+                  variant={
+                    employee.status === "Active"
+                      ? "default"
+                      : employee.status === "On Leave"
+                      ? "secondary"
+                      : "destructive"
+                  }
+                  className={`${
+                    employee.status === "Active" ? "bg-green-500" : ""
+                  } text-lg`}
+                >
+                  {employee.status}
+                </Badge>
+              </div>
+              <CardDescription className="text-lg">
+                {employee.position}
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-6">
+          <div>
+            <h3 className="text-lg font-semibold border-b pb-2 mb-4">
+              Personal Information
+            </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <InfoItem label="Employee ID" value={employee.employeeNumber} />
+              <InfoItem label="Email" value={employee.email} />
+              <InfoItem label="Date of Birth" value={(employee as any).dateOfBirth ?? (employee as any).date_of_birth ?? ''} />
+              <InfoItem label="Gender" value={employee.gender} />
+            </div>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold border-b pb-2 mb-4">
+              Employment Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <InfoItem label="Department" value={employee.department} />
+              <InfoItem label="Branch" value={employee.branch} />
+              <InfoItem label="Date Hired" value={(employee as any).dateHired ?? (employee as any).date_hired ?? ''} />
+              <InfoItem
+                label="Available Leaves"
+                value={`${(employee as any).availableLeaves ?? (employee as any).available_leaves ?? 0} days`}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function InfoItem({ label, value }: { label: string; value?: React.ReactNode }) {
+  return (
+    <div>
+      <p className="font-medium text-muted-foreground">{label}</p>
+      <p>{value}</p>
+    </div>
+  );
+}

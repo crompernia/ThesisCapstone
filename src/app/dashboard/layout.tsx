@@ -24,6 +24,7 @@ import {
   Wallet,
   Send,
   Clock,
+  CreditCard,
 } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
@@ -149,6 +150,12 @@ export default function DashboardLayout({
               <SidebarMenuButtonAny tooltip="Overtime Request" onClick={() => handleNavigation("/dashboard/overtime")} disabled={loadingHref !== null}>
                 {loadingHref === "/dashboard/overtime" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock />}
                 Overtime Request
+              </SidebarMenuButtonAny>
+            </SidebarMenuItemAny>
+            <SidebarMenuItemAny>
+              <SidebarMenuButtonAny tooltip="Loan Request" onClick={() => handleNavigation("/dashboard/loan")} disabled={loadingHref !== null}>
+                {loadingHref === "/dashboard/loan" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard />}
+                Loan Request
               </SidebarMenuButtonAny>
             </SidebarMenuItemAny>
           </SidebarMenuAny>

@@ -25,6 +25,7 @@ import { FileDown, CheckCircle, AlertTriangle, XCircle, Clock, CalendarOff } fro
 import { Loader2 } from 'lucide-react';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useToast } from "@/hooks/use-toast";
 
 /**
  * Renders the interactive part of the employee's attendance page.
@@ -37,6 +38,7 @@ type AttendanceSummary = { daysAttended: number; totalDaysAttended: number; late
 type ScheduleItem = { day: string; date: string; timeIn: string; timeOut: string; break: string; hours: number };
 
 export default function AttendanceClientPage({ attendanceSummary, attendanceRecords, employeeName, scheduleData }: { attendanceSummary: AttendanceSummary; attendanceRecords: AttendanceRecord[]; employeeName: string; scheduleData?: ScheduleItem[] }) {
+  const { toast } = useToast();
   React.useEffect(() => {
           document.title = "Employee Attendance";
           }, []);
@@ -85,10 +87,10 @@ export default function AttendanceClientPage({ attendanceSummary, attendanceReco
           const updated = [...prev];
           if (d?.action === 'in') {
             updated[idx] = { ...updated[idx], timeIn: timeStr, status: d?.status || 'Present' };
-            alert('Clocked in successfully');
+            toast({ title: "Clocked In", description: "Successfully clocked in" });
           } else if (d?.action === 'out') {
             updated[idx] = { ...updated[idx], timeOut: timeStr };
-            alert(`Clocked out. Hours worked: ${d?.hoursWorked ?? ''}`);
+            toast({ title: "Clocked Out", description: `Hours worked: ${d?.hoursWorked ?? ''}` });
           }
           return updated;
         }
@@ -180,31 +182,29 @@ export default function AttendanceClientPage({ attendanceSummary, attendanceReco
               <p className="text-muted-foreground">Your attendance summary for the current half-month period.</p>
 
           </div>
-        <div className="flex gap-2">
-          <Button onClick={handleClockIn} disabled={isClocking} variant="secondary">
-            {isClocking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Clock className="mr-2"/>}
-            Clock In
-          </Button>
-          <Button onClick={handleClockOut} disabled={isClocking} variant="outline">
-            <Clock className="mr-2"/>
-            Clock Out
-          </Button>
-          <Button onClick={handleDownloadPdf}>
-          <FileDown />
-          Download PDF
-          </Button>
-        </div>
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <Button onClick={getCurrentStatus() === 'outline' ? handleClockIn : handleClockOut} disabled={isClocking} variant={getCurrentStatus() === 'outline' ? 'secondary' : 'outline'}>
+              {isClocking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Clock className="mr-2"/>}
+              Clock In/Out
+            </Button>
+            <Button onClick={handleDownloadPdf}>
+            <FileDown />
+            Download PDF
+            </Button>
+          </div>
 
-        {/* Current Status Display */}
-        <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              <span className="font-medium">Today's Status:</span>
+          {/* Current Status Display */}
+          <div className="p-4 bg-muted/50 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <span className="font-medium">Today's Status:</span>
+              </div>
+              <Badge variant={getCurrentStatus()} className={getCurrentStatus() === 'break' ? 'bg-yellow-500' : ''}>
+                {getCurrentStatusText()}
+              </Badge>
             </div>
-            <Badge variant={getCurrentStatus()} className={getCurrentStatus() === 'break' ? 'bg-yellow-500' : ''}>
-              {getCurrentStatusText()}
-            </Badge>
           </div>
         </div>
       </div>
@@ -300,8 +300,13 @@ export default function AttendanceClientPage({ attendanceSummary, attendanceReco
                     <TableCell>{record.lateMinutes || 0}</TableCell>
                     <TableCell className="text-right">
                       <Badge variant={
-                        record.status === 'Present' ? 'default' : record.status === 'Late' ? 'secondary' : 'destructive'
-                      } className={record.status === 'Present' ? 'bg-green-500' : ''}>
+                        record.status?.includes('Absent') ? 'destructive' :
+                        record.status?.includes('Undertime') || record.status?.includes('Late') ? 'secondary' :
+                        'default'
+                      } className={
+                        record.status?.includes('Present') || record.status?.includes('Overtime') ? 'bg-green-500' :
+                        record.status?.includes('Overtime') ? 'bg-blue-500' : ''
+                      }>
                         {record.status}
                       </Badge>
                     </TableCell>
