@@ -49,7 +49,7 @@ export function LoginForm() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
-  const [forgotUsername, setForgotUsername] = React.useState("");
+  const [forgotEmployeeNumber, setForgotEmployeeNumber] = React.useState("");
   const [isForgotLoading, setIsForgotLoading] = React.useState(false);
 
   // Show error message if present in URL
@@ -169,11 +169,11 @@ export function LoginForm() {
   };
 
   const handleForgotPassword = async () => {
-    if (!forgotUsername.trim()) {
+    if (!forgotEmployeeNumber.trim()) {
       toast({
         variant: "destructive",
-        title: "Username Required",
-        description: "Please enter your username.",
+        title: "Employee Number Required",
+        description: "Please enter your employee number.",
       });
       return;
     }
@@ -185,16 +185,16 @@ export function LoginForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username: forgotUsername }),
+        body: JSON.stringify({ employeeNumber: forgotEmployeeNumber }),
       });
 
       if (response.ok) {
         toast({
           title: "Reset Email Sent",
-          description: "If an account with that username exists, a password reset email has been sent.",
+          description: "If an account with that employee number exists, a password reset link has been sent to your registered email.",
         });
         setForgotPasswordOpen(false);
-        setForgotUsername("");
+        setForgotEmployeeNumber("");
       } else {
         const error = await response.json();
         toast({
@@ -272,31 +272,51 @@ export function LoginForm() {
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Reset Password</DialogTitle>
-                    <DialogDescription>
-                      Enter your username to receive a password reset email.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="forgot-username">Username</Label>
-                      <Input
-                        id="forgot-username"
-                        placeholder="Employee Number, HR email, or Admin email"
-                        value={forgotUsername}
-                        onChange={(e) => setForgotUsername(e.target.value)}
-                      />
-                    </div>
-                    <Button
-                      onClick={handleForgotPassword}
-                      disabled={isForgotLoading}
-                      className="w-full"
-                    >
-                      {isForgotLoading ? "Sending..." : "Send Reset Email"}
-                    </Button>
-                  </div>
-                </DialogContent>
+                   <DialogHeader>
+                     <DialogTitle>Reset Password</DialogTitle>
+                     <DialogDescription>
+                       Enter your employee number to receive a password reset link on your registered email.
+                     </DialogDescription>
+                   </DialogHeader>
+                   <div className="space-y-4">
+                     <div>
+                       <Label htmlFor="forgot-employee">Employee Number</Label>
+                       <Input
+                         id="forgot-employee"
+                         placeholder="001-00037"
+                         value={forgotEmployeeNumber}
+                         onChange={(e) => {
+                           let value = e.target.value.replace(/[^0-9-]/g, ''); // Only allow numbers and hyphens
+
+                           // Auto-format as user types
+                           if (value.length <= 3) {
+                             value = value.replace(/[^0-9]/g, ''); // First 3 digits only
+                           } else if (value.length === 4) {
+                             // Add hyphen after 3 digits
+                             value = value.slice(0, 3) + '-' + value.slice(3);
+                           } else if (value.length > 4) {
+                             // Ensure format 000-00000
+                             const digitsOnly = value.replace(/-/g, '');
+                             if (digitsOnly.length <= 8) {
+                               value = digitsOnly.slice(0, 3) + '-' + digitsOnly.slice(3, 8);
+                             } else {
+                               value = digitsOnly.slice(0, 3) + '-' + digitsOnly.slice(3, 8);
+                             }
+                           }
+
+                           setForgotEmployeeNumber(value);
+                         }}
+                       />
+                     </div>
+                     <Button
+                       onClick={handleForgotPassword}
+                       disabled={isForgotLoading}
+                       className="w-full"
+                     >
+                       {isForgotLoading ? "Sending..." : "Send Reset Email"}
+                     </Button>
+                   </div>
+                 </DialogContent>
               </Dialog>
             </div>
           </form>

@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, UserPlus } from 'lucide-react';
+import { ArrowLeft, UserPlus, Camera } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -46,6 +46,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { addEmployee } from './actions';
 import { getAllBranches, getDepartmentsForBranchById, getPositionsForDepartment } from '@/lib/data';
+import FacePhotoCapture from '@/components/face-photo-capture';
 
 const employeeSchema = z.object({
     firstName: z.string().min(1, "First name is required."),
@@ -81,12 +82,13 @@ const employeeSchema = z.object({
  * @returns {JSX.Element} The add employee page component.
  */
 export default function AddEmployeePage() {
-  const [photoPreview, setPhotoPreview] = React.useState(null);
-  const [branches, setBranches] = React.useState([]);
-  const [departments, setDepartments] = React.useState([]);
-  const [positions, setPositions] = React.useState([]);
-  const router = useRouter();
-  const { toast } = useToast();
+   const [photoPreview, setPhotoPreview] = React.useState(null);
+   const [cameraOpen, setCameraOpen] = React.useState(false);
+   const [branches, setBranches] = React.useState([]);
+   const [departments, setDepartments] = React.useState([]);
+   const [positions, setPositions] = React.useState([]);
+   const router = useRouter();
+   const { toast } = useToast();
 
   const form = useForm({
     resolver: zodResolver(employeeSchema),
@@ -171,6 +173,17 @@ export default function AddEmployeePage() {
     }
   };
 
+  const handlePhotoCaptured = (dataUri: string) => {
+    setPhotoPreview(dataUri);
+    // Convert dataUri to File object for form submission
+    fetch(dataUri)
+      .then(res => res.blob())
+      .then(blob => {
+        const file = new File([blob], 'face-reference.jpg', { type: 'image/jpeg' });
+        form.setValue('photo', file);
+      });
+  };
+
   const handleSubmit = async (values) => {
     const formData = new FormData();
     for (const key in values) {
@@ -238,11 +251,25 @@ export default function AddEmployeePage() {
                     <UserPlus />
                     </AvatarFallback>
                 </Avatar>
-                <div className="space-y-2">
-                    <Label htmlFor="photo-upload">Upload a photo</Label>
-                    <Input id="photo-upload" type="file" accept="image/*" onChange={handlePhotoChange} />
+                <div className="space-y-2 flex-1">
+                    <div className="flex gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCameraOpen(true)}
+                            className="flex items-center gap-2"
+                        >
+                            <Camera className="h-4 w-4" />
+                            Take Photo
+                        </Button>
+                        <div className="flex-1">
+                            <Label htmlFor="photo-upload" className="text-sm font-medium">Or upload a file</Label>
+                            <Input id="photo-upload" type="file" accept="image/*" onChange={handlePhotoChange} className="mt-1" />
+                        </div>
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                    PNG, JPG, or GIF up to 5MB. This photo will be used for facial recognition.
+                    Take a photo or upload an image (PNG, JPG, or GIF up to 5MB). This photo will be used for facial recognition during clock-in/out.
                     </p>
                 </div>
                 </div>
@@ -620,6 +647,13 @@ export default function AddEmployeePage() {
         </Card>
       </form>
     </Form>
+
+    {/* Face Photo Capture Dialog */}
+    <FacePhotoCapture
+      open={cameraOpen}
+      onOpenChange={setCameraOpen}
+      onPhotoCaptured={handlePhotoCaptured}
+    />
     </div>
   );
 }

@@ -340,7 +340,13 @@ export async function getEmployeeById(id: string) {
 
 export async function deleteEmployee(id: string): Promise<boolean> {
     const db = await getDb();
-    const result = await db.delete(accounts).where(eq(accounts.id, id));
+    const result = await db.update(accounts).set({ status: 'Inactive' }).where(eq(accounts.id, id));
+    return (result.rowCount ?? 0) > 0;
+}
+
+export async function reactivateEmployee(id: string): Promise<boolean> {
+    const db = await getDb();
+    const result = await db.update(accounts).set({ status: 'Active' }).where(eq(accounts.id, id));
     return (result.rowCount ?? 0) > 0;
 }
 

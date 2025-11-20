@@ -209,6 +209,7 @@ export const accounts = pgTable("accounts", {
 	lastName: varchar("last_name", { length: 255 }).notNull(),
 	middleName: varchar("middle_name", { length: 255 }),
 	email: varchar({ length: 255 }).notNull(),
+	phoneNumber: varchar("phone_number", { length: 20 }),
 	password: varchar({ length: 255 }).notNull(),
 	role: varchar({ length: 50 }).notNull(),
 	position: varchar({ length: 255 }),

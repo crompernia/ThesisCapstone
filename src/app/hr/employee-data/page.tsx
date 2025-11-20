@@ -32,11 +32,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, PlusCircle, FileText, Pencil, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, PlusCircle, FileText, Pencil, Trash2, ChevronUp, ChevronDown, UserCheck } from "lucide-react";
 import Link from "next/link";
 import {
   getEmployees,
   deleteEmployee,
+  reactivateEmployee,
   getAllBranches,
   getDepartmentsForBranch,
   getPositionsForDepartment,
@@ -165,19 +166,36 @@ export default function EmployeeDataPage() {
     doc.save("Employee-Report.pdf");
   };
 
-  const handleDelete = async (id) => {
+  const handleDeactivate = async (id) => {
     const result = await deleteEmployee(id);
     if (result) {
       toast({
         title: "Success",
-        description: "Employee has been deleted.",
+        description: "Employee has been deactivated.",
       });
       fetchEmployees();
     } else {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to delete employee.",
+        description: "Failed to deactivate employee.",
+      });
+    }
+  };
+
+  const handleReactivate = async (id) => {
+    const result = await reactivateEmployee(id);
+    if (result) {
+      toast({
+        title: "Success",
+        description: "Employee has been reactivated.",
+      });
+      fetchEmployees();
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to reactivate employee.",
       });
     }
   };
@@ -418,33 +436,42 @@ export default function EmployeeDataPage() {
                             <Pencil className="h-4 w-4" />
                           </Link>
                         </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                Are you absolutely sure?
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will
-                                permanently delete the employee's data from
-                                the servers.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(emp.id)}
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        {emp.status === "Active" ? (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Deactivate Employee Account
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will deactivate the employee's account and prevent them from logging in.
+                                  The account can be reactivated by HR at any time.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeactivate(emp.id)}
+                                >
+                                  Deactivate
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        ) : (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleReactivate(emp.id)}
+                          >
+                            <UserCheck className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

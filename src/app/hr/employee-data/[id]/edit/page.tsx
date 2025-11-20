@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, UserPlus, Save } from 'lucide-react';
+import { ArrowLeft, UserPlus, Save, Camera } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -35,6 +35,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { getEmployeeById, getAllBranches, getDepartmentsForBranch, getPositionsForDepartment } from '@/lib/data';
 import { updateEmployeeAction } from './actions';
 import { Skeleton } from '@/components/ui/skeleton';
+import FacePhotoCapture from '@/components/face-photo-capture';
 
 const employeeSchema = z.object({
     firstName: z.string().min(1, "First name is required."),
@@ -82,14 +83,15 @@ type FormValues = {
 type Branch = { id: number; name: string; coordinates?: string | null }
 
 export default function EditEmployeePage({ params }: { params: Promise<{ id: string }> }) {
-    const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
-    const [isLoading, setIsLoading] = React.useState<boolean>(true);
-    const [branches, setBranches] = React.useState<Branch[]>([]);
-    const [departments, setDepartments] = React.useState<string[]>([]);
-    const [positions, setPositions] = React.useState<string[]>([]);
-    const [resolvedId, setResolvedId] = React.useState<string>('');
-  const router = useRouter();
-  const { toast } = useToast();
+     const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
+     const [cameraOpen, setCameraOpen] = React.useState(false);
+     const [isLoading, setIsLoading] = React.useState<boolean>(true);
+     const [branches, setBranches] = React.useState<Branch[]>([]);
+     const [departments, setDepartments] = React.useState<string[]>([]);
+     const [positions, setPositions] = React.useState<string[]>([]);
+     const [resolvedId, setResolvedId] = React.useState<string>('');
+   const router = useRouter();
+   const { toast } = useToast();
 
   React.useEffect(() => {
     const resolveParams = async () => {
@@ -221,6 +223,17 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
     }
   };
 
+    const handlePhotoCaptured = (dataUri: string) => {
+      setPhotoPreview(dataUri);
+      // Convert dataUri to File object for form submission
+      fetch(dataUri)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], 'face-reference.jpg', { type: 'image/jpeg' });
+          form.setValue('photo', file);
+        });
+    };
+
     const handleSubmit = async (values: FormValues) => {
         if (!resolvedId) {
             toast({
@@ -329,9 +342,26 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
                     <UserPlus />
                     </AvatarFallback>
                 </Avatar>
-                <div className="space-y-2">
-                    <Label htmlFor="photo-upload">Upload new photo</Label>
-                    <Input id="photo-upload" type="file" accept="image/*" onChange={handlePhotoChange} />
+                <div className="space-y-2 flex-1">
+                    <div className="flex gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCameraOpen(true)}
+                            className="flex items-center gap-2"
+                        >
+                            <Camera className="h-4 w-4" />
+                            Take Photo
+                        </Button>
+                        <div className="flex-1">
+                            <Label htmlFor="photo-upload" className="text-sm font-medium">Or upload a file</Label>
+                            <Input id="photo-upload" type="file" accept="image/*" onChange={handlePhotoChange} className="mt-1" />
+                        </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                    Take a photo or upload an image (PNG, JPG, or GIF up to 5MB). This photo will be used for facial recognition during clock-in/out.
+                    </p>
                 </div>
                 </div>
             </div>
@@ -554,6 +584,13 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
         </Card>
       </form>
     </Form>
+
+    {/* Face Photo Capture Dialog */}
+    <FacePhotoCapture
+      open={cameraOpen}
+      onOpenChange={setCameraOpen}
+      onPhotoCaptured={handlePhotoCaptured}
+    />
     </div>
   );
 }
