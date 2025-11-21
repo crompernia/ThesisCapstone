@@ -3,11 +3,17 @@
  */
 import { Resend } from 'resend';
 
-if (!process.env.RESEND_API_KEY) {
-  throw new Error('RESEND_API_KEY environment variable is required');
+// Check if email is configured
+const isEmailConfigured = !!process.env.RESEND_API_KEY;
+
+// Create Resend client only if API key is available
+let resendInstance: Resend | null = null;
+if (isEmailConfigured) {
+  resendInstance = new Resend(process.env.RESEND_API_KEY!);
 }
 
-export const resend = new Resend(process.env.RESEND_API_KEY);
+export const resend = resendInstance;
+export const emailEnabled = isEmailConfigured;
 
 /**
  * Send an email using Resend
@@ -23,6 +29,12 @@ export async function sendEmail({
   html: string;
   from?: string;
 }) {
+  // Check if email is configured
+  if (!emailEnabled || !resend) {
+    console.log('Email not configured, skipping email send');
+    return { success: false, error: 'Email not configured' };
+  }
+
   try {
     const result = await resend.emails.send({
       from,
