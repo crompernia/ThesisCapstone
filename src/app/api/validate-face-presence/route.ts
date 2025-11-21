@@ -277,7 +277,7 @@ export async function POST(req: Request) {
       }, { status: 404 });
     }
 
-    const storedFaceEncoding = employee[0].faceEncoding;
+    const storedFaceEncoding = (employee[0] as any).faceEncoding;
     if (!storedFaceEncoding) {
       return NextResponse.json({ 
         isVerified: false, 
