@@ -17,7 +17,9 @@
     "db:seed": "npx tsx src/lib/seed.ts",
     "db:update-passwords": "npx tsx src/lib/update-passwords.ts",
     "db:update-leaves": "npx tsx src/lib/update-leaves.ts",
-    "attendance:mark-absent": "npx tsx scripts/mark-absent-records.js"
+    "attendance:mark-absent": "npx tsx scripts/mark-absent-records.js",
+    "export-schedules": "npx tsx scripts/export-schedules.js",
+    "import-schedules": "npx tsx scripts/import-schedules.js"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",

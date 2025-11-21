@@ -195,6 +195,8 @@ async function dataUriToCanvas(dataUri: string): Promise<Canvas> {
 
 export async function POST(req: Request) {
   try {
+    await loadModels();
+
     const body = await req.json();
     console.debug('[verify-face] body keys:', Object.keys(body || {}));
     const { fingerprint, dataUri, faceAlreadyVerified } = body;
@@ -273,9 +275,6 @@ export async function POST(req: Request) {
     // Extract face descriptor from captured photo (skip if already verified)
     let capturedDescriptor: Float32Array | null = null;
     if (!faceAlreadyVerified) {
-      // Only load models when actually needed for face processing
-      await loadModels();
-
       try {
         console.log('[verify-face] Starting face detection on captured image');
         const canvas = await dataUriToCanvas(dataUri);

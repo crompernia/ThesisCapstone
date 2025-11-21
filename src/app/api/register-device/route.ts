@@ -45,8 +45,7 @@ export async function POST(req: Request) {
     if (Array.isArray(currentDevices) && currentDevices.length >= MAX_DEVICES) {
       return NextResponse.json({
         success: false,
-        message: `Maximum ${MAX_DEVICES} devices allowed per employee. Your current devices: ${currentDevices.join(', ')}. Please contact HR to manage your registered devices.`,
-        currentDevices: currentDevices
+        message: `Maximum ${MAX_DEVICES} devices allowed per employee. Please contact HR to manage your registered devices.`
       }, { status: 403 });
     }
 
