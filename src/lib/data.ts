@@ -628,6 +628,7 @@ export async function getEmployeeDashboardData(employeeid: string) {
             branch: accounts.branch,
             email: accounts.email,
             dateHired: accounts.dateHired,
+            photo: accounts.photo,
         })
         .from(accounts)
         .where(eq(accounts.id, employeeid));
@@ -660,6 +661,7 @@ export async function getEmployeeDashboardData(employeeid: string) {
             branch: employee.branch,
             email: employee.email,
             dateHired: employee.dateHired ? format(new Date(employee.dateHired), 'yyyy-MM-dd') : null,
+            photo: employee.photo,
         },
         announcements: announcementsResult.map(a => ({
             id: a.id,
