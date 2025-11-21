@@ -8,6 +8,30 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 /**
+ * Parses a 12-hour time string (e.g., "9:00 AM") into 24-hour format components.
+ * @param timeStr - Time string in format "H:MM AM/PM"
+ * @returns Object with hour (0-23) and minute (0-59)
+ */
+function parseTime12Hour(timeStr: string): { hour: number; minute: number } {
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) {
+    throw new Error(`Invalid time format: ${timeStr}`);
+  }
+
+  let hour = parseInt(match[1], 10);
+  const minute = parseInt(match[2], 10);
+  const period = match[3].toUpperCase();
+
+  if (period === 'PM' && hour !== 12) {
+    hour += 12;
+  } else if (period === 'AM' && hour === 12) {
+    hour = 0;
+  }
+
+  return { hour, minute };
+}
+
+/**
  * Generates sample attendance data for an employee for 1-2 weeks.
  * Creates realistic clock-in/out records based on their schedule.
  */
@@ -74,8 +98,8 @@ export async function generateSampleAttendance(formData: FormData) {
         scheduleInserts.push({
           employeeId,
           date: dateStr,
-          shiftStart: '09:00:00',
-          shiftEnd: '18:00:00',
+          shiftStart: '9:00 AM',
+          shiftEnd: '6:00 PM',
         });
       }
 
@@ -139,8 +163,8 @@ export async function generateSampleAttendance(formData: FormData) {
 
     if (schedule && schedule.shiftStart && schedule.shiftEnd) {
       // Employee has a schedule, generate attendance
-      const [startHour, startMin] = schedule.shiftStart.split(':').map(Number);
-      const [endHour, endMin] = schedule.shiftEnd.split(':').map(Number);
+      const { hour: startHour, minute: startMin } = parseTime12Hour(schedule.shiftStart);
+      const { hour: endHour, minute: endMin } = parseTime12Hour(schedule.shiftEnd);
 
       // Generate clock-in time with variation (early, on time, or late)
       const attendanceType = Math.random(); // Random number between 0 and 1
