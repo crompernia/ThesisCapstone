@@ -294,7 +294,7 @@ export async function POST(req: Request) {
       }
 
       const distance = faceapi.euclideanDistance(capturedFaceDescriptor, storedDescriptor);
-      const threshold = 0.6;
+      const threshold = 0.5;
       const isVerified = distance < threshold;
 
       console.log(`[validate-face-presence] Face verification - Distance: ${distance.toFixed(4)}, Threshold: ${threshold}, Verified: ${isVerified}`);
@@ -365,8 +365,8 @@ export async function POST(req: Request) {
       // Calculate the Euclidean distance between the two face descriptors
       const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor);
 
-      // Set a threshold for face recognition (0.6 is a common threshold for face-api.js)
-      const threshold = 0.6;
+      // Set a threshold for face recognition (0.5 is a stricter threshold for face-api.js)
+      const threshold = 0.5;
       const isVerified = distance < threshold;
 
       console.log(`[validate-face-presence] Face verification - Distance: ${distance.toFixed(4)}, Threshold: ${threshold}, Verified: ${isVerified}`);
