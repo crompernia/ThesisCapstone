@@ -211,104 +211,173 @@ async function fileToCanvas(file: File): Promise<Canvas> {
 
 export async function POST(req: Request) {
   try {
-    await loadModels();
+    const contentType = req.headers.get('content-type') || '';
 
-    const formData = await req.formData();
-    const imageFile = formData.get('image') as File;
-    const employeeId = formData.get('employeeId') as string;
+    if (contentType.includes('multipart/form-data')) {
+      // Handle FormData requests (legacy presence check)
+      const formData = await req.formData();
+      const imageFile = formData.get('image') as File;
+      const employeeId = formData.get('employeeId') as string;
 
-    if (!imageFile) {
+      if (!imageFile) {
+        return NextResponse.json({
+          isVerified: false,
+          hasFace: false,
+          error: 'No image provided'
+        }, { status: 400 });
+      }
+
+      // Convert file to canvas
+      const canvas = await fileToCanvas(imageFile);
+
+      // If no employeeId, just check for face presence
+      if (!employeeId) {
+        const detections = await faceapi.detectAllFaces(canvas as any);
+        const hasFace = detections.length === 1;
+        return NextResponse.json({
+          hasFace,
+          faceCount: detections.length
+        });
+      }
+
+      // Legacy verification mode (should not be used with new client-side extraction)
+      await loadModels();
+      const detections = await faceapi.detectAllFaces(canvas as any)
+        .withFaceLandmarks()
+        .withFaceDescriptors();
+
+      if (detections.length === 0) {
+        return NextResponse.json({
+          isVerified: false,
+          error: 'No face detected in the image'
+        }, { status: 400 });
+      }
+
+      if (detections.length > 1) {
+        return NextResponse.json({
+          isVerified: false,
+          error: 'Multiple faces detected. Please provide an image with only one face.'
+        }, { status: 400 });
+      }
+
+      const capturedFaceDescriptor = detections[0].descriptor;
+
+      // Retrieve and compare with stored encoding
+      const db = await getDb();
+      const employee = await db.select().from(accounts).where(eq(accounts.id, employeeId)).limit(1);
+
+      if (employee.length === 0) {
+        return NextResponse.json({
+          isVerified: false,
+          error: 'Employee not found'
+        }, { status: 404 });
+      }
+
+      const storedFaceEncoding = (employee[0] as any).faceEncoding;
+      if (!storedFaceEncoding) {
+        return NextResponse.json({
+          isVerified: false,
+          error: 'No face encoding found for this employee. Please capture face data first.'
+        }, { status: 400 });
+      }
+
+      let storedDescriptor: Float32Array;
+      try {
+        const storedArray = JSON.parse(storedFaceEncoding);
+        storedDescriptor = new Float32Array(storedArray);
+      } catch (error) {
+        console.error('[validate-face-presence] Error parsing stored face encoding:', error);
+        return NextResponse.json({
+          isVerified: false,
+          error: 'Invalid face encoding data stored for employee'
+        }, { status: 500 });
+      }
+
+      const distance = faceapi.euclideanDistance(capturedFaceDescriptor, storedDescriptor);
+      const threshold = 0.6;
+      const isVerified = distance < threshold;
+
+      console.log(`[validate-face-presence] Face verification - Distance: ${distance.toFixed(4)}, Threshold: ${threshold}, Verified: ${isVerified}`);
+
       return NextResponse.json({
-        isVerified: false,
-        hasFace: false,
-        error: 'No image provided'
-      }, { status: 400 });
-    }
+        isVerified,
+        distance: parseFloat(distance.toFixed(4)),
+        threshold,
+        faceCount: detections.length,
+        message: isVerified ? 'Face verified successfully' : 'Face verification failed'
+      });
 
-    // Convert file to canvas
-    const canvas = await fileToCanvas(imageFile);
+    } else {
+      // Handle JSON requests (new client-side descriptor verification)
+      const body = await req.json();
+      const { faceDescriptor, employeeId } = body;
 
-    // If no employeeId, just check for face presence
-    if (!employeeId) {
-      const detections = await faceapi.detectAllFaces(canvas as any);
-      const hasFace = detections.length === 1;
+      if (!faceDescriptor || !employeeId) {
+        return NextResponse.json({
+          isVerified: false,
+          error: 'Face descriptor and employeeId required'
+        }, { status: 400 });
+      }
+
+      // Parse the provided face descriptor
+      let capturedDescriptor: Float32Array;
+      try {
+        capturedDescriptor = new Float32Array(faceDescriptor);
+      } catch (error) {
+        return NextResponse.json({
+          isVerified: false,
+          error: 'Invalid face descriptor format'
+        }, { status: 400 });
+      }
+
+      // Retrieve the stored face encoding from the database
+      const db = await getDb();
+      const employee = await db.select().from(accounts).where(eq(accounts.id, employeeId)).limit(1);
+
+      if (employee.length === 0) {
+        return NextResponse.json({
+          isVerified: false,
+          error: 'Employee not found'
+        }, { status: 404 });
+      }
+
+      const storedFaceEncoding = (employee[0] as any).faceEncoding;
+      if (!storedFaceEncoding) {
+        return NextResponse.json({
+          isVerified: false,
+          error: 'No face encoding found for this employee. Please capture face data first.'
+        }, { status: 400 });
+      }
+
+      // Parse the stored face encoding
+      let storedDescriptor: Float32Array;
+      try {
+        const storedArray = JSON.parse(storedFaceEncoding);
+        storedDescriptor = new Float32Array(storedArray);
+      } catch (error) {
+        console.error('[validate-face-presence] Error parsing stored face encoding:', error);
+        return NextResponse.json({
+          isVerified: false,
+          error: 'Invalid face encoding data stored for employee'
+        }, { status: 500 });
+      }
+
+      // Calculate the Euclidean distance between the two face descriptors
+      const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor);
+
+      // Set a threshold for face recognition (0.6 is a common threshold for face-api.js)
+      const threshold = 0.6;
+      const isVerified = distance < threshold;
+
+      console.log(`[validate-face-presence] Face verification - Distance: ${distance.toFixed(4)}, Threshold: ${threshold}, Verified: ${isVerified}`);
+
       return NextResponse.json({
-        hasFace,
-        faceCount: detections.length
+        isVerified,
+        distance: parseFloat(distance.toFixed(4)),
+        threshold,
+        message: isVerified ? 'Face verified successfully' : 'Face verification failed'
       });
     }
-
-    // Full verification mode
-    // Detect faces and get face descriptors
-    const detections = await faceapi.detectAllFaces(canvas as any)
-      .withFaceLandmarks()
-      .withFaceDescriptors();
-
-    if (detections.length === 0) {
-      return NextResponse.json({ 
-        isVerified: false, 
-        error: 'No face detected in the image' 
-      }, { status: 400 });
-    }
-
-    if (detections.length > 1) {
-      return NextResponse.json({ 
-        isVerified: false, 
-        error: 'Multiple faces detected. Please provide an image with only one face.' 
-      }, { status: 400 });
-    }
-
-    // Get the face descriptor from the captured image
-    const capturedFaceDescriptor = detections[0].descriptor;
-
-    // Retrieve the stored face encoding from the database
-    const db = await getDb();
-    const employee = await db.select().from(accounts).where(eq(accounts.id, employeeId)).limit(1);
-    
-    if (employee.length === 0) {
-      return NextResponse.json({ 
-        isVerified: false, 
-        error: 'Employee not found' 
-      }, { status: 404 });
-    }
-
-    const storedFaceEncoding = (employee[0] as any).faceEncoding;
-    if (!storedFaceEncoding) {
-      return NextResponse.json({ 
-        isVerified: false, 
-        error: 'No face encoding found for this employee. Please capture face data first.' 
-      }, { status: 400 });
-    }
-
-    // Parse the stored face encoding
-    let storedDescriptor: Float32Array;
-    try {
-      const storedArray = JSON.parse(storedFaceEncoding);
-      storedDescriptor = new Float32Array(storedArray);
-    } catch (error) {
-      console.error('[validate-face-presence] Error parsing stored face encoding:', error);
-      return NextResponse.json({ 
-        isVerified: false, 
-        error: 'Invalid face encoding data stored for employee' 
-      }, { status: 500 });
-    }
-
-    // Calculate the Euclidean distance between the two face descriptors
-    const distance = faceapi.euclideanDistance(capturedFaceDescriptor, storedDescriptor);
-    
-    // Set a threshold for face recognition (0.6 is a common threshold for face-api.js)
-    const threshold = 0.6;
-    const isVerified = distance < threshold;
-
-    console.log(`[validate-face-presence] Face verification - Distance: ${distance.toFixed(4)}, Threshold: ${threshold}, Verified: ${isVerified}`);
-
-    return NextResponse.json({
-      isVerified,
-      distance: parseFloat(distance.toFixed(4)),
-      threshold,
-      faceCount: detections.length,
-      message: isVerified ? 'Face verified successfully' : 'Face verification failed'
-    });
 
   } catch (err: any) {
     console.error('[validate-face-presence] server error', err);

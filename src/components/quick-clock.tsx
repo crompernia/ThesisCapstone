@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Clock, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateDeviceFingerprint } from '@/lib/deviceFingerprint';
+import { extractFaceDescriptor } from '@/lib/faceVerification';
 
 export default function QuickClock() {
     const { toast } = useToast();
@@ -92,31 +93,84 @@ export default function QuickClock() {
       const pos = await getPosition();
       const fingerprint = generateDeviceFingerprint();
       await startCamera();
+
+      // Wait for camera to initialize
+      await new Promise(resolve => setTimeout(resolve, 1000));
       let dataUri: string | null = null;
       if (videoRef.current && canvasRef.current) {
         const v = videoRef.current;
         const c = canvasRef.current;
+
+        // Wait for video to be ready
+        if (v.videoWidth === 0 || v.videoHeight === 0) {
+          throw new Error('Camera not ready. Please wait a moment and try again.');
+        }
+
         c.width = v.videoWidth;
         c.height = v.videoHeight;
         const ctx = c.getContext('2d');
-        ctx?.drawImage(v, 0, 0, v.videoWidth, v.videoHeight);
+        if (!ctx) {
+          throw new Error('Canvas context not available');
+        }
+
+        ctx.drawImage(v, 0, 0, v.videoWidth, v.videoHeight);
         dataUri = c.toDataURL('image/jpeg');
+
         console.log('[quick-clock] Image captured, dataUri length:', dataUri?.length);
+        console.log('[quick-clock] dataUri starts with:', dataUri?.substring(0, 50));
+
+        // Validate dataUri
+        if (!dataUri || dataUri === 'data:,') {
+          throw new Error('Failed to capture image from camera. Please check camera permissions.');
+        }
       } else {
-        console.log('[quick-clock] Video or canvas ref not available');
+        throw new Error('Camera not available');
       }
 
-      // send device fingerprint + photo + location to verification endpoint
-      console.log('[quick-clock] Calling verify-face API with dataUri present:', !!dataUri);
-      const verifyRes = await fetch('/api/attendance/verify-face', {
+      // Extract face descriptor client-side
+      console.log('[quick-clock] Extracting face descriptor from captured image');
+      const faceDescriptor = await extractFaceDescriptor(dataUri);
+      if (!faceDescriptor) {
+        throw new Error('No face detected in captured image. Please ensure your face is clearly visible.');
+      }
+      console.log('[quick-clock] Face descriptor extracted successfully');
+
+      // Get current user ID for face verification
+      const userRes = await fetch('/api/auth/session');
+      const userData = await userRes.json();
+      const employeeId = userData?.user?.id;
+      if (!employeeId) {
+        throw new Error('Unable to identify user. Please log in again.');
+      }
+
+      // Verify face against stored encoding
+      console.log('[quick-clock] Calling validate-face-presence API with descriptor');
+      const verifyRes = await fetch('/api/validate-face-presence', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fingerprint, dataUri, latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+        body: JSON.stringify({ faceDescriptor: Array.from(faceDescriptor), employeeId }),
       });
       const verifyJson = await verifyRes.json();
-      console.log('[quick-clock] Verify-face response:', verifyJson);
-      if (!verifyRes.ok || !verifyJson.verified) {
-        if (verifyJson.requiresDeviceRegistration) {
+      console.log('[quick-clock] Validate-face-presence response:', verifyJson);
+      if (!verifyRes.ok || !verifyJson.isVerified) {
+        throw new Error(verifyJson?.error || verifyJson?.message || 'Face verification failed');
+      }
+
+      // Check device registration
+      console.log('[quick-clock] Checking device registration');
+      const deviceCheckRes = await fetch('/api/attendance/verify-face', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fingerprint,
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          faceAlreadyVerified: true  // Face already verified above
+        }),
+      });
+      const deviceCheckJson = await deviceCheckRes.json();
+      if (!deviceCheckRes.ok || !deviceCheckJson.verified) {
+        if (deviceCheckJson.requiresDeviceRegistration) {
           // Try to register the device
           const registerRes = await fetch('/api/register-device', {
             method: 'POST',
@@ -132,7 +186,7 @@ export default function QuickClock() {
             throw new Error(registerJson?.message || 'Device registration failed');
           }
         }
-        throw new Error(verifyJson?.message || 'Verification failed');
+        throw new Error(deviceCheckJson?.message || 'Device verification failed');
       }
 
       const res = await fetch('/api/attendance/clock-in', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }) });
@@ -169,25 +223,82 @@ export default function QuickClock() {
       const pos = await getPosition();
       const fingerprint = generateDeviceFingerprint();
       await startCamera();
+
+      // Wait for camera to initialize
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       let dataUri: string | null = null;
       if (videoRef.current && canvasRef.current) {
         const v = videoRef.current;
         const c = canvasRef.current;
+
+        // Wait for video to be ready
+        if (v.videoWidth === 0 || v.videoHeight === 0) {
+          throw new Error('Camera not ready. Please wait a moment and try again.');
+        }
+
         c.width = v.videoWidth;
         c.height = v.videoHeight;
         const ctx = c.getContext('2d');
-        ctx?.drawImage(v, 0, 0, v.videoWidth, v.videoHeight);
+        if (!ctx) {
+          throw new Error('Canvas context not available');
+        }
+
+        ctx.drawImage(v, 0, 0, v.videoWidth, v.videoHeight);
         dataUri = c.toDataURL('image/jpeg');
+
+        // Validate dataUri
+        if (!dataUri || dataUri === 'data:,') {
+          throw new Error('Failed to capture image from camera. Please check camera permissions.');
+        }
+      } else {
+        throw new Error('Camera not available');
       }
 
-      const verifyRes = await fetch('/api/attendance/verify-face', {
+      // Extract face descriptor client-side
+      console.log('[quick-clock] Extracting face descriptor from captured image');
+      const faceDescriptor = await extractFaceDescriptor(dataUri);
+      if (!faceDescriptor) {
+        throw new Error('No face detected in captured image. Please ensure your face is clearly visible.');
+      }
+      console.log('[quick-clock] Face descriptor extracted successfully');
+
+      // Get current user ID for face verification
+      const userRes = await fetch('/api/auth/session');
+      const userData = await userRes.json();
+      const employeeId = userData?.user?.id;
+      if (!employeeId) {
+        throw new Error('Unable to identify user. Please log in again.');
+      }
+
+      // Verify face against stored encoding
+      console.log('[quick-clock] Calling validate-face-presence API with descriptor');
+      const verifyRes = await fetch('/api/validate-face-presence', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fingerprint, dataUri, latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+        body: JSON.stringify({ faceDescriptor: Array.from(faceDescriptor), employeeId }),
       });
       const verifyJson = await verifyRes.json();
-      if (!verifyRes.ok || !verifyJson.verified) {
-        if (verifyJson.requiresDeviceRegistration) {
+      console.log('[quick-clock] Validate-face-presence response:', verifyJson);
+      if (!verifyRes.ok || !verifyJson.isVerified) {
+        throw new Error(verifyJson?.error || verifyJson?.message || 'Face verification failed');
+      }
+
+      // Check device registration
+      console.log('[quick-clock] Checking device registration');
+      const deviceCheckRes = await fetch('/api/attendance/verify-face', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fingerprint,
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          faceAlreadyVerified: true  // Face already verified above
+        }),
+      });
+      const deviceCheckJson = await deviceCheckRes.json();
+      if (!deviceCheckRes.ok || !deviceCheckJson.verified) {
+        if (deviceCheckJson.requiresDeviceRegistration) {
           // Try to register the device
           const registerRes = await fetch('/api/register-device', {
             method: 'POST',
@@ -203,7 +314,7 @@ export default function QuickClock() {
             throw new Error(registerJson?.message || 'Device registration failed');
           }
         }
-        throw new Error(verifyJson?.message || 'Verification failed');
+        throw new Error(deviceCheckJson?.message || 'Device verification failed');
       }
 
       const res = await fetch('/api/attendance/clock-out', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }) });

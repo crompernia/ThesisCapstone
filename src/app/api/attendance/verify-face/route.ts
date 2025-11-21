@@ -199,7 +199,7 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     console.debug('[verify-face] body keys:', Object.keys(body || {}));
-    const { fingerprint, dataUri } = body;
+    const { fingerprint, dataUri, faceAlreadyVerified } = body;
 
     if (!fingerprint) {
       return NextResponse.json({ verified: false, message: 'No device fingerprint provided' }, { status: 400 });
@@ -240,7 +240,7 @@ export async function POST(req: Request) {
     const isDeviceRegistered = Array.isArray(registeredDevices) &&
       registeredDevices.includes(currentFingerprintHash);
 
-    console.log(`[verify-face] Device registered: ${isDeviceRegistered}, Photo provided: ${!!dataUri}, Face encoding stored: ${!!storedFaceEncoding}`);
+    console.log(`[verify-face] Device registered: ${isDeviceRegistered}, Photo provided: ${!!dataUri}, Face encoding stored: ${!!storedFaceEncoding}, Face already verified: ${faceAlreadyVerified}`);
 
     if (!isDeviceRegistered) {
       return NextResponse.json({
@@ -250,101 +250,110 @@ export async function POST(req: Request) {
       });
     }
 
-    // Require face encoding for verification
-    if (!storedFaceEncoding) {
-      console.log('[verify-face] No stored face encoding found for employee');
-      return NextResponse.json({
-        verified: false,
-        message: 'Face verification required but no face data stored. Please contact HR to set up face recognition.'
-      }, { status: 400 });
-    }
-
-    // If no photo provided, require it for face verification
-    if (!dataUri) {
-      return NextResponse.json({
-        verified: false,
-        message: 'Photo required for face verification'
-      }, { status: 400 });
-    }
-
-    // Extract face descriptor from captured photo
-    let capturedDescriptor: Float32Array;
-    try {
-      console.log('[verify-face] Starting face detection on captured image');
-      const canvas = await dataUriToCanvas(dataUri);
-      console.log('[verify-face] Canvas created, dimensions:', canvas.width, 'x', canvas.height);
-      const detections = await faceapi.detectAllFaces(canvas as any)
-        .withFaceLandmarks()
-        .withFaceDescriptors();
-
-      console.log('[verify-face] Face detection completed, detections found:', detections.length);
-
-      if (detections.length === 0) {
-        console.log('[verify-face] No faces detected - rejecting verification');
+    // If face is already verified client-side, skip face verification
+    if (faceAlreadyVerified) {
+      console.log('[verify-face] Face already verified client-side, skipping face verification');
+    } else {
+      // Require face encoding for verification
+      if (!storedFaceEncoding) {
+        console.log('[verify-face] No stored face encoding found for employee');
         return NextResponse.json({
           verified: false,
-          message: 'No face detected in the captured photo'
+          message: 'Face verification required but no face data stored. Please contact HR to set up face recognition.'
         }, { status: 400 });
       }
 
-      if (detections.length > 1) {
-        console.log('[verify-face] Multiple faces detected:', detections.length, '- rejecting');
+      // If no photo provided, require it for face verification
+      if (!dataUri) {
         return NextResponse.json({
           verified: false,
-          message: 'Multiple faces detected. Please ensure only one face is visible.'
+          message: 'Photo required for face verification'
         }, { status: 400 });
       }
-
-      // Check face size and confidence - reject if face is too small or low confidence (likely false positive)
-      const detection = detections[0].detection;
-      const faceBox = detection.box;
-      const faceArea = faceBox.width * faceBox.height;
-      const confidence = detection.score;
-      const minFaceArea = 10000; // Minimum area for valid face (adjust as needed)
-      const minConfidence = 0.8; // Minimum confidence score
-      console.log('[verify-face] Detected face box:', faceBox, 'area:', faceArea, 'confidence:', confidence);
-
-      if (faceArea < minFaceArea || confidence < minConfidence) {
-        console.log('[verify-face] Face too small or low confidence (area:', faceArea, 'confidence:', confidence, ') - rejecting');
-        return NextResponse.json({
-          verified: false,
-          message: 'Face detected is not clear enough. Please ensure your face is clearly visible and well-lit.'
-        }, { status: 400 });
-      }
-
-      console.log('[verify-face] Single valid face detected, proceeding with verification');
-      capturedDescriptor = detections[0].descriptor;
-    } catch (error) {
-      console.error('[verify-face] Error processing captured photo:', error);
-      return NextResponse.json({
-        verified: false,
-        message: 'Failed to process captured photo'
-      }, { status: 500 });
     }
 
-    // Compare with stored face encoding
-    try {
-      const storedDescriptor = new Float32Array(JSON.parse(storedFaceEncoding));
-      const distance = faceapi.euclideanDistance(capturedDescriptor, storedDescriptor);
+    // Extract face descriptor from captured photo (skip if already verified)
+    let capturedDescriptor: Float32Array | null = null;
+    if (!faceAlreadyVerified) {
+      try {
+        console.log('[verify-face] Starting face detection on captured image');
+        const canvas = await dataUriToCanvas(dataUri);
+        console.log('[verify-face] Canvas created, dimensions:', canvas.width, 'x', canvas.height);
+        const detections = await faceapi.detectAllFaces(canvas as any)
+          .withFaceLandmarks()
+          .withFaceDescriptors();
 
-      console.log(`[verify-face] Face distance: ${distance}`);
+        console.log('[verify-face] Face detection completed, detections found:', detections.length);
 
-      // Threshold for face similarity (lower is more similar)
-      const SIMILARITY_THRESHOLD = 0.6;
+        if (detections.length === 0) {
+          console.log('[verify-face] No faces detected - rejecting verification');
+          return NextResponse.json({
+            verified: false,
+            message: 'No face detected in the captured photo'
+          }, { status: 400 });
+        }
 
-      if (distance > SIMILARITY_THRESHOLD) {
+        if (detections.length > 1) {
+          console.log('[verify-face] Multiple faces detected:', detections.length, '- rejecting');
+          return NextResponse.json({
+            verified: false,
+            message: 'Multiple faces detected. Please ensure only one face is visible.'
+          }, { status: 400 });
+        }
+
+        // Check face size and confidence - reject if face is too small or low confidence (likely false positive)
+        const detection = detections[0].detection;
+        const faceBox = detection.box;
+        const faceArea = faceBox.width * faceBox.height;
+        const confidence = detection.score;
+        const minFaceArea = 10000; // Minimum area for valid face (adjust as needed)
+        const minConfidence = 0.8; // Minimum confidence score
+        console.log('[verify-face] Detected face box:', faceBox, 'area:', faceArea, 'confidence:', confidence);
+
+        if (faceArea < minFaceArea || confidence < minConfidence) {
+          console.log('[verify-face] Face too small or low confidence (area:', faceArea, 'confidence:', confidence, ') - rejecting');
+          return NextResponse.json({
+            verified: false,
+            message: 'Face detected is not clear enough. Please ensure your face is clearly visible and well-lit.'
+          }, { status: 400 });
+        }
+
+        console.log('[verify-face] Single valid face detected, proceeding with verification');
+        capturedDescriptor = detections[0].descriptor;
+      } catch (error) {
+        console.error('[verify-face] Error processing captured photo:', error);
         return NextResponse.json({
           verified: false,
-          message: 'Face verification failed. The captured face does not match the registered face.'
-        });
+          message: 'Failed to process captured photo'
+        }, { status: 500 });
       }
+    }
 
-    } catch (error) {
-      console.error('[verify-face] Error comparing faces:', error);
-      return NextResponse.json({
-        verified: false,
-        message: 'Failed to compare faces'
-      }, { status: 500 });
+    // Compare with stored face encoding (skip if already verified)
+    if (!faceAlreadyVerified) {
+      try {
+        const storedDescriptor = new Float32Array(JSON.parse(storedFaceEncoding));
+        const distance = faceapi.euclideanDistance(capturedDescriptor!, storedDescriptor);
+
+        console.log(`[verify-face] Face distance: ${distance}`);
+
+        // Threshold for face similarity (lower is more similar)
+        const SIMILARITY_THRESHOLD = 0.6;
+
+        if (distance > SIMILARITY_THRESHOLD) {
+          return NextResponse.json({
+            verified: false,
+            message: 'Face verification failed. The captured face does not match the registered face.'
+          });
+        }
+
+      } catch (error) {
+        console.error('[verify-face] Error comparing faces:', error);
+        return NextResponse.json({
+          verified: false,
+          message: 'Failed to compare faces'
+        }, { status: 500 });
+      }
     }
 
     // Both device and face verified
