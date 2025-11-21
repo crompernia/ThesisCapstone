@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { Camera, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { getFaceCaptureConstraints, isMobileDevice } from '@/lib/utils';
 
 interface FacePhotoCaptureProps {
   open: boolean;
@@ -31,17 +32,17 @@ export default function FacePhotoCapture({
   const startCamera = async () => {
     try {
       setError(null);
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          facingMode: 'user'
-        }
-      });
+      const constraints = getFaceCaptureConstraints();
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
 
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        // Add mobile-specific attributes for better performance
+        if (isMobileDevice()) {
+          videoRef.current.setAttribute('playsinline', 'true');
+          videoRef.current.setAttribute('webkit-playsinline', 'true');
+        }
       }
     } catch (err: any) {
       setError('Unable to access camera. Please check permissions.');

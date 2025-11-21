@@ -7,6 +7,7 @@ import { Clock, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateDeviceFingerprint } from '@/lib/deviceFingerprint';
 import { extractFaceDescriptor } from '@/lib/faceVerification';
+import { getOptimizedCameraConstraints, isMobileDevice } from '@/lib/utils';
 
 export default function QuickClock() {
     const { toast } = useToast();
@@ -17,6 +18,7 @@ export default function QuickClock() {
     const videoRef = React.useRef<HTMLVideoElement | null>(null);
     const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
     const [error, setError] = React.useState<string | null>(null);
+    const [orientation, setOrientation] = React.useState<'portrait' | 'landscape'>('portrait');
 
   const getPosition = async (): Promise<GeolocationPosition> => {
     if (!navigator.geolocation) throw new Error('Geolocation not available');
@@ -27,8 +29,16 @@ export default function QuickClock() {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) videoRef.current.srcObject = stream;
+      const constraints = getOptimizedCameraConstraints();
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        // Add mobile-specific attributes for better performance
+        if (isMobileDevice()) {
+          videoRef.current.setAttribute('playsinline', 'true');
+          videoRef.current.setAttribute('webkit-playsinline', 'true');
+        }
+      }
     } catch (e) {
       setError('Camera access denied');
     }
@@ -84,6 +94,28 @@ export default function QuickClock() {
     };
     window.addEventListener('quick-clock', handler as EventListener);
     return () => window.removeEventListener('quick-clock', handler as EventListener);
+  }, []);
+
+  // Handle orientation changes on mobile devices
+  React.useEffect(() => {
+    if (!isMobileDevice()) return () => {}; // Return empty cleanup function for non-mobile
+
+    const handleOrientationChange = () => {
+      const newOrientation = window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
+      setOrientation(newOrientation);
+    };
+
+    // Set initial orientation
+    handleOrientationChange();
+
+    // Listen for orientation changes
+    window.addEventListener('orientationchange', handleOrientationChange);
+    window.addEventListener('resize', handleOrientationChange);
+
+    return () => {
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      window.removeEventListener('resize', handleOrientationChange);
+    };
   }, []);
 
   const handleClockIn = async () => {
@@ -349,7 +381,18 @@ export default function QuickClock() {
           <div className="space-y-4">
             {error && <div className="text-destructive">{error}</div>}
             <div className="relative aspect-video w-full max-w-md mx-auto bg-muted rounded-md overflow-hidden">
-              <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                className={`w-full h-full object-cover transition-transform duration-300 ${
+                  isMobileDevice() && orientation === 'landscape' ? 'rotate-90' : ''
+                }`}
+                style={{
+                  transform: isMobileDevice() && orientation === 'landscape' ? 'rotate(90deg) scale(1.2)' : 'none'
+                }}
+              />
               <canvas ref={canvasRef} className="hidden" />
             </div>
             <div className="flex gap-2 justify-center">
