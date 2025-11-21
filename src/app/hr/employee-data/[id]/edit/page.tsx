@@ -59,6 +59,7 @@ const employeeSchema = z.object({
         if (!file) return true; // Optional
         return file.type.startsWith('image/');
     }, "File must be an image"),
+    faceEncoding: z.string().optional(), // Face encoding data for verification
 });
 
 /**
@@ -78,20 +79,22 @@ type FormValues = {
      hireDate: string;
      email: string;
      photo?: File;
+     faceEncoding?: string;
 }
 
 type Branch = { id: number; name: string; coordinates?: string | null }
 
 export default function EditEmployeePage({ params }: { params: Promise<{ id: string }> }) {
-     const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
-     const [cameraOpen, setCameraOpen] = React.useState(false);
-     const [isLoading, setIsLoading] = React.useState<boolean>(true);
-     const [branches, setBranches] = React.useState<Branch[]>([]);
-     const [departments, setDepartments] = React.useState<string[]>([]);
-     const [positions, setPositions] = React.useState<string[]>([]);
-     const [resolvedId, setResolvedId] = React.useState<string>('');
-   const router = useRouter();
-   const { toast } = useToast();
+      const [photoPreview, setPhotoPreview] = React.useState<string | null>(null);
+      const [cameraOpen, setCameraOpen] = React.useState(false);
+      const [faceEncoding, setFaceEncoding] = React.useState<string | null>(null);
+      const [isLoading, setIsLoading] = React.useState<boolean>(true);
+      const [branches, setBranches] = React.useState<Branch[]>([]);
+      const [departments, setDepartments] = React.useState<string[]>([]);
+      const [positions, setPositions] = React.useState<string[]>([]);
+      const [resolvedId, setResolvedId] = React.useState<string>('');
+    const router = useRouter();
+    const { toast } = useToast();
 
   React.useEffect(() => {
     const resolveParams = async () => {
@@ -116,6 +119,7 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
           hireDate: '',
           email: '',
           photo: undefined,
+          faceEncoding: '',
       }
     });
 
@@ -234,6 +238,56 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
         });
     };
 
+    const handlePhotoAndEncodingCapture = async (dataUri: string) => {
+      // First, set the photo as the profile picture
+      handlePhotoCaptured(dataUri);
+
+      // Then, handle the face encoding
+      try {
+        // Create form data for face encoding API
+        const formData = new FormData();
+        const byteString = atob(dataUri.split(',')[1]);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: 'image/jpeg' });
+        formData.append('image', blob, 'face.jpg');
+        formData.append('employeeId', resolvedId); // Use the actual employee ID
+
+        const response = await fetch('/api/store-face-encoding', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Store the face encoding in the form
+          setFaceEncoding(result.faceEncoding);
+          form.setValue('faceEncoding', result.faceEncoding);
+          toast({
+            title: 'Success',
+            description: 'Face reference updated successfully',
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: result.error || 'Failed to process face data',
+          });
+        }
+      } catch (error) {
+        console.error('Face encoding error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to process face data',
+        });
+      }
+    };
+
     const handleSubmit = async (values: FormValues) => {
         if (!resolvedId) {
             toast({
@@ -255,6 +309,10 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
                 }
             }
         });
+        // Add faceEncoding if available
+        if (faceEncoding) {
+            formData.append('faceEncoding', faceEncoding);
+        }
 
         const result = await updateEmployeeAction(resolvedId, formData);
 
@@ -589,7 +647,7 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
     <FacePhotoCapture
       open={cameraOpen}
       onOpenChange={setCameraOpen}
-      onPhotoCaptured={handlePhotoCaptured}
+      onPhotoCaptured={handlePhotoAndEncodingCapture}
     />
     </div>
   );

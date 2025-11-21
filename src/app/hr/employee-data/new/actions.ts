@@ -24,6 +24,7 @@ const employeeSchema = z.object({
   email: z.string().email(),
   phone: z.string().min(1),
   photo: z.any().optional(),
+  faceEncoding: z.string().optional(), // Face encoding data for verification
   sssNumber: z.string().min(1).refine((val) => /^\d{2}-\d{7}-\d{1}$/.test(val), "SSS number must be in format XX-XXXXXXX-X"),
   philhealthNumber: z.string().min(1).refine((val) => /^\d{2}-\d{9}-\d{1}$/.test(val), "PhilHealth number must be in format XX-XXXXXXXXX-X"),
   pagibigNumber: z.string().min(1).refine((val) => /^\d{4}-\d{4}-\d{4}$/.test(val), "Pag-IBIG number must be in format XXXX-XXXX-XXXX"),
@@ -73,6 +74,7 @@ export async function addEmployee(formData: FormData) {
     email,
     phone,
     photo,
+    faceEncoding,
     sssNumber,
     philhealthNumber,
     pagibigNumber,
@@ -137,6 +139,7 @@ export async function addEmployee(formData: FormData) {
       pagibigNumber,
       tin,
       photo: photo || null,
+      faceEncoding: faceEncoding || null,
       password: hashedPassword,
     };
     console.log('addEmployee: Preparing to insert data:', insertData);

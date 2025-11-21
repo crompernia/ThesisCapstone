@@ -45,7 +45,7 @@ export default async function EmployeeDashboardPage() {
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
                     <AvatarImage
-                      src={employee.photo ? `/uploads/${employee.photo}` : "/default-avatar.png"}
+                      src={employee.photo || "/default-avatar.png"}
                       alt={employee.name}
                     />
                     <AvatarFallback>

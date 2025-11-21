@@ -29,6 +29,7 @@ const employeeSchema = z.object({
 export async function updateEmployeeAction(id: string, formData: FormData) {
   const data = Object.fromEntries(formData.entries());
   const photoFile = formData.get('photo') as File | null;
+  const faceEncoding = formData.get('faceEncoding') as string | null;
 
   // Validate form data
   const validatedFields = employeeSchema.safeParse(data);
@@ -87,7 +88,7 @@ export async function updateEmployeeAction(id: string, formData: FormData) {
   }
 
   try {
-    const result = await updateEmployee(id, { ...validatedFields.data, photo: photoPath } as any);
+    const result = await updateEmployee(id, { ...validatedFields.data, photo: photoPath, faceEncoding } as any);
     if (result.success) {
         revalidatePath('/hr/employee-data');
         revalidatePath(`/hr/employee-data/${id}`);

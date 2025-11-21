@@ -75,6 +75,7 @@ const employeeSchema = z.object({
     tin: z.string().min(1, "TIN is required.").refine((val) => {
         return /^\d{3}-\d{3}-\d{3}-\d{3}$/.test(val);
     }, "TIN must be in format XXX-XXX-XXX-XXX"),
+    faceEncoding: z.string().optional(), // Face encoding data for verification
 });
 
 /**
@@ -84,6 +85,7 @@ const employeeSchema = z.object({
 export default function AddEmployeePage() {
    const [photoPreview, setPhotoPreview] = React.useState(null);
    const [cameraOpen, setCameraOpen] = React.useState(false);
+   const [faceEncoding, setFaceEncoding] = React.useState<string | null>(null);
    const [branches, setBranches] = React.useState([]);
    const [departments, setDepartments] = React.useState([]);
    const [positions, setPositions] = React.useState([]);
@@ -105,6 +107,7 @@ export default function AddEmployeePage() {
         email: '',
         phone: '',
         photo: null,
+        faceEncoding: '',
         sssNumber: '',
         philhealthNumber: '',
         pagibigNumber: '',
@@ -182,6 +185,56 @@ export default function AddEmployeePage() {
         const file = new File([blob], 'face-reference.jpg', { type: 'image/jpeg' });
         form.setValue('photo', file);
       });
+  };
+
+  const handlePhotoAndEncodingCapture = async (dataUri: string) => {
+    // First, set the photo as the profile picture
+    handlePhotoCaptured(dataUri);
+
+    // Then, handle the face encoding
+    try {
+      // Create form data for face encoding API
+      const formData = new FormData();
+      const byteString = atob(dataUri.split(',')[1]);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([ab], { type: 'image/jpeg' });
+      formData.append('image', blob, 'face.jpg');
+      formData.append('employeeId', 'temp'); // We'll use this to store encoding without employee ID
+
+      const response = await fetch('/api/store-face-encoding', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Store the face encoding in the form
+        setFaceEncoding(result.faceEncoding);
+        form.setValue('faceEncoding', result.faceEncoding);
+        toast({
+          title: 'Success',
+          description: 'Face reference captured successfully',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: result.error || 'Failed to process face data',
+        });
+      }
+    } catch (error) {
+      console.error('Face encoding error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to process face data',
+      });
+    }
   };
 
   const handleSubmit = async (values) => {
@@ -652,7 +705,9 @@ export default function AddEmployeePage() {
     <FacePhotoCapture
       open={cameraOpen}
       onOpenChange={setCameraOpen}
-      onPhotoCaptured={handlePhotoCaptured}
+      onPhotoCaptured={handlePhotoAndEncodingCapture}
+      title="Capture Face Reference Photo"
+      description="Please position your face in the center and ensure good lighting. This photo will be used for face verification during clock-in and clock-out."
     />
     </div>
   );
