@@ -380,7 +380,7 @@ export default function QuickClock() {
 
           <div className="space-y-4">
             {error && <div className="text-destructive">{error}</div>}
-            <div className="relative aspect-video w-full max-w-md mx-auto bg-muted rounded-md overflow-hidden">
+            <div className="relative aspect-[4/5] w-full max-w-md mx-auto bg-muted rounded-md overflow-hidden">
               <video
                 ref={videoRef}
                 autoPlay
