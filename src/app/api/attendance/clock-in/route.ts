@@ -52,9 +52,16 @@ export async function POST(req: Request) {
     // Keep date comparison as YYYY-MM-DD string (matches Drizzle date column mapping in this project)
     const isoDate = formatInTimeZone(now, 'Asia/Singapore', 'yyyy-MM-dd'); // YYYY-MM-DD in GMT+8
 
+    console.log('[clock-in] Time debugging:');
+    console.log('[clock-in] - nowUtc:', nowUtc.toISOString());
+    console.log('[clock-in] - now (Singapore):', now.toISOString());
+    console.log('[clock-in] - isoDate:', isoDate);
+
     // Check if current date is before hire date
     const hireDateZoned = toZonedTime(new Date(hireDate), 'Asia/Singapore');
     const hireDateStr = formatInTimeZone(hireDateZoned, 'Asia/Singapore', 'yyyy-MM-dd');
+    console.log('[clock-in] - hireDate:', hireDate, 'hireDateStr:', hireDateStr);
+
     if (isoDate < hireDateStr) {
       return NextResponse.json({ success: false, message: 'Cannot clock in before hire date' }, { status: 403 });
     }
@@ -147,6 +154,17 @@ export async function POST(req: Request) {
     }
 
     // Check if employee has a schedule for today and get attendance status in one query
+    console.log('[clock-in] Checking schedule for employeeId:', employeeId, 'date:', isoDate);
+
+    // First, let's see what schedules exist for this employee
+    const allSchedules = await db
+      .select({ date: schedules.date, shiftStart: schedules.shiftStart, shiftEnd: schedules.shiftEnd })
+      .from(schedules)
+      .where(eq(schedules.employeeId, employeeId))
+      .limit(10);
+
+    console.log('[clock-in] All schedules for employee:', allSchedules);
+
     const scheduleAndAttendance = await db
       .select({
         shiftStart: schedules.shiftStart,
@@ -159,8 +177,14 @@ export async function POST(req: Request) {
       .where(and(eq(schedules.employeeId, employeeId), eq(schedules.date, isoDate)))
       .limit(1);
 
+    console.log('[clock-in] Schedule query result:', scheduleAndAttendance);
+
     if (scheduleAndAttendance.length === 0) {
-      return NextResponse.json({ success: false, message: 'No schedule assigned for today. Cannot clock in.' }, { status: 403 });
+      return NextResponse.json({
+        success: false,
+        message: `No schedule assigned for today (${isoDate}). Cannot clock in.`,
+        debug: { employeeId, isoDate, availableSchedules: allSchedules }
+      }, { status: 403 });
     }
 
     const schedule = scheduleAndAttendance[0];
@@ -206,11 +230,24 @@ export async function POST(req: Request) {
     const gracePeriodEnd = new Date(shiftStartDate.getTime() + (5 * 60 * 1000)); // 5 minutes after shift start
     let clockInStatus = 'Present';
 
+    console.log('[clock-in] Time calculations:');
+    console.log('[clock-in] - Current time:', now.toISOString(), '(Singapore time)');
+    console.log('[clock-in] - Shift start:', shiftStartDate.toISOString());
+    console.log('[clock-in] - Grace period end:', gracePeriodEnd.toISOString());
+    console.log('[clock-in] - Late clock-in limit:', lateClockInLimit.toISOString());
+
     if (now.getTime() <= gracePeriodEnd.getTime()) {
       clockInStatus = 'Present'; // On time within grace period
+      console.log('[clock-in] - Status: Present (within grace period)');
     } else if (now.getTime() > gracePeriodEnd.getTime() && now.getTime() <= lateClockInLimit.getTime()) {
       clockInStatus = 'Late'; // Late but within allowed window
+      console.log('[clock-in] - Status: Late (after grace period but within shift)');
+    } else {
+      clockInStatus = 'Present'; // Default fallback
+      console.log('[clock-in] - Status: Present (fallback - should not happen)');
     }
+
+    console.log('[clock-in] Final clock-in status:', clockInStatus);
 
     // Upsert attendance: if a record exists for employee + date, update timeIn if empty; otherwise insert
     if (existingAttendanceId) {
