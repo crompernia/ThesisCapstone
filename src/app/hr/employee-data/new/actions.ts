@@ -10,6 +10,8 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { sql } from 'drizzle-orm';
+import { sendEmail } from '@/lib/email';
+import { createEmployeeWelcomeEmail } from '@/lib/email-templates';
 
 const employeeSchema = z.object({
   firstName: z.string().min(1),
@@ -151,6 +153,37 @@ export async function addEmployee(formData: FormData) {
     console.log('addEmployee: Executing insert query');
     await db.insert(accounts).values(insertData);
     console.log('addEmployee: Insert successful');
+
+    // Send welcome email to the new employee
+    console.log('addEmployee: Sending welcome email');
+    try {
+      const emailTemplate = createEmployeeWelcomeEmail({
+        firstName,
+        lastName,
+        email,
+        employeeNumber,
+        defaultPassword,
+        position,
+        department,
+        branch
+      });
+
+      const emailResult = await sendEmail({
+        to: email,
+        subject: emailTemplate.subject,
+        html: emailTemplate.html
+      });
+
+      if (emailResult.success) {
+        console.log('addEmployee: Welcome email sent successfully');
+      } else {
+        console.error('addEmployee: Failed to send welcome email:', emailResult.error);
+        // Don't fail the employee creation if email fails
+      }
+    } catch (emailError) {
+      console.error('addEmployee: Error sending welcome email:', emailError);
+      // Don't fail the employee creation if email fails
+    }
 
     revalidatePath('/admin/dashboard');
 

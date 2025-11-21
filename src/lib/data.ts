@@ -9,6 +9,8 @@ import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { eq, and, desc, sql, inArray, ne, isNotNull, asc, or } from 'drizzle-orm';
 import * as schema from './schema';
 const { accounts, announcements, leaveRequests, branches, positions, schedules, attendance, departments, positionDepartments, attendanceRecords, payslips, loans } = schema;
+import { sendEmail } from './email';
+import { createHRNotificationEmail } from './email-templates';
 
 // Type definitions for database query results
 interface CountResult {
@@ -89,6 +91,16 @@ export async function getHRDashboardData() {
         .where(eq(leaveRequests.status, 'Pending'));
     const pendingLeaveRequests = pendingLeaveRequestsResult[0]?.count || 0;
 
+    const pendingOvertimeRequestsResult = await db.select({ count: sql<number>`count(*)` })
+        .from(schema.overtimeRequests)
+        .where(eq(schema.overtimeRequests.status, 'Pending'));
+    const pendingOvertimeRequests = pendingOvertimeRequestsResult[0]?.count || 0;
+
+    const pendingLoanRequestsResult = await db.select({ count: sql<number>`count(*)` })
+        .from(loans)
+        .where(eq(loans.status, 'Pending'));
+    const pendingLoanRequests = pendingLoanRequestsResult[0]?.count || 0;
+
     // Calculate on-time percentage from attendance data
     const currentMonth = new Date();
     const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
@@ -139,6 +151,8 @@ export async function getHRDashboardData() {
         { title: 'Total Employees', value: String(totalEmployees), change: '' },
         { title: 'On Time Percentage', value: `${onTimePercentage}%`, change: '' },
         { title: 'Pending Leave Requests', value: String(pendingLeaveRequests), change: '' },
+        { title: 'Pending Overtime Requests', value: String(pendingOvertimeRequests), change: '' },
+        { title: 'Pending Loan Requests', value: String(pendingLoanRequests), change: '' },
     ];
 
     // Get recent employee activities from various tables
@@ -973,6 +987,51 @@ export async function createLeaveRequest(data: {
         reason,
     });
 
+    // Send notification email to HR
+    try {
+        // Get employee details for the email
+        const employeeResult = await db
+            .select({
+                firstName: accounts.firstName,
+                lastName: accounts.lastName,
+                employeeNumber: accounts.employeeNumber,
+            })
+            .from(accounts)
+            .where(eq(accounts.id, employeeId))
+            .limit(1);
+
+        if (employeeResult.length > 0) {
+            const employee = employeeResult[0];
+            const employeeName = `${employee.firstName} ${employee.lastName}`;
+
+            const requestDetails = `${leaveType} from ${format(new Date(startDate), 'MMM dd, yyyy')} to ${format(new Date(endDate), 'MMM dd, yyyy')}. Reason: ${reason || 'Not specified'}`;
+            const submittedAt = formatInTimeZone(new Date(), 'Asia/Singapore', 'MMM dd, yyyy HH:mm');
+
+            const emailTemplate = createHRNotificationEmail({
+                requestType: 'leave',
+                employeeName,
+                employeeNumber: employee.employeeNumber || 'Unknown',
+                requestDetails,
+                submittedAt
+            });
+
+            // Get HR email addresses - for now, send to a default HR email
+            // In a real implementation, you might query for all HR users
+            const hrEmail = process.env.HR_NOTIFICATION_EMAIL || 'hr@yourcompany.com';
+
+            await sendEmail({
+                to: hrEmail,
+                subject: emailTemplate.subject,
+                html: emailTemplate.html
+            });
+
+            console.log('HR notification email sent for leave request');
+        }
+    } catch (emailError) {
+        console.error('Failed to send HR notification email for leave request:', emailError);
+        // Don't fail the request if email fails
+    }
+
     return { success: true };
 }
 
@@ -1016,6 +1075,50 @@ export async function createOvertimeRequest(data: {
         reason,
     });
 
+    // Send notification email to HR
+    try {
+        // Get employee details for the email
+        const employeeResult = await db
+            .select({
+                firstName: accounts.firstName,
+                lastName: accounts.lastName,
+                employeeNumber: accounts.employeeNumber,
+            })
+            .from(accounts)
+            .where(eq(accounts.id, employeeId))
+            .limit(1);
+
+        if (employeeResult.length > 0) {
+            const employee = employeeResult[0];
+            const employeeName = `${employee.firstName} ${employee.lastName}`;
+
+            const requestDetails = `${hoursRequested} hours on ${format(new Date(date), 'MMM dd, yyyy')}. Reason: ${reason || 'Not specified'}`;
+            const submittedAt = formatInTimeZone(new Date(), 'Asia/Singapore', 'MMM dd, yyyy HH:mm');
+
+            const emailTemplate = createHRNotificationEmail({
+                requestType: 'overtime',
+                employeeName,
+                employeeNumber: employee.employeeNumber || 'Unknown',
+                requestDetails,
+                submittedAt
+            });
+
+            // Get HR email addresses - for now, send to a default HR email
+            const hrEmail = process.env.HR_NOTIFICATION_EMAIL || 'hr@yourcompany.com';
+
+            await sendEmail({
+                to: hrEmail,
+                subject: emailTemplate.subject,
+                html: emailTemplate.html
+            });
+
+            console.log('HR notification email sent for overtime request');
+        }
+    } catch (emailError) {
+        console.error('Failed to send HR notification email for overtime request:', emailError);
+        // Don't fail the request if email fails
+    }
+
     return { success: true };
 }
 
@@ -1041,6 +1144,50 @@ export async function createLoanRequest(data: {
             totalAmount: totalAmount.toString(),
             monthlyPayment: monthlyPayment.toString(),
         });
+
+        // Send notification email to HR
+        try {
+            // Get employee details for the email
+            const employeeResult = await db
+                .select({
+                    firstName: accounts.firstName,
+                    lastName: accounts.lastName,
+                    employeeNumber: accounts.employeeNumber,
+                })
+                .from(accounts)
+                .where(eq(accounts.id, employeeId))
+                .limit(1);
+
+            if (employeeResult.length > 0) {
+                const employee = employeeResult[0];
+                const employeeName = `${employee.firstName} ${employee.lastName}`;
+
+                const requestDetails = `₱${amount.toLocaleString()} for ${months} months at ${interestRate * 100}% interest. Total: ₱${totalAmount.toLocaleString()}, Monthly: ₱${monthlyPayment.toLocaleString()}`;
+                const submittedAt = formatInTimeZone(new Date(), 'Asia/Singapore', 'MMM dd, yyyy HH:mm');
+
+                const emailTemplate = createHRNotificationEmail({
+                    requestType: 'loan',
+                    employeeName,
+                    employeeNumber: employee.employeeNumber || 'Unknown',
+                    requestDetails,
+                    submittedAt
+                });
+
+                // Get HR email addresses - for now, send to a default HR email
+                const hrEmail = process.env.HR_NOTIFICATION_EMAIL || 'hr@yourcompany.com';
+
+                await sendEmail({
+                    to: hrEmail,
+                    subject: emailTemplate.subject,
+                    html: emailTemplate.html
+                });
+
+                console.log('HR notification email sent for loan request');
+            }
+        } catch (emailError) {
+            console.error('Failed to send HR notification email for loan request:', emailError);
+            // Don't fail the request if email fails
+        }
 
         return { success: true };
     } catch (error) {

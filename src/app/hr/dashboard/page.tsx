@@ -56,7 +56,7 @@ export default async function HRDashboardPage() {
         </div>
 
         {/* Statistics Cards: A high-level overview of important metrics. */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {stats.length > 0 ? (
                 stats.map(stat => (
                     <Card key={stat.title}>
