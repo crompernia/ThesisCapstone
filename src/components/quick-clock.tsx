@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Clock, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { generateDeviceFingerprint } from '@/lib/deviceFingerprint';
 
 export default function QuickClock() {
     const { toast } = useToast();
@@ -19,7 +20,7 @@ export default function QuickClock() {
   const getPosition = async (): Promise<GeolocationPosition> => {
     if (!navigator.geolocation) throw new Error('Geolocation not available');
     return new Promise((resolve, reject) => {
-  navigator.geolocation.getCurrentPosition(resolve, () => reject(new Error('Geolocation permission denied')), { timeout: 4000 });
+   navigator.geolocation.getCurrentPosition(resolve, () => reject(new Error('Geolocation permission denied')), { timeout: 4000 });
     });
   };
 
@@ -89,6 +90,7 @@ export default function QuickClock() {
     setIsProcessing(true);
     try {
       const pos = await getPosition();
+      const fingerprint = generateDeviceFingerprint();
       await startCamera();
       let dataUri: string | null = null;
       if (videoRef.current && canvasRef.current) {
@@ -101,14 +103,29 @@ export default function QuickClock() {
         dataUri = c.toDataURL('image/jpeg');
       }
 
-      // send captured photo + location to verification endpoint
+      // send device fingerprint + photo + location to verification endpoint
       const verifyRes = await fetch('/api/attendance/verify-face', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dataUri, latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+        body: JSON.stringify({ fingerprint, dataUri, latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
       });
       const verifyJson = await verifyRes.json();
-      if (!verifyRes.ok || !verifyJson.verified) throw new Error(verifyJson?.message || 'Face verification failed');
+      if (!verifyRes.ok || !verifyJson.verified) {
+        if (verifyJson.requiresDeviceRegistration) {
+          // Try to register the device
+          const registerRes = await fetch('/api/register-device', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fingerprint }),
+          });
+          if (registerRes.ok) {
+            toast({ title: "Device Registered", description: "Your device has been registered. Please try clocking in again." });
+            setIsProcessing(false);
+            return;
+          }
+        }
+        throw new Error(verifyJson?.message || 'Verification failed');
+      }
 
       const res = await fetch('/api/attendance/clock-in', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }) });
       if (!res.ok) {
@@ -142,6 +159,7 @@ export default function QuickClock() {
         }
       }
       const pos = await getPosition();
+      const fingerprint = generateDeviceFingerprint();
       await startCamera();
       let dataUri: string | null = null;
       if (videoRef.current && canvasRef.current) {
@@ -157,10 +175,25 @@ export default function QuickClock() {
       const verifyRes = await fetch('/api/attendance/verify-face', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dataUri, latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+        body: JSON.stringify({ fingerprint, dataUri, latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
       });
       const verifyJson = await verifyRes.json();
-      if (!verifyRes.ok || !verifyJson.verified) throw new Error(verifyJson?.message || 'Face verification failed');
+      if (!verifyRes.ok || !verifyJson.verified) {
+        if (verifyJson.requiresDeviceRegistration) {
+          // Try to register the device
+          const registerRes = await fetch('/api/register-device', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fingerprint }),
+          });
+          if (registerRes.ok) {
+            toast({ title: "Device Registered", description: "Your device has been registered. Please try clocking out again." });
+            setIsProcessing(false);
+            return;
+          }
+        }
+        throw new Error(verifyJson?.message || 'Verification failed');
+      }
 
       const res = await fetch('/api/attendance/clock-out', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }) });
       const json = await res.json();
@@ -188,7 +221,7 @@ export default function QuickClock() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Attendance</DialogTitle>
-            <DialogDescription>Use the camera to clock in/out</DialogDescription>
+            <DialogDescription>Use the camera to verify your identity and clock in/out</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -198,10 +231,10 @@ export default function QuickClock() {
               <canvas ref={canvasRef} className="hidden" />
             </div>
             <div className="flex gap-2 justify-center">
-               <Button variant="outline" onClick={handleClockIn} disabled={isProcessing}>{isProcessing ? <Loader2 className="animate-spin" /> : 'Clock In'}</Button>
-               <Button variant="outline" onClick={handleClockOut} disabled={isProcessing}>{isProcessing ? <Loader2 className="animate-spin" /> : 'Clock Out'}</Button>
-               <Button variant="ghost" onClick={() => setOpen(false)}><X /></Button>
-             </div>
+                <Button variant="outline" onClick={handleClockIn} disabled={isProcessing}>{isProcessing ? <Loader2 className="animate-spin" /> : 'Clock In'}</Button>
+                <Button variant="outline" onClick={handleClockOut} disabled={isProcessing}>{isProcessing ? <Loader2 className="animate-spin" /> : 'Clock Out'}</Button>
+                <Button variant="ghost" onClick={() => setOpen(false)}><X /></Button>
+              </div>
           </div>
 
         </DialogContent>

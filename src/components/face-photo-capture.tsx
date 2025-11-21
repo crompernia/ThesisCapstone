@@ -169,7 +169,7 @@ export default function FacePhotoCapture({
             </div>
           )}
 
-          <div className="relative aspect-video w-full bg-muted rounded-lg overflow-hidden">
+          <div className="relative aspect-square w-full bg-muted rounded-lg overflow-hidden">
             <video
               ref={videoRef}
               autoPlay

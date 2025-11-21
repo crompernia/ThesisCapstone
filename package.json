@@ -55,6 +55,7 @@
     "dotenv": "^16.6.1",
     "drizzle-kit": "^0.31.5",
     "drizzle-orm": "^0.44.7",
+    "encoding": "^0.1.13",
     "face-api.js": "^0.22.2",
     "genkit": "^1.8.0",
     "jspdf": "^2.5.1",
