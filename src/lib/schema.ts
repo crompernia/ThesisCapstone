@@ -28,6 +28,7 @@ export const accounts = pgTable("accounts", {
 	pagibigNumber: varchar("pagibig_number", { length: 255 }),
 	tin: varchar({ length: 255 }),
 	photo: varchar({ length: 500 }),
+	faceEncoding: varchar("face_encoding", { length: 5000 }),
 	managedBranches: varchar("managed_branches", { length: 255 }).array(),
 	registeredDevices: jsonb("registered_devices"),
 	createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),

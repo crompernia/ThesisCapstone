@@ -1,0 +1,1 @@
+ALTER TABLE "accounts" ADD COLUMN "face_encoding" varchar(5000);
