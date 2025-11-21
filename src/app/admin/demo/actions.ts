@@ -289,13 +289,14 @@ export async function generateSampleAttendance(formData: FormData) {
     // Don't fail the whole process for this
   }
 
-    console.log('[demo] Revalidating and redirecting to success');
-    revalidatePath('/admin/demo');
-    redirect('/admin/demo?success=true');
-  } catch (error: any) {
-    console.error('[demo] Unexpected error in generateSampleAttendance:', error);
-    console.error('[demo] Error stack:', error?.stack);
-    console.error('[demo] Error message:', error?.message);
-    redirect('/admin/demo?error=An unexpected error occurred. Please try again.');
-  }
+  // Success - redirect outside try-catch so NEXT_REDIRECT isn't caught
+  console.log('[demo] Revalidating and redirecting to success');
+  revalidatePath('/admin/demo');
+  redirect('/admin/demo?success=true');
+} catch (error: any) {
+  console.error('[demo] Unexpected error in generateSampleAttendance:', error);
+  console.error('[demo] Error stack:', error?.stack);
+  console.error('[demo] Error message:', error?.message);
+  redirect('/admin/demo?error=An unexpected error occurred. Please try again.');
+}
 }
