@@ -138,9 +138,9 @@ export default function HRDashboardLayout({
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>
-              <SidebarMenuButton tooltip="Employee Data" className="w-full justify-start" onClick={() => handleNavigation("/hr/employee-data")} disabled={loadingHref !== null} {...({} as any)}>
+              <SidebarMenuButton tooltip="Employee" className="w-full justify-start" onClick={() => handleNavigation("/hr/employee-data")} disabled={loadingHref !== null} {...({} as any)}>
                 {loadingHref === "/hr/employee-data" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Users />}
-                Employee Data
+                Employee
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem {...({} as any)}>

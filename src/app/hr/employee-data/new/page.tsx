@@ -161,7 +161,7 @@ export default function AddEmployeePage() {
   }, [watchedDepartment, form]);
 
 
-  const handlePhotoChange = (event) => {
+  const handlePhotoChange = async (event) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -170,9 +170,52 @@ export default function AddEmployeePage() {
       };
       reader.readAsDataURL(file);
       form.setValue('photo', file);
+
+      // Try to extract face encoding from uploaded photo
+      try {
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('employeeId', 'temp');
+
+        const response = await fetch('/api/store-face-encoding', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          setFaceEncoding(result.faceEncoding);
+          form.setValue('faceEncoding', result.faceEncoding);
+          toast({
+            title: 'Success',
+            description: 'Face encoding extracted from uploaded photo',
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Face encoding could not be extracted from the photo. Please upload a clear photo of the employee\'s face.',
+          });
+          // Clear the photo since encoding failed
+          setPhotoPreview(null);
+          form.setValue('photo', null);
+          setFaceEncoding(null);
+          form.setValue('faceEncoding', '');
+        }
+      } catch (error) {
+        console.error('Face encoding extraction error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Warning',
+          description: 'Photo uploaded but face encoding extraction failed.',
+        });
+      }
     } else {
       setPhotoPreview(null);
       form.setValue('photo', null);
+      setFaceEncoding(null);
+      form.setValue('faceEncoding', '');
     }
   };
 
@@ -224,8 +267,13 @@ export default function AddEmployeePage() {
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: result.error || 'Failed to process face data',
+          description: result.error || 'Failed to process face data. Please try again.',
         });
+        // Clear the photo since encoding failed
+        setPhotoPreview(null);
+        form.setValue('photo', null);
+        setFaceEncoding(null);
+        form.setValue('faceEncoding', '');
       }
     } catch (error) {
       console.error('Face encoding error:', error);

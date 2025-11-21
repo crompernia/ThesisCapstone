@@ -85,7 +85,7 @@ async function ensureModelsDownloaded(modelPath: string): Promise<void> {
     }
   ];
 
-  const baseUrl = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights/';
+  const baseUrl = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights/';
 
   console.log('[validate-face-presence] ensureModelsDownloaded called with modelPath:', modelPath);
 
@@ -196,27 +196,17 @@ async function loadModels() {
 }
 
 // Convert uploaded file to canvas
-function fileToCanvas(file: File): Promise<Canvas> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = new Canvas(img.width, img.height);
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          resolve(canvas);
-        };
-        img.onerror = reject;
-        img.src = e.target?.result as string;
-      } catch (error) {
-        reject(error);
-      }
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+async function fileToCanvas(file: File): Promise<Canvas> {
+  try {
+    const buffer = await file.arrayBuffer();
+    const img = await loadImage(Buffer.from(buffer));
+    const canvas = createCanvas(img.width, img.height);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    return canvas;
+  } catch (error) {
+    throw error;
+  }
 }
 
 export async function POST(req: Request) {
@@ -228,22 +218,27 @@ export async function POST(req: Request) {
     const employeeId = formData.get('employeeId') as string;
 
     if (!imageFile) {
-      return NextResponse.json({ 
-        isVerified: false, 
-        error: 'No image provided' 
-      }, { status: 400 });
-    }
-
-    if (!employeeId) {
-      return NextResponse.json({ 
-        isVerified: false, 
-        error: 'Employee ID is required' 
+      return NextResponse.json({
+        isVerified: false,
+        hasFace: false,
+        error: 'No image provided'
       }, { status: 400 });
     }
 
     // Convert file to canvas
     const canvas = await fileToCanvas(imageFile);
 
+    // If no employeeId, just check for face presence
+    if (!employeeId) {
+      const detections = await faceapi.detectAllFaces(canvas as any);
+      const hasFace = detections.length === 1;
+      return NextResponse.json({
+        hasFace,
+        faceCount: detections.length
+      });
+    }
+
+    // Full verification mode
     // Detect faces and get face descriptors
     const detections = await faceapi.detectAllFaces(canvas as any)
       .withFaceLandmarks()

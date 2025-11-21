@@ -53,7 +53,10 @@ import {
 
 const overtimeRequestSchema = z.object({
   date: z.string().min(1, { message: "Date is required." }),
-  hoursRequested: z.string().min(1, { message: "Hours requested is required." }),
+  hoursRequested: z.string().min(1, { message: "Hours requested is required." }).refine(val => {
+    const num = parseFloat(val);
+    return !isNaN(num) && num >= 1 && num <= 4;
+  }, { message: "Hours must be between 1 and 4" }),
   reason: z.string().optional(),
 });
 
@@ -170,8 +173,8 @@ export default function OvertimeRequestPage() {
                           <Input
                             type="number"
                             step="0.5"
-                            min="0.5"
-                            max="24"
+                            min="1"
+                            max="4"
                             placeholder="e.g., 2.5"
                             {...field}
                             name="hoursRequested"

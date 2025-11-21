@@ -11,13 +11,15 @@ async function fetchData() {
     'branches',
     'positions',
     'departments',
-    'position_departments',
+    'positionDepartments',
     'announcements',
-    'leave_requests',
+    'leaveRequests',
+    'overtimeRequests',
+    'loans',
     'attendance',
     'schedules',
     'payslips',
-    'attendance_records',
+    'attendanceRecords',
     'reports'
   ];
 

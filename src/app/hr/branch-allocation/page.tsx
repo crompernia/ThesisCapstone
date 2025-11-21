@@ -36,7 +36,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { getHrPersonnel, getAllBranches, updateHrBranchAllocation } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 /**
@@ -105,16 +104,6 @@ export default function BranchAllocationPage() {
         }
     };
     
-    // Determine which branches are already assigned to other HR personnel
-    const assignedBranchesByOthers = React.useMemo(() => {
-        const assignedSet = new Set();
-        hrPersonnel.forEach(hr => {
-            if (hr.id !== selectedHr?.id) {
-                hr.managed_branches?.forEach(branch => assignedSet.add(branch));
-            }
-        });
-        return assignedSet;
-    }, [hrPersonnel, selectedHr]);
 
 
     return (
@@ -164,37 +153,20 @@ export default function BranchAllocationPage() {
                                                 <DialogHeader>
                                                     <DialogTitle>Allocate Branches for {selectedHr?.name}</DialogTitle>
                                                     <DialogDescription>
-                                                        Select the branches this HR person will manage. Unavailable branches are already assigned.
+                                                        Select the branches this HR person will manage. Only unassigned branches are shown.
                                                     </DialogDescription>
                                                 </DialogHeader>
-                                                <div className="py-4 space-y-4">
-                                                    <TooltipProvider>
-                                                        {branches.map(branch => {
-                                                            const isAssignedToOther = assignedBranchesByOthers.has(branch.name);
-                                                            const isChecked = selectedBranches.has(branch.name);
-                                                            
-                                                            const checkbox = (
-                                                                 <div key={branch.id} className="flex items-center space-x-2">
-                                                                    <Checkbox {...({checked: isChecked, disabled: isAssignedToOther, onCheckedChange: (checked: boolean) => handleBranchChange(branch.name, checked)} as any)} />
-                                                                    <Label htmlFor={`branch-${branch.id}`} className={isAssignedToOther ? 'text-muted-foreground cursor-not-allowed' : ''}>{branch.name}</Label>
-                                                                </div>
-                                                            );
-
-                                                            if (isAssignedToOther) {
-                                                                return (
-                                                                    <Tooltip key={branch.id}>
-                                                                        <TooltipTrigger asChild>
-                                                                            <span>{checkbox}</span>
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent {...({} as any)}>
-                                                                            <p>This branch is already managed by another HR person.</p>
-                                                                        </TooltipContent>
-                                                                    </Tooltip>
-                                                                )
-                                                            }
-                                                            return checkbox;
-                                                        })}
-                                                    </TooltipProvider>
+                                                <div className="py-4 space-y-3">
+                                                    {branches.filter(branch => !hrPersonnel.some(hr => hr.id !== selectedHr?.id && hr.managed_branches?.includes(branch.name))).map(branch => {
+                                                        const isChecked = selectedBranches.has(branch.name);
+                                                        
+                                                        return (
+                                                            <div key={branch.id} className="flex items-center space-x-2">
+                                                                <Checkbox {...({checked: isChecked, onCheckedChange: (checked: boolean) => handleBranchChange(branch.name, checked)} as any)} />
+                                                                <Label htmlFor={`branch-${branch.id}`}>{branch.name}</Label>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                                 <DialogFooter>
                                                     <DialogClose asChild>

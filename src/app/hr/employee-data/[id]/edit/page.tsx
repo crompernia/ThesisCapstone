@@ -215,7 +215,7 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
   }, [watchedDepartment, form]);
 
 
-    const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -224,6 +224,47 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
             };
       reader.readAsDataURL(file);
       form.setValue('photo', file);
+
+      // Try to extract face encoding from uploaded photo
+      try {
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('employeeId', resolvedId);
+
+        const response = await fetch('/api/store-face-encoding', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          setFaceEncoding(result.faceEncoding);
+          form.setValue('faceEncoding', result.faceEncoding);
+          toast({
+            title: 'Success',
+            description: 'Face encoding extracted from uploaded photo',
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Face encoding could not be extracted from the photo. Please upload a clear photo of the employee\'s face.',
+          });
+          // Clear the photo since encoding failed
+          setPhotoPreview(null);
+          form.setValue('photo', undefined);
+          setFaceEncoding(null);
+          form.setValue('faceEncoding', '');
+        }
+      } catch (error) {
+        console.error('Face encoding extraction error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Warning',
+          description: 'Photo uploaded but face encoding extraction failed.',
+        });
+      }
     }
   };
 
@@ -275,8 +316,13 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
           toast({
             variant: 'destructive',
             title: 'Error',
-            description: result.error || 'Failed to process face data',
+            description: result.error || 'Failed to process face data. Please try again.',
           });
+          // Clear the photo since encoding failed
+          setPhotoPreview(null);
+          form.setValue('photo', undefined);
+          setFaceEncoding(null);
+          form.setValue('faceEncoding', '');
         }
       } catch (error) {
         console.error('Face encoding error:', error);

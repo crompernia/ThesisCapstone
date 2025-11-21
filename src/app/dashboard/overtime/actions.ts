@@ -10,7 +10,10 @@ import { z } from 'zod';
 const overtimeRequestSchema = z.object({
     employeeId: z.string(),
     date: z.string(),
-    hoursRequested: z.string(),
+    hoursRequested: z.string().refine(val => {
+        const num = parseFloat(val);
+        return !isNaN(num) && num >= 1 && num <= 4;
+    }, { message: "Hours must be between 1 and 4" }),
     reason: z.string().optional(),
 });
 
@@ -24,7 +27,7 @@ export async function createOvertimeRequest(_prevState: any, formData: any) {
 
     if (!validatedFields.success) {
         return {
-            message: 'Invalid form data. Please check your entries.',
+            message: validatedFields.error.errors.map(err => err.message).join(', '),
         };
     }
 

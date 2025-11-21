@@ -11,10 +11,11 @@ export async function POST(req: Request) {
   console.log('[clock-in] Route called');
   try {
     console.log('[clock-in] Parsing request body');
-    const body = await req.json();
+    const bodyText = await req.text();
+    const body = JSON.parse(bodyText);
     // DEBUG: log incoming body for troubleshooting (remove in production)
     console.debug('[clock-in] body:', body);
-  const { employeeNumber, latitude, longitude } = body;
+  const { employeeNumber, latitude, longitude, faceImage } = body;
   console.log('[clock-in] Getting database connection');
 
   const db = await getDb();
@@ -56,6 +57,54 @@ export async function POST(req: Request) {
     const hireDateStr = formatInTimeZone(hireDateZoned, 'Asia/Singapore', 'yyyy-MM-dd');
     if (isoDate < hireDateStr) {
       return NextResponse.json({ success: false, message: 'Cannot clock in before hire date' }, { status: 403 });
+    }
+
+    // Face verification check
+    let faceImageData: string | null = faceImage || null;
+    console.log('[clock-in] faceImage provided:', !!faceImageData);
+
+    if (faceImageData) {
+      console.log('[clock-in] Verifying face...');
+      
+      // Prepare form data for face verification API
+      const formData = new FormData();
+      const byteString = atob(faceImageData.split(',')[1]);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([ab], { type: 'image/jpeg' });
+      formData.append('image', blob, 'face.jpg');
+      formData.append('employeeId', employeeId!);
+
+      try {
+        const verificationResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/validate-face-presence`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const verificationResult = await verificationResponse.json();
+        
+        if (!verificationResult.isVerified) {
+          return NextResponse.json({ 
+            success: false, 
+            message: verificationResult.error || 'Face verification failed. Please try again.' 
+          }, { status: 401 });
+        }
+
+        console.log('[clock-in] Face verification successful');
+      } catch (faceError) {
+        console.error('[clock-in] Face verification error:', faceError);
+        return NextResponse.json({ 
+          success: false, 
+          message: 'Face verification service unavailable. Please try again later.' 
+        }, { status: 503 });
+      }
+    } else {
+      // For now, allow clock-in without face verification to not break existing functionality
+      // In production, you might want to make this mandatory
+      console.log('[clock-in] No face verification provided - allowing clock-in');
     }
 
     // Geofence check: if coordinates provided, verify distance against branch coordinates.
@@ -126,8 +175,14 @@ export async function POST(req: Request) {
     // Parse shift start time as GMT+8
     const shiftStartDate = fromZonedTime(parseISO(`${isoDate}T${shiftStartTime}`), 'Asia/Singapore');
 
-    // Parse shift end time as GMT+8
-    const shiftEndDate = fromZonedTime(parseISO(`${isoDate}T${shiftEndTime}`), 'Asia/Singapore');
+    // Parse shift end time as GMT+8, adjusting for overnight shifts
+    let shiftEndDate = fromZonedTime(parseISO(`${isoDate}T${shiftEndTime}`), 'Asia/Singapore');
+    if (shiftEndTime < shiftStartTime) {
+      // Shift spans midnight, end is on the next day
+      const nextDay = new Date(year, month - 1, day + 1);
+      const nextIsoDate = formatInTimeZone(nextDay, 'Asia/Singapore', 'yyyy-MM-dd');
+      shiftEndDate = fromZonedTime(parseISO(`${nextIsoDate}T${shiftEndTime}`), 'Asia/Singapore');
+    }
 
     // Define clock-in window: from shift start to shift end time
     const earlyClockInLimit = shiftStartDate; // Cannot clock in before shift start

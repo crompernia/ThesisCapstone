@@ -49,6 +49,62 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Cannot clock out before hire date' }, { status: 403 });
     }
 
+    // Face verification check
+    const bodyText = await req.text();
+    let faceImageData: string | null = null;
+    
+    try {
+      const bodyJson = JSON.parse(bodyText);
+      faceImageData = bodyJson.faceImage;
+    } catch (e) {
+      // If parsing fails, body might not contain face image data
+      console.log('[clock-out] No face image data in request body');
+    }
+
+    if (faceImageData) {
+      console.log('[clock-out] Verifying face...');
+      
+      // Prepare form data for face verification API
+      const formData = new FormData();
+      const byteString = atob(faceImageData.split(',')[1]);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([ab], { type: 'image/jpeg' });
+      formData.append('image', blob, 'face.jpg');
+      formData.append('employeeId', employeeId!);
+
+      try {
+        const verificationResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/validate-face-presence`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const verificationResult = await verificationResponse.json();
+        
+        if (!verificationResult.isVerified) {
+          return NextResponse.json({ 
+            success: false, 
+            message: verificationResult.error || 'Face verification failed. Please try again.' 
+          }, { status: 401 });
+        }
+
+        console.log('[clock-out] Face verification successful');
+      } catch (faceError) {
+        console.error('[clock-out] Face verification error:', faceError);
+        return NextResponse.json({ 
+          success: false, 
+          message: 'Face verification service unavailable. Please try again later.' 
+        }, { status: 503 });
+      }
+    } else {
+      // For now, allow clock-out without face verification to not break existing functionality
+      // In production, you might want to make this mandatory
+      console.log('[clock-out] No face verification provided - allowing clock-out');
+    }
+
     // Geofence check
     if (latitude && longitude) {
       // Get employee's branch and coordinates in a single query with join
