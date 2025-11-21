@@ -41,12 +41,14 @@ export async function POST(req: Request) {
     if (!hireDate) return NextResponse.json({ success: false, message: 'Employee hire date not found' }, { status: 400 });
 
     const nowUtc = new Date();
-    const now = toZonedTime(nowUtc, 'Asia/Singapore');
-    const isoDate = formatInTimeZone(now, 'Asia/Singapore', 'yyyy-MM-dd');
+    // Manually convert to Singapore time (UTC+8) since date-fns-tz may not work on Vercel
+    const now = new Date(nowUtc.getTime() + (8 * 60 * 60 * 1000)); // Add 8 hours
+    // Keep date comparison as YYYY-MM-DD string (matches Drizzle date column mapping in this project)
+    const isoDate = now.toISOString().split('T')[0]; // YYYY-MM-DD in GMT+8
 
     // Check if current date is before hire date
-    const hireDateZoned = toZonedTime(new Date(hireDate), 'Asia/Singapore');
-    const hireDateStr = formatInTimeZone(hireDateZoned, 'Asia/Singapore', 'yyyy-MM-dd');
+    const hireDateObj = new Date(hireDate + 'T00:00:00+08:00'); // Parse as Singapore time
+    const hireDateStr = hireDateObj.toISOString().split('T')[0];
     if (isoDate < hireDateStr) {
       return NextResponse.json({ success: false, message: 'Cannot clock out before hire date' }, { status: 403 });
     }
@@ -106,10 +108,10 @@ export async function POST(req: Request) {
     const schedule = scheduleAndAttendance[0];
     const shiftEndTime = schedule.shiftEnd;
     const attendanceId = schedule.attendanceId;
-    const timeIn = schedule.timeIn ? toZonedTime(new Date(schedule.timeIn), 'Asia/Singapore') : null;
+    const timeIn = schedule.timeIn ? new Date(schedule.timeIn) : null;
 
-   // Update timeOut and compute hours (store ISO string for timestamp)
-   await db.update(attendance).set({ timeOut: fromZonedTime(now, 'Asia/Singapore').toISOString() }).where(eq(attendance.id, attendanceId));
+    // Update timeOut and compute hours (store ISO string for timestamp)
+    await db.update(attendance).set({ timeOut: now.toISOString() }).where(eq(attendance.id, attendanceId));
 
     let hoursWorked = 0;
     if (timeIn) {
@@ -175,8 +177,10 @@ export async function POST(req: Request) {
       }
 
       let currentStatus = 'Present'; // default
-      const scheduleDate = fromZonedTime(parseISO(`${isoDate}T${scheduledStart}`), 'Asia/Singapore');
-      if (timeIn > scheduleDate) {
+      const [startHour, startMinute] = scheduledStart.split(':').map(Number);
+      const scheduleDate = new Date(now);
+      scheduleDate.setHours(startHour, startMinute, 0, 0);
+      if (timeIn && timeIn > scheduleDate) {
         currentStatus = 'Late';
       }
 
