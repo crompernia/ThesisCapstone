@@ -48,9 +48,10 @@ export async function POST(req: Request) {
     if (!hireDate) return NextResponse.json({ success: false, message: 'Employee hire date not found' }, { status: 400 });
 
     const nowUtc = new Date();
-    const now = toZonedTime(nowUtc, 'Asia/Singapore');
+    // Manually convert to Singapore time (UTC+8) since date-fns-tz may not work on Vercel
+    const now = new Date(nowUtc.getTime() + (8 * 60 * 60 * 1000)); // Add 8 hours
     // Keep date comparison as YYYY-MM-DD string (matches Drizzle date column mapping in this project)
-    const isoDate = formatInTimeZone(now, 'Asia/Singapore', 'yyyy-MM-dd'); // YYYY-MM-DD in GMT+8
+    const isoDate = now.toISOString().split('T')[0]; // YYYY-MM-DD in GMT+8
 
     console.log('[clock-in] Time debugging:');
     console.log('[clock-in] - nowUtc:', nowUtc.toISOString());
@@ -58,8 +59,8 @@ export async function POST(req: Request) {
     console.log('[clock-in] - isoDate:', isoDate);
 
     // Check if current date is before hire date
-    const hireDateZoned = toZonedTime(new Date(hireDate), 'Asia/Singapore');
-    const hireDateStr = formatInTimeZone(hireDateZoned, 'Asia/Singapore', 'yyyy-MM-dd');
+    const hireDateObj = new Date(hireDate + 'T00:00:00+08:00'); // Parse as Singapore time
+    const hireDateStr = hireDateObj.toISOString().split('T')[0];
     console.log('[clock-in] - hireDate:', hireDate, 'hireDateStr:', hireDateStr);
 
     if (isoDate < hireDateStr) {
@@ -193,19 +194,21 @@ export async function POST(req: Request) {
     const existingAttendanceId = schedule.attendanceId;
     const hasExistingTimeIn = schedule.timeIn !== null;
 
-    // Parse date components
-    const [year, month, day] = isoDate.split('-').map(Number);
+    // Parse shift times manually (Singapore time)
+    const [startHour, startMinute] = shiftStartTime.split(':').map(Number);
+    const [endHour, endMinute] = shiftEndTime.split(':').map(Number);
 
-    // Parse shift start time as GMT+8
-    const shiftStartDate = fromZonedTime(parseISO(`${isoDate}T${shiftStartTime}`), 'Asia/Singapore');
+    // Create shift start date in Singapore time
+    const shiftStartDate = new Date(now);
+    shiftStartDate.setHours(startHour, startMinute, 0, 0);
 
-    // Parse shift end time as GMT+8, adjusting for overnight shifts
-    let shiftEndDate = fromZonedTime(parseISO(`${isoDate}T${shiftEndTime}`), 'Asia/Singapore');
+    // Create shift end date in Singapore time
+    let shiftEndDate = new Date(now);
+    shiftEndDate.setHours(endHour, endMinute, 0, 0);
+
+    // If shift end is before shift start, it spans midnight
     if (shiftEndTime < shiftStartTime) {
-      // Shift spans midnight, end is on the next day
-      const nextDay = new Date(year, month - 1, day + 1);
-      const nextIsoDate = formatInTimeZone(nextDay, 'Asia/Singapore', 'yyyy-MM-dd');
-      shiftEndDate = fromZonedTime(parseISO(`${nextIsoDate}T${shiftEndTime}`), 'Asia/Singapore');
+      shiftEndDate.setDate(shiftEndDate.getDate() + 1);
     }
 
     // Define clock-in window: from shift start to shift end time
@@ -253,11 +256,11 @@ export async function POST(req: Request) {
     if (existingAttendanceId) {
        // If timeIn is null, set it; also set status based on clock-in time
        if (!hasExistingTimeIn) {
-         // store ISO strings for timestamp columns
-         await db.update(attendance).set({ timeIn: fromZonedTime(now, 'Asia/Singapore').toISOString(), status: clockInStatus }).where(eq(attendance.id, existingAttendanceId));
+         // store ISO strings for timestamp columns (already in Singapore time)
+         await db.update(attendance).set({ timeIn: now.toISOString(), status: clockInStatus }).where(eq(attendance.id, existingAttendanceId));
        }
      } else {
-       await db.insert(attendance).values({ employeeId: employeeId as any, date: isoDate as any, timeIn: fromZonedTime(now, 'Asia/Singapore').toISOString(), status: clockInStatus, createdAt: fromZonedTime(now, 'Asia/Singapore').toISOString() } as any);
+       await db.insert(attendance).values({ employeeId: employeeId as any, date: isoDate as any, timeIn: now.toISOString(), status: clockInStatus, createdAt: now.toISOString() } as any);
      }
     console.log('[clock-in] Returning success response');
 
