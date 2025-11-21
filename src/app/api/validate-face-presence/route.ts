@@ -82,6 +82,21 @@ async function ensureModelsDownloaded(modelPath: string): Promise<void> {
         'ssd_mobilenetv1_model-shard1',
         'ssd_mobilenetv1_model-shard2'
       ]
+    },
+    {
+      name: 'face_landmark_68_model',
+      files: [
+        'face_landmark_68_model-weights_manifest.json',
+        'face_landmark_68_model-shard1'
+      ]
+    },
+    {
+      name: 'face_recognition_model',
+      files: [
+        'face_recognition_model-weights_manifest.json',
+        'face_recognition_model-shard1',
+        'face_recognition_model-shard2'
+      ]
     }
   ];
 
@@ -187,6 +202,8 @@ async function loadModels() {
     }
 
     await faceapi.nets.ssdMobilenetv1.loadFromDisk(modelPath);
+    await faceapi.nets.faceLandmark68Net.loadFromDisk(modelPath);
+    await faceapi.nets.faceRecognitionNet.loadFromDisk(modelPath);
     modelsLoaded = true;
     console.log('[validate-face-presence] Face-api.js models loaded successfully');
   } catch (error) {
@@ -210,6 +227,7 @@ async function fileToCanvas(file: File): Promise<Canvas> {
 }
 
 export async function POST(req: Request) {
+  console.log('[validate-face-presence] POST request received, content-type:', req.headers.get('content-type'));
   try {
     const contentType = req.headers.get('content-type') || '';
 
@@ -380,7 +398,9 @@ export async function POST(req: Request) {
     }
 
   } catch (err: any) {
-    console.error('[validate-face-presence] server error', err);
+    console.error('[validate-face-presence] server error:', err);
+    console.error('[validate-face-presence] error stack:', err?.stack);
+    console.error('[validate-face-presence] error message:', err?.message);
     return NextResponse.json({
       isVerified: false,
       error: err?.message || 'Server error'
