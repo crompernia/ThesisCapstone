@@ -118,10 +118,13 @@ export default function QuickClock() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ fingerprint }),
           });
-          if (registerRes.ok) {
+          const registerJson = await registerRes.json();
+          if (registerRes.ok && registerJson.success) {
             toast({ title: "Device Registered", description: "Your device has been registered. Please try clocking in again." });
             setIsProcessing(false);
             return;
+          } else {
+            throw new Error(registerJson?.message || 'Device registration failed');
           }
         }
         throw new Error(verifyJson?.message || 'Verification failed');
@@ -186,10 +189,13 @@ export default function QuickClock() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ fingerprint }),
           });
-          if (registerRes.ok) {
+          const registerJson = await registerRes.json();
+          if (registerRes.ok && registerJson.success) {
             toast({ title: "Device Registered", description: "Your device has been registered. Please try clocking out again." });
             setIsProcessing(false);
             return;
+          } else {
+            throw new Error(registerJson?.message || 'Device registration failed');
           }
         }
         throw new Error(verifyJson?.message || 'Verification failed');

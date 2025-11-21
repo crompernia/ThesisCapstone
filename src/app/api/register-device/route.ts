@@ -31,8 +31,26 @@ export async function POST(req: Request) {
       .limit(1);
 
     const currentDevices = userData[0]?.registeredDevices || [];
+    const MAX_DEVICES = 2;
+
+    // Check if device is already registered
+    if (Array.isArray(currentDevices) && currentDevices.includes(fingerprintHash)) {
+      return NextResponse.json({
+        success: true,
+        message: 'Device already registered'
+      });
+    }
+
+    // Check device limit
+    if (Array.isArray(currentDevices) && currentDevices.length >= MAX_DEVICES) {
+      return NextResponse.json({
+        success: false,
+        message: `Maximum ${MAX_DEVICES} devices allowed per employee. Please contact HR to manage your registered devices.`
+      }, { status: 403 });
+    }
+
     const updatedDevices = Array.isArray(currentDevices)
-      ? [...new Set([...currentDevices, fingerprintHash])] // Remove duplicates
+      ? [...currentDevices, fingerprintHash]
       : [fingerprintHash];
 
     // Update user's registered devices
