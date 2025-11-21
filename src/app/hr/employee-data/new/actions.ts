@@ -34,24 +34,27 @@ const employeeSchema = z.object({
 export async function addEmployee(formData: FormData) {
   console.log('addEmployee: Starting employee creation process');
 
+  console.log('addEmployee: faceEncoding from formData:', formData.get('faceEncoding'));
+
   const validatedFields = employeeSchema.safeParse({
-    firstName: formData.get('firstName'),
-    lastName: formData.get('lastName'),
-    middleName: formData.get('middleName') || undefined,
-    gender: formData.get('gender'),
-    dob: formData.get('dob'),
-    position: formData.get('position'),
-    department: formData.get('department'),
-    branch: formData.get('branch'),
-    hireDate: formData.get('hireDate'),
-    email: formData.get('email'),
-    phone: formData.get('phone'),
-    photo: formData.get('photo') || undefined,
-    sssNumber: formData.get('sssNumber') || undefined,
-    philhealthNumber: formData.get('philhealthNumber') || undefined,
-    pagibigNumber: formData.get('pagibigNumber') || undefined,
-    tin: formData.get('tin') || undefined,
-  });
+   firstName: formData.get('firstName'),
+   lastName: formData.get('lastName'),
+   middleName: formData.get('middleName') || undefined,
+   gender: formData.get('gender'),
+   dob: formData.get('dob'),
+   position: formData.get('position'),
+   department: formData.get('department'),
+   branch: formData.get('branch'),
+   hireDate: formData.get('hireDate'),
+   email: formData.get('email'),
+   phone: formData.get('phone'),
+   photo: formData.get('photo') || undefined,
+   faceEncoding: formData.get('faceEncoding') || undefined,
+   sssNumber: formData.get('sssNumber') || undefined,
+   philhealthNumber: formData.get('philhealthNumber') || undefined,
+   pagibigNumber: formData.get('pagibigNumber') || undefined,
+   tin: formData.get('tin') || undefined,
+ });
 
   if (!validatedFields.success) {
     console.error('addEmployee: Validation failed:', validatedFields.error);
@@ -81,6 +84,7 @@ export async function addEmployee(formData: FormData) {
     tin
   } = validatedFields.data;
 
+  console.log('addEmployee: Validation passed, faceEncoding present:', !!faceEncoding);
   console.log('addEmployee: Validation passed, data:', { firstName, lastName, email, position, department, branch });
 
   // Generate a sequential numeric employee number (DB will generate the UUID primary key)

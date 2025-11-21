@@ -101,15 +101,20 @@ export default function QuickClock() {
         const ctx = c.getContext('2d');
         ctx?.drawImage(v, 0, 0, v.videoWidth, v.videoHeight);
         dataUri = c.toDataURL('image/jpeg');
+        console.log('[quick-clock] Image captured, dataUri length:', dataUri?.length);
+      } else {
+        console.log('[quick-clock] Video or canvas ref not available');
       }
 
       // send device fingerprint + photo + location to verification endpoint
+      console.log('[quick-clock] Calling verify-face API with dataUri present:', !!dataUri);
       const verifyRes = await fetch('/api/attendance/verify-face', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fingerprint, dataUri, latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
       });
       const verifyJson = await verifyRes.json();
+      console.log('[quick-clock] Verify-face response:', verifyJson);
       if (!verifyRes.ok || !verifyJson.verified) {
         if (verifyJson.requiresDeviceRegistration) {
           // Try to register the device
