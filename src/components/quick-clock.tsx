@@ -372,34 +372,15 @@ export default function QuickClock() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-none w-[95vw] h-[90vh] max-h-[90vh] p-0 bg-black/95 backdrop-blur-sm">
-          <div className="relative w-full h-full flex flex-col">
-            {/* Header overlay */}
-            <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/70 to-transparent p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-white">
-                  <h2 className="text-lg font-semibold">Attendance</h2>
-                  <p className="text-sm text-white/80">Position your face in the camera</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setOpen(false)}
-                  className="text-white hover:bg-white/20"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
-            </div>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Attendance</DialogTitle>
+            <DialogDescription>Use the camera to verify your identity and clock in/out</DialogDescription>
+          </DialogHeader>
 
-            {/* Camera view - takes up most of the space */}
-            <div className="flex-1 relative bg-black rounded-lg overflow-hidden mx-4 mt-16 mb-4">
-              {error && (
-                <div className="absolute top-4 left-4 right-4 z-20 bg-destructive/90 text-destructive-foreground p-3 rounded-md text-sm">
-                  {error}
-                </div>
-              )}
-
+          <div className="space-y-4">
+            {error && <div className="text-destructive">{error}</div>}
+            <div className="relative aspect-video w-full max-w-md mx-auto bg-muted rounded-md overflow-hidden">
               <video
                 ref={videoRef}
                 autoPlay
@@ -413,50 +394,14 @@ export default function QuickClock() {
                 }}
               />
               <canvas ref={canvasRef} className="hidden" />
-
-              {/* Face guide overlay */}
-              <div className="absolute inset-0 border-2 border-dashed border-white/50 rounded-lg pointer-events-none">
-                <div className="absolute inset-8 border-2 border-white rounded-full opacity-70"></div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-sm font-medium text-center">
-                  Position face here
-                </div>
-              </div>
-
-              {/* Processing overlay */}
-              {isProcessing && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <div className="text-center text-white">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-                    <p className="text-sm">Processing...</p>
-                  </div>
-                </div>
-              )}
             </div>
-
-            {/* Bottom controls overlay */}
-            <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/70 to-transparent p-4">
-              <div className="flex gap-3 justify-center">
-                <Button
-                  variant="outline"
-                  onClick={handleClockIn}
-                  disabled={isProcessing}
-                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 flex-1 max-w-xs"
-                >
-                  {isProcessing ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Clock className="h-4 w-4 mr-2" />}
-                  Clock In
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleClockOut}
-                  disabled={isProcessing}
-                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 flex-1 max-w-xs"
-                >
-                  {isProcessing ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Clock className="h-4 w-4 mr-2" />}
-                  Clock Out
-                </Button>
+            <div className="flex gap-2 justify-center">
+                <Button variant="outline" onClick={handleClockIn} disabled={isProcessing}>{isProcessing ? <Loader2 className="animate-spin" /> : 'Clock In'}</Button>
+                <Button variant="outline" onClick={handleClockOut} disabled={isProcessing}>{isProcessing ? <Loader2 className="animate-spin" /> : 'Clock Out'}</Button>
+                <Button variant="ghost" onClick={() => setOpen(false)}><X /></Button>
               </div>
-            </div>
           </div>
+
         </DialogContent>
       </Dialog>
     </>
