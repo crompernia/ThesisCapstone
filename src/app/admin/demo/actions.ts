@@ -8,56 +8,36 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 /**
- * Parses a 12-hour time string (e.g., "9:00 AM") into 24-hour format components.
- * @param timeStr - Time string in format "H:MM AM/PM"
- * @returns Object with hour (0-23) and minute (0-59)
- */
-function parseTime12Hour(timeStr: string): { hour: number; minute: number } {
-  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (!match) {
-    throw new Error(`Invalid time format: ${timeStr}`);
-  }
-
-  let hour = parseInt(match[1], 10);
-  const minute = parseInt(match[2], 10);
-  const period = match[3].toUpperCase();
-
-  if (period === 'PM' && hour !== 12) {
-    hour += 12;
-  } else if (period === 'AM' && hour === 12) {
-    hour = 0;
-  }
-
-  return { hour, minute };
-}
-
-/**
  * Generates sample attendance data for an employee for 1-2 weeks.
  * Creates realistic clock-in/out records based on their schedule.
  */
 export async function generateSampleAttendance(formData: FormData) {
-  console.log('Starting generateSampleAttendance');
-  const employeeId = formData.get('employeeId') as string;
-  console.log('Employee ID:', employeeId);
+  try {
+    console.log('[demo] Starting generateSampleAttendance');
+    const employeeId = formData.get('employeeId') as string;
+    console.log('[demo] Employee ID:', employeeId);
 
-  if (!employeeId) {
-    console.log('No employee ID');
-    redirect('/admin/demo?error=Employee ID is required');
-  }
+    if (!employeeId) {
+      console.log('No employee ID');
+      redirect('/admin/demo?error=Employee ID is required');
+    }
 
-  const db = await getDb();
-  console.log('Got DB connection');
+    console.log('[demo] About to get DB connection');
+    const db = await getDb();
+    console.log('[demo] Got DB connection');
 
-  // Verify employee exists
-  const employee = await db
-    .select()
-    .from(accounts)
-    .where(eq(accounts.id, employeeId))
-    .limit(1);
+    // Verify employee exists
+    console.log('[demo] Verifying employee exists');
+    const employee = await db
+      .select()
+      .from(accounts)
+      .where(eq(accounts.id, employeeId))
+      .limit(1);
+    console.log('[demo] Employee query result:', employee.length);
 
-  if (!employee.length) {
-    redirect('/admin/demo?error=Employee not found');
-  }
+    if (!employee.length) {
+      redirect('/admin/demo?error=Employee not found');
+    }
 
   const now = new Date();
   const startDate = new Date(now);
@@ -98,8 +78,8 @@ export async function generateSampleAttendance(formData: FormData) {
         scheduleInserts.push({
           employeeId,
           date: dateStr,
-          shiftStart: '9:00 AM',
-          shiftEnd: '6:00 PM',
+          shiftStart: '09:00:00',
+          shiftEnd: '17:00:00',
         });
       }
 
@@ -163,16 +143,16 @@ export async function generateSampleAttendance(formData: FormData) {
 
     if (schedule && schedule.shiftStart && schedule.shiftEnd) {
       // Employee has a schedule, generate attendance
-      const { hour: startHour, minute: startMin } = parseTime12Hour(schedule.shiftStart);
-      const { hour: endHour, minute: endMin } = parseTime12Hour(schedule.shiftEnd);
+      const [startHour, startMin] = schedule.shiftStart.split(':').map(Number);
+      const [endHour, endMin] = schedule.shiftEnd.split(':').map(Number);
 
       // Generate clock-in time with variation (early, on time, or late)
       const attendanceType = Math.random(); // Random number between 0 and 1
 
       let timeVariation = 0;
       if (attendanceType < 0.3) {
-        // 30% chance: Early (5-10 minutes before shift)
-        timeVariation = -(Math.floor(Math.random() * 6) + 5); // -5 to -10 minutes
+        // 30% chance: Early (1-10 minutes before shift)
+        timeVariation = -(Math.floor(Math.random() * 10) + 1);
       } else if (attendanceType < 0.7) {
         // 40% chance: On time (within 5 minutes of shift start)
         timeVariation = Math.floor(Math.random() * 11) - 5; // -5 to +5 minutes
@@ -197,12 +177,12 @@ export async function generateSampleAttendance(formData: FormData) {
         actualMin = 0;
       }
 
-      const timeInStr = `${dateStr}T${String(actualHour).padStart(2, '0')}:${String(actualMin).padStart(2, '0')}:00+08:00`;
+      const timeInStr = `${dateStr}T${String(actualHour).padStart(2, '0')}:${String(actualMin).padStart(2, '0')}:00`;
       const timeIn = new Date(timeInStr);
 
-      // Generate clock-out time (on time or 5-10 minutes after shift end)
-      const endVariation = Math.random() < 0.5 ? 0 : Math.floor(Math.random() * 6) + 5; // 50% on time, 50% 5-10 minutes after
-      const timeOutStr = `${dateStr}T${String(endHour).padStart(2, '0')}:${String(endMin + endVariation).padStart(2, '0')}:00+08:00`;
+      // Generate clock-out time (1-45 minutes after shift end)
+      const endVariation = Math.floor(Math.random() * 45) + 1; // 1-45 minutes
+      const timeOutStr = `${dateStr}T${String(endHour).padStart(2, '0')}:${String(endMin + endVariation).padStart(2, '0')}:00`;
       const timeOut = new Date(timeOutStr);
 
       // Calculate hours worked
@@ -309,7 +289,13 @@ export async function generateSampleAttendance(formData: FormData) {
     // Don't fail the whole process for this
   }
 
-  console.log('Revalidating and redirecting to success');
-  revalidatePath('/admin/demo');
-  redirect('/admin/demo?success=true');
+    console.log('[demo] Revalidating and redirecting to success');
+    revalidatePath('/admin/demo');
+    redirect('/admin/demo?success=true');
+  } catch (error: any) {
+    console.error('[demo] Unexpected error in generateSampleAttendance:', error);
+    console.error('[demo] Error stack:', error?.stack);
+    console.error('[demo] Error message:', error?.message);
+    redirect('/admin/demo?error=An unexpected error occurred. Please try again.');
+  }
 }
