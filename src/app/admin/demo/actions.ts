@@ -75,7 +75,7 @@ export async function generateSampleAttendance(formData: FormData) {
           employeeId,
           date: dateStr,
           shiftStart: '09:00:00',
-          shiftEnd: '17:00:00',
+          shiftEnd: '18:00:00',
         });
       }
 
@@ -147,8 +147,8 @@ export async function generateSampleAttendance(formData: FormData) {
 
       let timeVariation = 0;
       if (attendanceType < 0.3) {
-        // 30% chance: Early (1-10 minutes before shift)
-        timeVariation = -(Math.floor(Math.random() * 10) + 1);
+        // 30% chance: Early (5-10 minutes before shift)
+        timeVariation = -(Math.floor(Math.random() * 6) + 5); // -5 to -10 minutes
       } else if (attendanceType < 0.7) {
         // 40% chance: On time (within 5 minutes of shift start)
         timeVariation = Math.floor(Math.random() * 11) - 5; // -5 to +5 minutes
@@ -176,8 +176,8 @@ export async function generateSampleAttendance(formData: FormData) {
       const timeInStr = `${dateStr}T${String(actualHour).padStart(2, '0')}:${String(actualMin).padStart(2, '0')}:00`;
       const timeIn = new Date(timeInStr);
 
-      // Generate clock-out time (1-45 minutes after shift end)
-      const endVariation = Math.floor(Math.random() * 45) + 1; // 1-45 minutes
+      // Generate clock-out time (on time or 5-10 minutes after shift end)
+      const endVariation = Math.random() < 0.5 ? 0 : Math.floor(Math.random() * 6) + 5; // 50% on time, 50% 5-10 minutes after
       const timeOutStr = `${dateStr}T${String(endHour).padStart(2, '0')}:${String(endMin + endVariation).padStart(2, '0')}:00`;
       const timeOut = new Date(timeOutStr);
 
