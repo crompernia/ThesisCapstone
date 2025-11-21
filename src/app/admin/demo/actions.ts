@@ -177,12 +177,12 @@ export async function generateSampleAttendance(formData: FormData) {
         actualMin = 0;
       }
 
-      const timeInStr = `${dateStr}T${String(actualHour).padStart(2, '0')}:${String(actualMin).padStart(2, '0')}:00`;
+      const timeInStr = `${dateStr}T${String(actualHour).padStart(2, '0')}:${String(actualMin).padStart(2, '0')}:00+08:00`;
       const timeIn = new Date(timeInStr);
 
       // Generate clock-out time (1-45 minutes after shift end)
       const endVariation = Math.floor(Math.random() * 45) + 1; // 1-45 minutes
-      const timeOutStr = `${dateStr}T${String(endHour).padStart(2, '0')}:${String(endMin + endVariation).padStart(2, '0')}:00`;
+      const timeOutStr = `${dateStr}T${String(endHour).padStart(2, '0')}:${String(endMin + endVariation).padStart(2, '0')}:00+08:00`;
       const timeOut = new Date(timeOutStr);
 
       // Calculate hours worked
