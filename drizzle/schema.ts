@@ -228,6 +228,7 @@ export const accounts = pgTable("accounts", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 	photo: text(),
+	faceEncoding: varchar("face_encoding", { length: 5000 }),
 }, (table) => [
 	index("idx_accounts_branch").using("btree", table.branch.asc().nullsLast().op("text_ops")),
 	index("idx_accounts_email").using("btree", table.email.asc().nullsLast().op("text_ops")),
