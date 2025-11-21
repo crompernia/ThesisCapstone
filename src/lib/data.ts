@@ -289,7 +289,7 @@ export async function getDailyAttendanceData(date: string): Promise<unknown[]> {
         const attendanceStatus = (a as any).attendance_status as string | undefined | null;
         const overtimeHours = (a as any).overtimeHours as number | undefined | null;
 
-        const fmt = (d?: Date | null) => d ? formatInTimeZone(new Date(d), 'Asia/Singapore', 'hh:mm a') : null;
+        const fmt = (d?: Date | null) => d ? formatInTimeZone(new Date(d), 'Asia/Singapore', 'HH:mm') : null;
 
         let status = attendanceStatus || 'Away';
         if (attendanceStatus && (attendanceStatus === 'Present' || attendanceStatus === 'Late') && overtimeHours && overtimeHours > 0) {
@@ -799,8 +799,8 @@ export async function getAttendanceData(employeeId: string) {
 
         totalHours += Number(record.hoursWorked) || 0;
 
-        // Format for display
-        const fmtTime = (d: Date | null) => d ? formatInTimeZone(d, 'Asia/Singapore', 'hh:mm a') : '--:--';
+        // Format for display (use 24-hour format to match schedule display)
+        const fmtTime = (d: Date | null) => d ? formatInTimeZone(d, 'Asia/Singapore', 'HH:mm') : '--:--';
         records.push({
             date: record.date as string,
             timeIn: fmtTime(timeIn),
