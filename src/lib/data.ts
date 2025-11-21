@@ -1531,10 +1531,18 @@ export async function getSchedule(employeeId: string) {
         weekDates.push(format(d, 'yyyy-MM-dd'));
     }
 
-    // Query schedule rows for the employee for those dates (include notes)
+    // Query schedule rows for the employee for those dates (include notes and attendance data)
     const rows = await db
-        .select({ date: schedules.date, shiftStart: schedules.shiftStart, shiftEnd: schedules.shiftEnd, notes: schedules.notes })
+        .select({
+            date: schedules.date,
+            shiftStart: schedules.shiftStart,
+            shiftEnd: schedules.shiftEnd,
+            notes: schedules.notes,
+            attendanceStatus: attendance.status,
+            overtimeHours: attendance.overtimeHours
+        })
         .from(schedules)
+        .leftJoin(attendance, and(eq(attendance.employeeId, schedules.employeeId), eq(attendance.date, schedules.date)))
         .where(and(eq(schedules.employeeId, employeeId), inArray(schedules.date, weekDates)))
         .orderBy(asc(schedules.date))
         .catch((error) => {
@@ -1544,9 +1552,11 @@ export async function getSchedule(employeeId: string) {
 
     // Map rows to the client shape expected by ScheduleClientPage
     const items = rows.map(r => {
-        // r.date may be a Date or string depending on driver; normalize to yyyy-MM-dd
+        // r.date may be a Date or string depending on driver; normalize to yyyy-MM-dd for internal use
         const dateStr = typeof r.date === 'string' ? r.date : format(new Date(r.date as any), 'yyyy-MM-dd');
         const dayName = new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long' });
+        // Format date for display like attendance log: "November 11, 2025"
+        const displayDate = format(new Date(dateStr), 'MMMM dd, yyyy');
 
         const formatTimeShort = (t: string | null | undefined) => {
             if (!t) return '-';
@@ -1603,13 +1613,19 @@ export async function getSchedule(employeeId: string) {
         const breakHours = calculateBreakHours(breakStr);
         hours -= breakHours;
 
+        // Determine LATE and OT status from attendance data
+        const isLate = r.attendanceStatus === 'Late';
+        const hasOvertime = (r.overtimeHours && Number(r.overtimeHours) > 0) ? true : false;
+
         return {
             day: dayName,
-            date: dateStr,
+            date: displayDate,
             timeIn,
             timeOut,
             break: breakStr,
             hours,
+            isLate,
+            hasOvertime,
         };
     });
 

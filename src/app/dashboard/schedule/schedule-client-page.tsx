@@ -115,7 +115,11 @@ export default function ScheduleClientPage({ schedule, employeeName }) {
                       {/* Highlight the current day with a "Today" badge */}
                       {item.day === today && <Badge variant="default" className="ml-2">Today</Badge>}
                     </TableCell>
-                    <TableCell>{item.date}</TableCell>
+                    <TableCell>
+                      {item.date}
+                      {item.isLate && <Badge variant="destructive" className="ml-2 text-xs">LATE</Badge>}
+                      {item.hasOvertime && <Badge variant="secondary" className="ml-1 text-xs">OT</Badge>}
+                    </TableCell>
                     <TableCell>{item.timeIn}</TableCell>
                     <TableCell>{item.timeOut}</TableCell>
                     <TableCell>{item.break}</TableCell>
