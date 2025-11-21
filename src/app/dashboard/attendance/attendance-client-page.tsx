@@ -58,7 +58,7 @@ export default function AttendanceClientPage({ attendanceSummary, attendanceReco
       startY: 45,
       head: [['Date', 'Time In', 'Time Out', 'Late (min)', 'Status']],
       body: attendanceRecords.map(record => [
-        String(record.date || ''),
+        formatDate(record.date || ''),
         String(record.timeIn || ''),
         String(record.timeOut || ''),
         String(record.lateMinutes || 0),
@@ -74,6 +74,14 @@ export default function AttendanceClientPage({ attendanceSummary, attendanceReco
 
   const [isClocking, setIsClocking] = React.useState(false);
   const [records, setRecords] = React.useState<AttendanceRecord[]>(attendanceRecords || []);
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
   // listen for quick-clock completion events and update the table in-place
   React.useEffect(() => {
@@ -294,7 +302,7 @@ export default function AttendanceClientPage({ attendanceSummary, attendanceReco
               <TableBody>
                 {records.map((record, index) => (
                   <TableRow key={index}>
-                    <TableCell className="font-medium">{record.date}</TableCell>
+                    <TableCell className="font-medium">{formatDate(record.date)}</TableCell>
                     <TableCell>{record.timeIn}</TableCell>
                     <TableCell>{record.timeOut}</TableCell>
                     <TableCell>{record.lateMinutes || 0}</TableCell>

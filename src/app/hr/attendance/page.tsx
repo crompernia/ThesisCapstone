@@ -240,6 +240,14 @@ export default function HRAttendancePage() {
     });
   };
 
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
       'Present': 'default',
@@ -404,7 +412,7 @@ export default function HRAttendancePage() {
               <TableBody>
                 {attendanceRecords.map((record, index) => (
                   <TableRow key={index}>
-                    <TableCell className="font-medium">{record.date}</TableCell>
+                    <TableCell className="font-medium">{formatDate(record.date)}</TableCell>
                     <TableCell>{record.timeIn}</TableCell>
                     <TableCell>{record.timeOut}</TableCell>
                     <TableCell className="text-right">
