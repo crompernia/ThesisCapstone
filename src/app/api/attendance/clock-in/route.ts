@@ -5,6 +5,7 @@ import { eq, and } from 'drizzle-orm';
 import { getCurrentUserId } from '@/lib/auth';
 import { branches } from '@/lib/schema';
 import { toZonedTime, fromZonedTime, formatInTimeZone } from 'date-fns-tz';
+import { parseISO } from 'date-fns';
 
 export async function POST(req: Request) {
   console.log('[clock-in] Route called');
@@ -123,12 +124,10 @@ export async function POST(req: Request) {
     const [year, month, day] = isoDate.split('-').map(Number);
 
     // Parse shift start time as GMT+8
-    const [startHour, startMin, startSec] = shiftStartTime.split(':').map(Number);
-    const shiftStartDate = toZonedTime(new Date(year, month - 1, day, startHour, startMin, startSec || 0), 'Asia/Singapore');
+    const shiftStartDate = fromZonedTime(parseISO(`${isoDate}T${shiftStartTime}`), 'Asia/Singapore');
 
     // Parse shift end time as GMT+8
-    const [endHour, endMin, endSec] = shiftEndTime.split(':').map(Number);
-    const shiftEndDate = toZonedTime(new Date(year, month - 1, day, endHour, endMin, endSec || 0), 'Asia/Singapore');
+    const shiftEndDate = fromZonedTime(parseISO(`${isoDate}T${shiftEndTime}`), 'Asia/Singapore');
 
     // Define clock-in window: from shift start to shift end time
     const earlyClockInLimit = shiftStartDate; // Cannot clock in before shift start

@@ -6,6 +6,7 @@ import { getCurrentUserId } from '@/lib/auth';
 import { branches } from '@/lib/schema';
 import { determineOvertimeType } from '@/lib/payroll';
 import { toZonedTime, fromZonedTime, formatInTimeZone } from 'date-fns-tz';
+import { parseISO } from 'date-fns';
 
 export async function POST(req: Request) {
   try {
@@ -169,8 +170,7 @@ export async function POST(req: Request) {
       }
 
       let currentStatus = 'Present'; // default
-      const [h, m] = scheduledStart.split(':').map((s: string) => parseInt(s, 10));
-      const scheduleDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+      const scheduleDate = fromZonedTime(parseISO(`${isoDate}T${scheduledStart}`), 'Asia/Singapore');
       if (timeIn > scheduleDate) {
         currentStatus = 'Late';
       }
